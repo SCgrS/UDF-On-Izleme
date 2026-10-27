@@ -1,0 +1,26 @@
+name: Yayım
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  yayim:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Etiket manifest sürümüyle aynı mı
+        run: node -e "const v=require('./manifest.json').version; if ('v'+v !== process.env.GITHUB_REF_NAME) { console.error('manifest '+v+' ile etiket '+process.env.GITHUB_REF_NAME+' tutmuyor'); process.exit(1); }"
+      - run: node araclar/paketle.mjs cikti/UDF-On-Izleme.zip
+      - name: Sürüm notu
+        run: node araclar/surum-notu.mjs "${GITHUB_REF_NAME#v}" > cikti/not.md
+      - name: Sürümü yayımla
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" cikti/UDF-On-Izleme.zip --title "UDF Ön İzleme ${GITHUB_REF_NAME#v}" --notes-file cikti/not.md --latest

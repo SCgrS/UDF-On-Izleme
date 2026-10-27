@@ -1,0 +1,5 @@
+node_modules/
+cikti/
+yerel-ornekler/
+*.zip
+.DS_Store

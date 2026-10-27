@@ -1,0 +1,41 @@
+/* UDF Ön İzleme: Drive'ın ve Gmail'in görüntüleyicisine gömülen belge (icerik.js). Kurallar yalnız eklentinin eklediği
+   öznitelik ve sınıfla eşleşir; Drive'ın başka hiçbir öğesine dokunmaz. Belgenin çerçevesi olağan durumda ana alanın gölge
+   kökündedir: Oradaki stil icerik.js'tedir, bu dosyadaki çerçeve kuralı yalnız gölge kökü eklenemezse kullanılır. */
+
+/* Drive'ın UDF için gösterdiği içerik ("önizlenemedi" kartı, arşiv listesi) gizlenir; yerleşim değişmez.
+   Opaklık da sıfırlanır: Drive bazı alt öğelerde visibility'yi açıkça "visible" yapıyor. */
+[data-udf-okuyucu-gomulu] > :not(iframe.udf-okuyucu-cerceve) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Belge gömülüyken Drive'ın üst çubuğundaki "Yorum" düğmesi gizlenir: UDF'de işlemez (icerik.js, yorumuGizle). */
+[data-udf-okuyucu-gizli] {
+  display: none !important;
+}
+
+/* Belge, ana alanın Drive'ın üst çubuklarının altında kalan kısmını kaplar (top ve height betikten). Zemin saydam:
+   arkada Drive'ın koyu katmanı görünür. Renk düzeni sabit: iframe ancak içindeki sayfayla aynı düzendeyse saydam
+   çizilir. Sayfanın @layer içindeki !important kuralı bu dosyadakini yendiği için (Dark Reader) betik renk düzenini
+   ayrıca satır içinde verir. Drive'ın okları (z-index 5) ve üst çubuğu belgenin üstünde kalır. */
+iframe.udf-okuyucu-cerceve {
+  position: absolute !important;
+  left: 0 !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  color-scheme: light !important;
+  z-index: 1 !important;
+}

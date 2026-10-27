@@ -1,0 +1,199 @@
+:root {
+  color-scheme: light dark;
+  --zemin: #eceef2;
+  --cubuk: #ffffff;
+  --cubuk-kenar: #dde1e7;
+  --yazi: #1f2328;
+  --soluk: #5c6470;
+  --dugme: #f3f4f6;
+  --dugme-ust: #e7e9ed;
+  --vurgu: #1a73e8;
+  --vurgu-ust: #1765cc;
+  --vurgu-yazi: #ffffff;
+  --rozet: #eef2f7;
+  --iyi: #137333;
+  --iyi-zemin: #e6f4ea;
+  --uyari: #b3261e;
+  --uyari-zemin: #fce8e6;
+  --panel: #ffffff;
+  font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --zemin: #1e1f22;
+    --cubuk: #2b2d31;
+    --cubuk-kenar: #3a3c42;
+    --yazi: #e8eaed;
+    --soluk: #a8adb5;
+    --dugme: #383a40;
+    --dugme-ust: #44474e;
+    --vurgu: #8ab4f8;
+    --vurgu-ust: #a6c5fa;
+    --vurgu-yazi: #202124;
+    --rozet: #34363c;
+    --iyi: #81c995;
+    --iyi-zemin: #1f3326;
+    --uyari: #f28b82;
+    --uyari-zemin: #3c2423;
+    --panel: #2b2d31;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { display: flex; flex-direction: column; background: var(--zemin); color: var(--yazi); }
+
+.cubuk {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 16px; background: var(--cubuk); border-bottom: 1px solid var(--cubuk-kenar);
+  position: sticky; top: 0; z-index: 10; flex-wrap: wrap;
+}
+.cubuk-sol { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 260px; }
+.logo { flex: none; }
+.baslik-kutu { min-width: 0; }
+#belge-adi { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rozetler { display: flex; flex-wrap: wrap; gap: 6px; }
+.rozetler:empty { display: none; }
+.rozet {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; padding: 0 8px;
+  border-radius: 9px; background: var(--rozet); color: var(--soluk); border: 0; font-family: inherit; white-space: nowrap;
+}
+.rozet.iyi { background: var(--iyi-zemin); color: var(--iyi); }
+.rozet.uyari { background: var(--uyari-zemin); color: var(--uyari); }
+/* Sağ bölüm üç parça: rozetler ve Notlar | yakınlaştırma | öbür düğmeler. Gömülü görünümde yakınlaştırma çubuğun tam
+   ortasında durur (aşağıda). */
+.cubuk-sag { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cubuk-yan { display: flex; align-items: center; gap: 6px; }
+
+.dugme {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; white-space: nowrap;
+  border: 1px solid transparent; background: var(--dugme); color: var(--yazi); font: inherit; font-size: 13px; cursor: pointer;
+}
+.dugme:hover { background: var(--dugme-ust); }
+.dugme:focus-visible { outline: 2px solid var(--vurgu); outline-offset: 2px; }
+.dugme svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.dugme.birincil { background: var(--vurgu); color: var(--vurgu-yazi); }
+.dugme.birincil:hover { background: var(--vurgu-ust); }
+.dugme[aria-pressed="true"] { border-color: var(--vurgu); }
+.dugme.simge { width: 32px; padding: 0; justify-content: center; }
+.sayi { font-size: 11px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--vurgu); color: var(--vurgu-yazi); text-align: center; }
+.sayi:empty { display: none; }
+@media (max-width: 720px) { .dugme span:not(.sayi) { display: none; } .dugme { padding: 0 9px; } }
+
+.govde { flex: 1; display: flex; min-height: 0; position: relative; }
+.alan { flex: 1; overflow: auto; scrollbar-gutter: stable; outline: none; position: relative; }
+/* Not bölmesi açıkken sayfa ortada kalsın diye bırakılan sol boşluk (goruntule.js, ortala). */
+@media screen { .alan { padding-left: var(--sol-bosluk, 0px); } }
+
+.durum { max-width: 520px; margin: 12vh auto 0; padding: 32px; text-align: center; }
+.durum h2 { font-size: 20px; margin: 12px 0 6px; }
+.durum p { margin: 6px 0; color: var(--soluk); }
+.durum-not { font-size: 12px; margin-top: 18px !important; }
+.durum-dugmeler { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+.durum-dugmeler:empty { display: none; }
+.durum-simge { width: 56px; height: 56px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; background: var(--rozet); }
+.durum-simge svg { width: 28px; height: 28px; fill: none; stroke: var(--soluk); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.durum.hata .durum-simge { background: var(--uyari-zemin); }
+.durum.hata .durum-simge svg { stroke: var(--uyari); }
+.durum.yukleniyor .durum-simge { background: none; }
+.donen { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--cubuk-kenar); border-top-color: var(--vurgu); animation: don 0.9s linear infinite; }
+@keyframes don { to { transform: rotate(360deg); } }
+.ayrinti { font-size: 12px; color: var(--soluk); font-family: Consolas, monospace; }
+
+/* Bölme dar pencerede daralır (kullanıcının isteği, 2026-10-27: "sıkışınca notlar kısmından da biraz sıkışsın"): 1280 px'te
+   ve üstünde 320 px, 960 px'te ve altında 240 px, arada pencerenin dörtte biri. Belge alanı tek başına daralmaz. */
+.notlar-paneli { width: clamp(240px, 25vw, 320px); flex: none; overflow: auto; background: var(--panel); border-left: 1px solid var(--cubuk-kenar); }
+.panel-baslik { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 6px 16px; position: sticky; top: 0; background: var(--panel); }
+.panel-baslik h2 { font-size: 14px; margin: 0; }
+.not-listesi { list-style: none; margin: 0; padding: 0 12px 16px; display: grid; gap: 8px; }
+.not-listesi button {
+  width: 100%; text-align: left; border: 1px solid var(--cubuk-kenar); border-radius: 8px; background: none; color: inherit;
+  padding: 8px 10px; font: inherit; cursor: pointer;
+}
+.not-listesi button:hover { background: var(--dugme); }
+.not-ust { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--soluk); }
+.not-metni { margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.not-metni.bos { color: var(--soluk); font-style: italic; }
+@media (max-width: 900px) { .notlar-paneli { position: absolute; right: 0; top: 0; bottom: 0; z-index: 9; max-width: 100%; box-shadow: -4px 0 16px rgba(0,0,0,.15); } }
+
+.olcek-grup { display: inline-flex; align-items: center; gap: 2px; }
+.dugme.olcek { min-width: 58px; padding: 0 6px; justify-content: center; font-variant-numeric: tabular-nums; }
+
+.udf-gorunum .udf-notlu.yanip { animation: yanip 1.2s ease-out 2; }
+@keyframes yanip { 50% { background-color: rgba(255, 152, 0, .85); } }
+
+.birak-katmani { position: fixed; inset: 0; z-index: 50; background: rgba(26, 115, 232, .12); border: 3px dashed var(--vurgu); display: grid; place-items: center; pointer-events: none; }
+.birak-katmani div { background: var(--cubuk); padding: 12px 20px; border-radius: 10px; font-size: 16px; font-weight: 600; }
+.ipucu { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #202124; color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px; z-index: 60; }
+
+/* ------------------------------------------------ Drive'a gömülü görünüm (gomulu.html: html.gomulu)
+   Drive'ın görüntüleyicisi koyu, yarı saydam bir katman: sayfa saydam kalır, arkada Drive'ın zemini görünür. Üst
+   çubuk, PDF görüntüleyicilerdeki sayfa ve yakınlaştırma denetimi gibi altta ortalanmış koyu bir hap olur. Renk düzeni
+   "normal" (açık) kalmalı: iframe ancak içindeki sayfayla aynı renk düzenindeyse saydam çizilir; çerçeve öğesi "light"
+   (icerik.js). */
+:root.gomulu {
+  color-scheme: normal;
+  --zemin: transparent;
+  --cubuk: rgba(32, 33, 36, .94);
+  --cubuk-kenar: rgba(232, 234, 237, .22);
+  --yazi: #e8eaed;
+  --soluk: #bdc1c6;
+  --dugme: transparent;
+  --dugme-ust: rgba(232, 234, 237, .12);
+  --vurgu: #8ab4f8;
+  --vurgu-ust: #a6c5fa;
+  --vurgu-yazi: #202124;
+  --rozet: rgba(232, 234, 237, .12);
+  --uyari: #f28b82;
+  --uyari-zemin: rgba(242, 139, 130, .18);
+  --panel: #2d2e31;
+}
+.gomulu body { background: transparent; }
+/* Çubuk [0, 2 × ortası] aralığında ortalanır; ortası ve en büyük genişliği betikten (goruntule.js, cubuguYerlestir). */
+.gomulu .cubuk {
+  position: fixed; z-index: 20; top: auto; bottom: 16px; left: 0; right: calc(100% - 2 * var(--cubuk-ortasi, 50%)); margin: 0 auto;
+  width: max-content; max-width: var(--cubuk-en-cok, calc(100% - 24px)); padding: 4px 6px; gap: 4px; flex-wrap: nowrap;
+  border: 0; border-radius: 24px; box-shadow: 0 2px 6px rgba(0, 0, 0, .35), 0 8px 24px rgba(0, 0, 0, .3);
+}
+.gomulu body:not(.belgeli) .cubuk { display: none; }
+.gomulu .cubuk-sol, .gomulu #dugme-ac, .gomulu #dugme-drive, .gomulu #dugme-indir { display: none !important; }
+.gomulu .rozetler { margin: 0 2px 0 6px; flex-wrap: nowrap; overflow: hidden; min-width: 0; }
+.gomulu .rozet { line-height: 22px; }
+/* Yakınlaştırma (iki çizginin arası) çubuğun tam ortasında (kullanıcının isteği, 2026-10-07): iki yan eşit genişlikte,
+   genişi kadar; dardaki düğmeler kendi yanının ortasında durur, boyları değişmez. Notlar bu yüzden solda, rozetlerin
+   yanında ve yazısız (simge ve sayı): sağda yalnız Yazdır / PDF kalınca iki yan birbirine yakın olur. Solda hiçbir şey
+   kalmayacaksa "E-imzasız" yazar (goruntule.js, rozetleriYaz). Bu düzen sığmazsa (goruntule.js, cubuguYerlestir:
+   .sikisik) yanlar eşitlenmez, önce rozetler kısalır. */
+.gomulu .cubuk-sag { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2px; min-width: 0; }
+.gomulu .cubuk-yan { justify-content: center; gap: 2px; min-width: 0; }
+.gomulu .cubuk.sikisik .cubuk-sag { display: flex; flex-wrap: nowrap; }
+.gomulu .cubuk.sikisik .cubuk-yan.bas { flex: 0 1 auto; }
+.gomulu .cubuk.sikisik .olcek-grup, .gomulu .cubuk.sikisik .cubuk-yan.son, .gomulu .cubuk-yan .dugme { flex: none; }
+.gomulu .dugme { height: 36px; border-radius: 18px; }
+.gomulu .dugme.simge { width: 36px; }
+.gomulu .dugme.birincil { background: transparent; color: var(--yazi); }
+.gomulu .dugme:hover, .gomulu .dugme.birincil:hover { background: var(--dugme-ust); }
+.gomulu .olcek-grup { padding: 0 4px; margin: 0 2px; border-left: 1px solid var(--cubuk-kenar); border-right: 1px solid var(--cubuk-kenar); }
+.gomulu .alan { scrollbar-color: rgba(232, 234, 237, .35) transparent; }
+@media screen { .gomulu .udf-gorunum .udf { padding-bottom: 96px; } }   /* baskıda boş sayfa eklemesin */
+.gomulu .durum { margin-top: 10vh; border-radius: 12px; background: #282a2c; max-width: 480px; }
+.gomulu .durum.yukleniyor { background: none; pointer-events: none; }   /* görünmez kutu: tıklama arkadaki boşluğa geçer (kapatır) */
+.gomulu .durum .dugme { background: rgba(232, 234, 237, .12); }
+.gomulu .durum .dugme.birincil { background: var(--vurgu); color: var(--vurgu-yazi); }
+/* Not bölmesi notlu belgede kendiliğinden açılır. Sağında Drive'ın "sonraki" oku için boşluk kalır (--sag-bosluk,
+   icerik.js ölçer): ok bölmenin üstünde kalırsa nota basmak başka dosyaya geçirir. Geniş görünümde bölme belgenin yanında
+   yer kaplar; sayfa yer yettikçe bölme kapalıykenki yerinde, ortada kalır, çubuk bölmeye 12 px'ten fazla yaklaşmaz
+   (goruntule.js, ortala ve cubuguYerlestir). Dar görünümde (≤ 900 px) bölme belgenin üstüne biner ve çubuğun üstünde
+   biter. */
+.gomulu .notlar-paneli { margin-right: var(--sag-bosluk, 0px); border-left: 0; box-shadow: -4px 0 16px rgba(0, 0, 0, .35); }
+@media (max-width: 900px) {
+  .gomulu .notlar-paneli { right: var(--sag-bosluk, 0px); bottom: 68px; margin-right: 0; max-width: calc(100% - var(--sag-bosluk, 0px)); }
+}
+.gomulu .ipucu { bottom: 76px; left: var(--cubuk-ortasi, 50%); }
+
+@media print {
+  html, body { height: auto; background: #fff !important; display: block; }
+  .cubuk, .notlar-paneli, .birak-katmani, .ipucu, .durum { display: none !important; }
+  .govde { display: block; }
+  .alan { overflow: visible; }
+}

@@ -1,0 +1,820 @@
+{
+ "repolar": [
+  {
+   "ad": "hasanimer/legaluga-uyap-ui (aynı udf.js: hasanimer/legaluga-uyap-asistani)",
+   "url": "https://github.com/hasanimer/legaluga-uyap-ui",
+   "ne_yapar": "Okuma + görüntüleme: UDF -> tarayıcı DOM'u (sayfa biçimli görünüm). MV3 Chrome eklentisinin (Legaluga UYAP Asistanı) içindeki UDF önizleyicisi. Yazma yok.",
+   "dil": "JavaScript (bağımlılıksız; ZIP'i kendisi DecompressionStream('deflate-raw') ile açar, XML için DOMParser)",
+   "lisans": "MIT (depoda LICENSE var; README: 'UYAP işlem motoru özel kaynaklı', ama udf.js açık MIT depoda). legaluga-uyap-asistani deposu GitHub'da NOASSERTION görünüyor.",
+   "son_commit": "2026-10-05",
+   "yildiz": 0,
+   "desteklenenler": "Stil zinciri (resolver), hizalama, girinti, satır aralığı, Bulleted/Numbered liste, TabSet sekme durakları, tablo (colspan/rowspan, iç içe tablo, kenarlık), resim (imageData, boyut/piksel sınırları, canvas'a çizim), üst/alt bilgi, page-break ile bölümler, bgimage filigran, sayfa boyutu ve kenar boşlukları (pageFormat), şablon verisi (data / dataRow satırları), field/space/tab, sign.sgn varlığı (kriptografik doğrulama yok). Güvenlik sınırları var: boyut, girdi sayısı, derinlik, süre; DTD reddediliyor; içerik yalnız createElement ve textContent ile kuruluyor.",
+   "ana_dosyalar": [
+    "src/extension/udf.js (oku, modelKur, ciz, zipGirdileri, CSS)",
+    "src/extension/manifest.json"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Bulunanlar içinde en kapsamlı ve en güvenlik odaklı tarayıcı okuyucusu; zaten bir MV3 eklentisinde çalışıyor. Offset'ler JS dizesi (UTF-16) üzerinden; Java Swing ile tutarlı. Uyarlama gerekenler: globalThis.UHD ad alanına bağlı (common.js), CSS '.viewer' önekli, içerik betiği şu an yalnız avukat.uyap.gov.tr'de yükleniyor. Yıldız sayısı 0, yeni bir depo."
+  },
+  {
+   "ad": "mfozmen/udfly",
+   "url": "https://github.com/mfozmen/udfly",
+   "ne_yapar": "Okuma + görüntüleme: UDF -> HTML (masaüstü Tauri görüntüleyicisi; ön yüz saf tarayıcı JS'i), bağımsız HTML dışa aktarımı",
+   "dil": "JavaScript (JSZip + DOMParser), kabuk Rust/Tauri",
+   "lisans": "MIT",
+   "son_commit": "2026-07-28",
+   "yildiz": 0,
+   "desteklenenler": "Öğe sırası korunuyor (paragraph/table/header/footer). Stil zinciri (resolver), bold, underline, size, family, renk, Alignment, LeftIndent/RightIndent/FirstLineIndent/Hanging/SpaceAbove/SpaceBelow/LineSpacing, TabSet duraklarına göre sekme, borderNone tablolar, field/space/tab, documentproperties.xml'den doğrulama kodu. EKSİK: italik okunmuyor (normalizeStyle italic almıyor), resim, liste işaretleri, colspan/rowspan, sayfa kenar boşlukları ve sayfalama yok.",
+   "ana_dosyalar": [
+    "src/parser.js",
+    "src/render.js",
+    "src/export.js"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Temiz, küçük ve testli (test/parser, render.security, render.fidelity). XSS'e karşı kaçış ve font-family arındırma var. Eklenti için iyi bir temel, ama resim/liste/birleşik hücre eklenmeli."
+  },
+  {
+   "ad": "burakayax/NB_PDF_PLATFORM",
+   "url": "https://github.com/burakayax/NB_PDF_PLATFORM",
+   "ne_yapar": "Okuma + çevirme: UDF -> PDF, tamamen tarayıcıda (nb-pdf-tools.vercel.app'teki UDF->PDF aracı)",
+   "dil": "TypeScript (fflate + DOMParser + pdf-lib)",
+   "lisans": "MIT",
+   "son_commit": "2026-10-05",
+   "yildiz": 1,
+   "desteklenenler": "Paragraf; bold/italic/underline/strikethrough/superscript; renk; hizalama; LeftIndent/FirstLineIndent; tab/space; resim (PNG/JPEG imza koklama); page-break; tablo (columnSpans); sayfa kenar boşlukları; resolver stilleri. Üst/alt bilgi ve liste işleme kodda görülmedi.",
+   "ana_dosyalar": [
+    "web/frontend/src/lib/udf.ts",
+    "web/frontend/src/lib/udfPdf.ts",
+    "web/frontend/src/components/tools/UdfToPdfTool.tsx"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Büyük bir PDF araçları sitesinin parçası. Ayrıştırıcı tek dosya, iyi açıklamalı ve testli (udf.test.ts, udfPdf.test.ts). Offset'ler kod noktası (code point) üzerinden; BMP dışı karakterde kayabilir."
+  },
+  {
+   "ad": "gokselb/udfpdf (npm: udfpdf 2.0.0)",
+   "url": "https://github.com/gokselb/udfpdf",
+   "ne_yapar": "Okuma + çevirme: UDF -> PDF / DOCX / HTML / Markdown / TXT (Node CLI ve programlı API)",
+   "dil": "TypeScript (JSZip, fast-xml-parser, pdfmake, docx)",
+   "lisans": "Apache-2.0 (SPDX başlıkları ve LICENSE; GitHub NOASSERTION gösteriyor)",
+   "son_commit": "2026-05-11",
+   "yildiz": 0,
+   "desteklenenler": "Sayfa boyutu (A4/Letter/Legal/A5), yön, kenar boşlukları, üst/alt bilgi mesafesi ve paragrafları, tablo (colSpan/rowSpan, genişlik, kenarlık, renk), stil çözümleme, bold/italic/underline/size/family/renk/arka plan, hizalama, aralık, girinti, documentproperties (doğrulama kodu), sign.sgn okuma. EKSİK: resim, liste, tab öğesi.",
+   "ana_dosyalar": [
+    "src/parser/xml-parser.ts",
+    "src/parser/document-model.ts",
+    "src/parser/unzip.ts",
+    "src/utils/style-resolver.ts",
+    "src/renderers/html.ts",
+    "src/renderers/pdf.ts",
+    "src/renderers/docx.ts"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Düzenli paket (CI, testler, semantic-release). Ancak fast-xml-parser preserveOrder olmadan kullanılıyor ve model Object.entries ile kuruluyor; bu yüzden paragraf ile tablo sırası kayboluyor (tablolar paragraflardan sonra geliyor). npm 2.0.0 dist'inde de aynı. Node'a bağlı (fs, Buffer); tarayıcı için uyarlama gerekir. Offset'ler kod noktası üzerinden."
+  },
+  {
+   "ad": "murataskin/udf-cli (npm: udf-cli 0.5.7, yayımcı saidsrc; kaynak deposu saidsurucu/udf-cli 404)",
+   "url": "https://github.com/murataskin/udf-cli",
+   "ne_yapar": "Çift yönlü: HTML/Markdown <-> UDF (udf2html, udf2md, html2udf, md2udf); npm 0.5.7'de e-imza ile UDF imzalama da var",
+   "dil": "TypeScript (JSZip + htmlparser2)",
+   "lisans": "package.json'da MIT; depoda LICENSE dosyası yok. npm 0.5.7 obfuscate edilmiş (javascript-obfuscator).",
+   "son_commit": "2026-03-13 (depo); npm 0.5.7: 2026-10-05",
+   "yildiz": 2,
+   "desteklenenler": "Öğe sırası korunuyor. Resim (imageData), Bulleted/Numbered (ListLevel, NumberType, BulletType, ListId), tablo (colspan/rowspan, iç içe tablo, columnSpans, kenarlık, fillColor), sayfa biçimi (kenar boşlukları, yön, üst/alt bilgi mesafesi), bold/italic/underline/renk/arka plan, hizalama/girinti/aralık. Depodaki sürümde EKSİK: header/footer öğeleri okunmuyor, tab atlanıyor, styles/resolver çözümü yok.",
+   "ana_dosyalar": [
+    "src/udf/parser.ts",
+    "src/model/document.ts",
+    "src/html/serializer.ts",
+    "src/udf/serializer.ts",
+    "src/udf/cdata-builder.ts"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "README'si biçim için iyi bir başvuru (renk kodlaması, borderSpec bit maskesi, ￼ resim yer tutucusu, ​ boş paragraf). Asıl kaynak gizli ya da silinmiş, npm sürümü obfuscate edilmiş; lisans durumu belirsiz. Offset'ler kod noktası üzerinden."
+  },
+  {
+   "ad": "iseeeva/uyap",
+   "url": "https://github.com/iseeeva/uyap",
+   "ne_yapar": "Okuma + çevirme: UDF -> DOCX, tarayıcıda (Vue uygulaması)",
+   "dil": "TypeScript (xml2js + docx)",
+   "lisans": "Yok (LICENSE dosyası yok)",
+   "son_commit": "2026-08-02",
+   "yildiz": 1,
+   "desteklenenler": "Tipli model: content, field, image, space, tab, paragraph, table/row/cell, header/footer, page-break. italic/underline/strikethrough, LeftIndent/FirstLineIndent/LineSpacing, TabSet, Bulleted/Numbered, pageFormat, styles/resolver.",
+   "ana_dosyalar": [
+    "src/pages/udf/scripts/parser.ts",
+    "src/pages/udf/index.vue"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Ayrıntılı tip modeli var, ama lisans olmadığı için kod alınamaz; yalnız başvuru olarak kullanılabilir."
+  },
+  {
+   "ad": "can-yesilyurt/udf-to-pdf",
+   "url": "https://github.com/can-yesilyurt/udf-to-pdf",
+   "ne_yapar": "Okuma + görüntüleme + çevirme: UDF -> HTML önizleme, PDF indirme (html2pdf.js) ve yazdırma; tek HTML sayfası",
+   "dil": "HTML/JavaScript (JSZip ve html2pdf.js, cdnjs'ten)",
+   "lisans": "Yok",
+   "son_commit": "2026-05-17",
+   "yildiz": 0,
+   "desteklenenler": "Tablo (colspan/rowspan, borderSpec), resim, üst/alt bilgi, TabSet, girinti, sayfa kenar boşlukları, resolver, page-break, sign.sgn tespiti, italic/underline/strikethrough.",
+   "ana_dosyalar": [
+    "index.html"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Tek dosyada oldukça kapsamlı; lisans yok, başvuru olarak kullanılabilir."
+  },
+  {
+   "ad": "ugarchance/udf-viewer (npm: udf-viewer-react 1.0.5)",
+   "url": "https://github.com/ugarchance/udf-viewer",
+   "ne_yapar": "Okuma + görüntüleme: UDF'yi gösteren React bileşeni; TIFF görüntüleyici de var",
+   "dil": "TypeScript/React (JSZip + fast-xml-parser preserveOrder:true)",
+   "lisans": "Yok (npm paketinde de lisans yok)",
+   "son_commit": "2025-12-19",
+   "yildiz": 0,
+   "desteklenenler": "Sıra korunuyor. Paragraf, tablo, üst/alt bilgi, tab, bold/italic/underline/size/family/renk, hizalama, girinti (Left/Right/FirstLine), SpaceAbove/Below, stiller.",
+   "ana_dosyalar": [
+    "src/lib/parser.ts",
+    "src/lib/UdfViewer.tsx",
+    "src/UdfParser.js"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "React'e bağlı; lisans yok."
+  },
+  {
+   "ad": "muhammetekurt/UDF.Converter",
+   "url": "https://github.com/muhammetekurt/UDF.Converter",
+   "ne_yapar": "Okuma + çevirme: UDF -> HTML (Expo/React Native mobil uygulama)",
+   "dil": "TypeScript (JSZip + fast-xml-parser)",
+   "lisans": "Yok",
+   "son_commit": "2026-04-02",
+   "yildiz": 0,
+   "desteklenenler": "Üst/alt bilgi, paragraf, tablo (colspan/rowspan, bgColor), page-break, image, tab/space/field, Bulleted/Numbered, bold/italic/underline/renk/size, styles.",
+   "ana_dosyalar": [
+    "src/lib/udfParser.ts"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "preserveOrder kullanmadığı için blok sırasını startOffset'e göre tahmin ediyor. Resim konumu 0 kabul ediliyor. Expo dosya API'sine bağlı."
+  },
+  {
+   "ad": "cihadturhan/uyap-udf-viewer",
+   "url": "https://github.com/cihadturhan/uyap-udf-viewer",
+   "ne_yapar": "Okuma + görüntüleme: UDF -> HTML, statik web uygulaması (Netlify)",
+   "dil": "TypeScript (Vite, JSZip + DOMParser)",
+   "lisans": "Yok",
+   "son_commit": "2026-05-24",
+   "yildiz": 0,
+   "desteklenenler": "Yalnız üst düzey paragraflar ve content parçaları (bold/italic/underline/family/size/foreground, Alignment). pageFormat ve styles yalnız bilgi olarak gösteriliyor, imza yalnız varlık olarak. Tablo, resim, üst/alt bilgi, liste yok.",
+   "ana_dosyalar": [
+    "src/udf.ts",
+    "src/main.ts"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Basit ve okunaklı, ama tablo içeren mahkeme belgelerinde içerik kaybeder."
+  },
+  {
+   "ad": "e-imza/evrak-md",
+   "url": "https://github.com/e-imza/evrak-md",
+   "ne_yapar": "Okuma + çevirme: UDF/PDF/DOCX/tarama -> Markdown (+OCR), yerel Node aracı",
+   "dil": "JavaScript (Node)",
+   "lisans": "MIT",
+   "son_commit": "2026-09-27",
+   "yildiz": 0,
+   "desteklenenler": "content/field, bold/italic, resim (base64 -> dosya, isteğe bağlı OCR), tab/space/page-break, tablo (birleşik hücreler düzleştiriliyor), üst/alt bilgi başlık olarak, imza varlığı, offset sınır denetimi.",
+   "ana_dosyalar": [
+    "src/udf.js",
+    "src/archive.js"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Offset'leri doğru biçimde UTF-16 olarak dilimliyor (kodda Java Swing açıklaması var). Node Buffer'a bağlı."
+  },
+  {
+   "ad": "ygzyr/UDFpad",
+   "url": "https://github.com/ygzyr/UDFpad",
+   "ne_yapar": "Okuma + yazma: çevrimdışı UDF editörü (macOS AppKit + WKWebView); DOCX/ODT/RTF dışa aktarma, e-imza",
+   "dil": "TypeScript (fast-xml-parser) + Swift kabuk",
+   "lisans": "Yok",
+   "son_commit": "2026-09-19",
+   "yildiz": 0,
+   "desteklenenler": "Gidiş-dönüş okuma/yazma, tablolar, üst/alt bilgi (pageNumber), sayfa düzeni (pageFormat), stiller. cms.ts ile sign.sgn imza doğrulaması (WebCrypto).",
+   "ana_dosyalar": [
+    "src/udf/parse.ts",
+    "src/udf/serialize.ts",
+    "src/udf/style.ts",
+    "src/udf/types.ts",
+    "src/udf/zip.ts",
+    "src/udf/cms.ts",
+    "src/udf/docx-io.ts"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "WebView'de çalışan TS çekirdeği, testleri var (roundtrip, table, cms). Lisans yok."
+  },
+  {
+   "ad": "Cicikuss/JustiWise",
+   "url": "https://github.com/Cicikuss/JustiWise",
+   "ne_yapar": "Okuma + yazma: tarayıcıda UDF editörü (UDF -> HTML düzenleyici -> UDF)",
+   "dil": "TypeScript/React (JSZip + fast-xml-parser)",
+   "lisans": "Yok",
+   "son_commit": "2025-06-19",
+   "yildiz": 1,
+   "desteklenenler": "Tablo, resim, tab/space/field, alt bilgi, girinti, satır aralığı, borderSpec, italic/underline.",
+   "ana_dosyalar": [
+    "src/Helper/udf.util.ts (parseUdfFileContent, generateHtmlForUdfElement, buildUdfXmlForDownload)",
+    "src/Models/udf.types.ts",
+    "src/Models/udf.constants.ts"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Lisans yok, son commit 2025."
+  },
+  {
+   "ad": "symbuzzer/Evrak",
+   "url": "https://github.com/symbuzzer/Evrak",
+   "ne_yapar": "Okuma + görüntüleme + çevirme: Android çoklu biçim görüntüleyici; UDF -> HTML (WebView) ve PDF",
+   "dil": "Kotlin",
+   "lisans": "Apache-2.0",
+   "son_commit": "2026-10-04",
+   "yildiz": 3,
+   "desteklenenler": "Tablo (colspan/rowspan, borderSpec), Bulleted/Numbered, üst/alt bilgi, TabSet, resim, page-break, sayfa kenar boşlukları, resolver, FirstLineIndent, LineSpacing.",
+   "ana_dosyalar": [
+    "app/src/main/java/com/avalibeyaz/evrak/ui/UdfHtmlConverter.kt",
+    "app/src/main/java/com/avalibeyaz/evrak/ui/UdfViewerScreen.kt"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "UDF -> HTML kural seti kapsamlı (43 KB) ve lisansı uygun; JS'e çevirmek için iyi bir başvuru."
+  },
+  {
+   "ad": "saidsurucu/udf-preview-win",
+   "url": "https://github.com/saidsurucu/udf-preview-win",
+   "ne_yapar": "Okuma + görüntüleme: Windows Gezgini önizleme bölmesi ve küçük resim; udf-cli ile UDF -> HTML/RTF",
+   "dil": "Rust",
+   "lisans": "README'ye göre MIT (LICENSE dosyası yok)",
+   "son_commit": "2026-06-09",
+   "yildiz": 4,
+   "desteklenenler": "Tablo (colspan/rowspan), Bulleted liste, üst/alt bilgi, TabSet, resim, page-break, resolver, strikethrough, sayfa kenar boşlukları, rune.rs ile offset işleme.",
+   "ana_dosyalar": [
+    "crates/udf-core/src/parser.rs",
+    "crates/udf-core/src/model.rs",
+    "crates/udf-core/src/html.rs",
+    "crates/udf-core/src/rune.rs",
+    "crates/udf-core/src/xml.rs",
+    "crates/udf-core/src/zip.rs"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Saf Rust, testli. İlke olarak WASM'a derlenebilir ama hazır bir WASM çıktısı yok."
+  },
+  {
+   "ad": "saidsurucu/udf-quicklook-extension (kopyası: exposoftdev/udf-quicklook-extension)",
+   "url": "https://github.com/saidsurucu/udf-quicklook-extension",
+   "ne_yapar": "Okuma + görüntüleme: macOS QuickLook önizleme, küçük resim ve salt okunur görüntüleyici; PDF çizimi",
+   "dil": "Swift (UDFKit paketi)",
+   "lisans": "Yok",
+   "son_commit": "2026-08-11",
+   "yildiz": 3,
+   "desteklenenler": "Tablo (colspan/rowspan), liste (UDFListMapping), resim, üst/alt bilgi, strikethrough, girinti, satır aralığı.",
+   "ana_dosyalar": [
+    "UDFKit/Sources/UDFKit/Parser/UDFParser.swift",
+    "UDFKit/Sources/UDFKit/Model/Document.swift",
+    "Shared/DocumentToAttributedString.swift",
+    "Shared/UDFListMapping.swift",
+    "Shared/UDFPDFRenderer.swift"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Biçim bilgisi için değerli; lisans yok."
+  },
+  {
+   "ad": "saidsurucu/UDF-Toolkit (kopyaları: heysamy/Gelismis-Toplu-UDF-to-PDF-Donusturucu, GorkemEldeniz/UDF-SERVICE, onurcelebi96/UDF-Cevirici, ataetgi/UDF-Toolkit)",
+   "url": "https://github.com/saidsurucu/UDF-Toolkit",
+   "ne_yapar": "Çift yönlü: UDF -> DOCX / PDF / Markdown; DOCX -> UDF; taranmış PDF -> UDF",
+   "dil": "Python",
+   "lisans": "Yok",
+   "son_commit": "2026-10-05",
+   "yildiz": 7,
+   "desteklenenler": "Tablo, resim (imageData), üst/alt bilgi, italic/underline, LeftIndent, LineSpacing, sayfa kenar boşlukları, page-break. Docs.md biçim belgesini içeriyor (başka projeler bunu kaynak gösteriyor).",
+   "ana_dosyalar": [
+    "udf_to_pdf.py",
+    "udf_to_docx.py",
+    "udf_to_md.py",
+    "docx_to_udf.py",
+    "main.py",
+    "paragraph_processor.py",
+    "table_processor.py",
+    "image_processor.py",
+    "Docs.md"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Topluluğun ana Python başvurusu; Docs.md biçim için en çok atıf alan belge. Lisans yok."
+  },
+  {
+   "ad": "miasimbilir/udf-cevirici",
+   "url": "https://github.com/miasimbilir/udf-cevirici",
+   "ne_yapar": "Çift yönlü: DOCX <-> UDF, biçimi koruyarak (Windows/macOS masaüstü programı); Java ile UDF önizleme",
+   "dil": "Python (+ Java UdfRender)",
+   "lisans": "Özel 'Kullanım Koşulları' (GitHub NOASSERTION); açık kaynak lisansı değil",
+   "son_commit": "2026-10-03",
+   "yildiz": 2,
+   "desteklenenler": "Birleştirilmiş hücreler, görseller, numaralı ve madde işaretli listeler (ListId, SecListTypeLevelN, NumberSetted, Türk alfabesiyle harfli liste), üst/alt bilgi ve logo, bgImage, sayfa sonları, dipnotlar, sekme durakları, pageNumber-spec bit kümesi, yazı biçimleri.",
+   "ana_dosyalar": [
+    "udf_docx.py",
+    "docx_udf.py",
+    "udf_dogrula.py",
+    "udf_onizle/UdfRender.java"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Biçim ayrıntısında en derin kaynak (README'deki eşleme tablosu). Lisans kod almaya izin vermiyor; yalnız bilgi kaynağı."
+  },
+  {
+   "ad": "ssayoglu/udf-kit",
+   "url": "https://github.com/ssayoglu/udf-kit",
+   "ne_yapar": "Okuma: UDF -> Markdown/JSON. Yazma: DOCX/PDF -> UDF. MCP sunucusu; sign.sgn imza ayrıştırma",
+   "dil": "Python",
+   "lisans": "MIT",
+   "son_commit": "2026-08-30",
+   "yildiz": 0,
+   "desteklenenler": "Tablo, resim, Bulleted liste, üst/alt bilgi, TabSet, resolver, italic/underline, girinti, LineSpacing, sayfa kenar boşlukları, imza bilgisi.",
+   "ana_dosyalar": [
+    "src/udf_kit/core/reader.py",
+    "src/udf_kit/core/writer.py",
+    "src/udf_kit/core/models.py",
+    "src/udf_kit/core/offset.py",
+    "src/udf_kit/converters/html.py",
+    "src/udf_kit/security/signature.py"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "MIT lisanslı, düzenli Python okuyucu."
+  },
+  {
+   "ad": "udf-tools (PyPI)",
+   "url": "https://pypi.org/project/udf-tools/",
+   "ne_yapar": "UDF oluşturma ve düzenleme, DOCX -> UDF (CLI ve kütüphane). UDF'yi başka biçime okuma belirtilmemiş.",
+   "dil": "Python",
+   "lisans": "README'de MIT; paket meta verisinde lisans alanı boş",
+   "son_commit": "0.1.0 yayımı: 2025-12-27 (depo bağlantısı yok)",
+   "yildiz": 0,
+   "desteklenenler": "Stiller, paragraflar, offset yönetimi (açıklamaya göre).",
+   "ana_dosyalar": [
+    "udf_tools.editor (UDFEditor)",
+    "udf_tools.models.styles"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Yazar alanı yer tutucu ('developer@example.com'), kaynak deposu bulunamadı."
+  },
+  {
+   "ad": "mistih/UdfParser",
+   "url": "https://github.com/mistih/UdfParser",
+   "ne_yapar": "Okuma: UDF'den ham metin",
+   "dil": "Python (zipfile + ElementTree)",
+   "lisans": "Yok",
+   "son_commit": "2023-08-24",
+   "yildiz": 11,
+   "desteklenenler": "Yalnız content.xml'deki ham metin; biçim, tablo, resim yok.",
+   "ana_dosyalar": [
+    "main.py"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Eski ve çok basit; content.xml'i diske çıkarıp siliyor."
+  },
+  {
+   "ad": "morsaken/udf2pdf",
+   "url": "https://github.com/morsaken/udf2pdf",
+   "ne_yapar": "Okuma + çevirme: UDF -> PDF, toplu (PyInstaller exe)",
+   "dil": "Python",
+   "lisans": "Yok",
+   "son_commit": "2026-08-04",
+   "yildiz": 0,
+   "desteklenenler": "Tablo, resim, üst bilgi, italic/underline, girinti, sayfa kenar boşlukları.",
+   "ana_dosyalar": [
+    "udf2pdf.py"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Tek dosya (33 KB)."
+  },
+  {
+   "ad": "AEmirhannn/udfToPdfConverter",
+   "url": "https://github.com/AEmirhannn/udfToPdfConverter",
+   "ne_yapar": "Okuma + çevirme: UDF -> PDF",
+   "dil": "Python",
+   "lisans": "Yok",
+   "son_commit": "2026-03-06",
+   "yildiz": 2,
+   "desteklenenler": "italic/underline, LineSpacing, sayfa kenar boşlukları, page-break. Tablo ve resim kodda görülmedi.",
+   "ana_dosyalar": [
+    "converter.py"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Basit betik."
+  },
+  {
+   "ad": "tunisoprano/UDFConverter",
+   "url": "https://github.com/tunisoprano/UDFConverter",
+   "ne_yapar": "Okuma + çevirme: UDF -> HTML -> PDF/DOCX (iOS uygulaması)",
+   "dil": "Swift",
+   "lisans": "Yok",
+   "son_commit": "2026-08-20",
+   "yildiz": 0,
+   "desteklenenler": "Tablo, resim, üst bilgi, TabSet, girinti, LineSpacing.",
+   "ana_dosyalar": [
+    "UDFConverter/Services/UDFParser.swift",
+    "UDFConverter/Services/HTMLGenerator.swift",
+    "UDFConverter/Services/DOCXGenerator.swift"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Reklamlı ve kullanım sınırlı ticari uygulama kodu."
+  },
+  {
+   "ad": "KilimcininKorOglu/udf-ve-usb-eimza",
+   "url": "https://github.com/KilimcininKorOglu/udf-ve-usb-eimza",
+   "ne_yapar": "Okuma + yazma: macOS/iOS/iPadOS UDF editörü ve USB akıllı kartla e-imza (CAdES)",
+   "dil": "Swift",
+   "lisans": "Yok",
+   "son_commit": "2026-09-28",
+   "yildiz": 0,
+   "desteklenenler": "UDF gidiş-dönüş (testler: UDFRoundTripTests, UDFAttributedTextTests), sayfa düzeni, tablo düzenleyici, imzalama.",
+   "ana_dosyalar": [
+    "App/Sources/UDFTextEditor.swift",
+    "App/Sources/UDFEditorView.swift",
+    "Tests/SignCoreTests/UDFRoundTripTests.swift"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "İmza tarafı için başvuru."
+  },
+  {
+   "ad": "inflatablegrade/UDF-Goruntuleyici",
+   "url": "https://github.com/inflatablegrade/UDF-Goruntuleyici",
+   "ne_yapar": "Okuma + görüntüleme: Windows Forms UDF görüntüleyici",
+   "dil": "C#",
+   "lisans": "MIT",
+   "son_commit": "2021-03-10",
+   "yildiz": 0,
+   "desteklenenler": "Resim, italic/underline, resolver. Tablo kodda görülmedi.",
+   "ana_dosyalar": [
+    "UDF/UDFConverter/WindowsFormsApp1/XMLHandler.cs",
+    "UDF/UDFConverter/WindowsFormsApp1/Form1.cs"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Eski; depoya derlenmiş exe ve pdb dosyaları da konmuş."
+  },
+  {
+   "ad": "mavvi/UDF_Cevir",
+   "url": "https://github.com/mavvi/UDF_Cevir",
+   "ne_yapar": "Okuma + çevirme: UDF -> başka biçim (WinForms)",
+   "dil": "C#",
+   "lisans": "Yok",
+   "son_commit": "2023-05-05",
+   "yildiz": 0,
+   "desteklenenler": "Üst/alt bilgi, italic/underline, kenar boşluğu.",
+   "ana_dosyalar": [
+    "Form1.cs"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Küçük, eski."
+  },
+  {
+   "ad": "afsozer/agentbridge-public",
+   "url": "https://github.com/afsozer/agentbridge-public",
+   "ne_yapar": "Okuma + düzenleme: Android modülünde UDF ayrıştırıcı ve düzenleyici (asıl proje uzaktan kodlama ajanı köprüsü)",
+   "dil": "Kotlin",
+   "lisans": "Yok",
+   "son_commit": "2026-09-22",
+   "yildiz": 0,
+   "desteklenenler": "content.xml, startOffset ile paragraf ve blok satırları, düzenleme (testler: UdfEditTest, BlockLinesTest, UdfPackageTest).",
+   "ana_dosyalar": [
+    "android/shared/src/main/kotlin/com/agent/bridge/udf/UdfParser.kt",
+    "android/shared/src/main/kotlin/com/agent/bridge/udf/UdfDocument.kt"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Yan modül; ayrıntılı incelenmedi."
+  },
+  {
+   "ad": "ofgmr/udfix-lite",
+   "url": "https://github.com/ofgmr/udfix-lite",
+   "ne_yapar": "Okuma + yazma: avukatlar için Electron iş istasyonu (UDF editörü, belge görüntüleyici, PDF dışa aktarma, imza durumu)",
+   "dil": "TypeScript (Electron/React)",
+   "lisans": "Apache-2.0",
+   "son_commit": "2026-10-04",
+   "yildiz": 0,
+   "desteklenenler": "UDF düzenleme, tablolar (UdfixTable), üst/alt bilgi dışa aktarımı, imza rozeti ve imza durumu, toplu PDF dışa aktarma.",
+   "ana_dosyalar": [
+    "udfix-app/src/components/viewer/UDFViewer.tsx",
+    "udfix-app/src/components/editor/UdfixEditor.tsx",
+    "udfix-app/src/utils/udfSignatureState.ts",
+    "udfix-app/src/utils/udfHfExportSegments.ts"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Büyük uygulama; asıl UDF ayrıştırıcı dosyası dosya adlarından net tespit edilemedi (bulunamadı)."
+  },
+  {
+   "ad": "bilalabic/udf-dilekce",
+   "url": "https://github.com/bilalabic/udf-dilekce",
+   "ne_yapar": "Okuma + yazma: Word/UDF şablonundan Excel listesiyle toplu dilekçe üretimi, tamamen tarayıcıda",
+   "dil": "TypeScript",
+   "lisans": "Yok",
+   "son_commit": "2026-09-16",
+   "yildiz": 0,
+   "desteklenenler": "field/space/tab, sign.sgn, metin havuzu ve offset yeniden hesaplama.",
+   "ana_dosyalar": [
+    "app/utils/udf.ts",
+    "docs/udf-format.md",
+    "scripts/udf-probe.mjs"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Görüntüleme değil şablon doldurma; docs/udf-format.md biçim notu olarak yararlı."
+  },
+  {
+   "ad": "halitsever/uyap-pdf (npm: uyap-udf 0.1.0)",
+   "url": "https://github.com/halitsever/uyap-pdf",
+   "ne_yapar": "Yazma: PDF -> UDF (sayfa görüntülerini gömerek). UDF okuma yok.",
+   "dil": "TypeScript",
+   "lisans": "MIT",
+   "son_commit": "2026-08-25",
+   "yildiz": 0,
+   "desteklenenler": "Resim gömme (imageData), sayfa düzeni.",
+   "ana_dosyalar": [
+    "src/pdf-to-udf.ts",
+    "site/src/udf-build.ts"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Ters yön; görüntüleyici için yalnız UDF yazma örneği."
+  },
+  {
+   "ad": "saruapp/js-udf-tools (npm: js-udf-tools 0.1.2)",
+   "url": "https://github.com/saruapp/js-udf-tools",
+   "ne_yapar": "Yazma: HTML -> UDF (Node ve React Native)",
+   "dil": "TypeScript",
+   "lisans": "npm'de MIT, depoda LICENSE yok",
+   "son_commit": "2026-07-31",
+   "yildiz": 0,
+   "desteklenenler": "Metin, resim, tablo içinde resim, stiller, renk dönüşümü.",
+   "ana_dosyalar": [
+    "src/core/UDFConverter.ts",
+    "src/builders/ElementsBuilder.ts",
+    "src/builders/ContentBuilder.ts"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Okuma yok."
+  },
+  {
+   "ad": "talhaorak/uyap-dilekce-kit",
+   "url": "https://github.com/talhaorak/uyap-dilekce-kit",
+   "ne_yapar": "Yazma: metin/dilekçe -> UDF üretimi (ajan iş akışları)",
+   "dil": "TypeScript (Bun)",
+   "lisans": "MIT",
+   "son_commit": "2026-06-26",
+   "yildiz": 2,
+   "desteklenenler": "Düz metin UDF üretimi.",
+   "ana_dosyalar": [
+    "packages/uyap-udf/src/index.ts"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Okuma yok."
+  },
+  {
+   "ad": "yesdopepe/KEYSIS",
+   "url": "https://github.com/yesdopepe/KEYSIS",
+   "ne_yapar": "Yazma: resmî belge -> UDF (sunucu tarafı)",
+   "dil": "TypeScript (fflate)",
+   "lisans": "MIT",
+   "son_commit": "2026-08-28",
+   "yildiz": 5,
+   "desteklenenler": "Hizalama, girinti, TabSet, italic, kenar boşlukları.",
+   "ana_dosyalar": [
+    "teknofest-ebys-web/src/lib/belgeler/render/udf.ts"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "'server-only'; okuma yok. Biçim kaynağı olarak UDF-Toolkit Docs.md'yi gösteriyor."
+  },
+  {
+   "ad": "mustafayildiran/LexUDF",
+   "url": "https://github.com/mustafayildiran/LexUDF",
+   "ne_yapar": "Yazma: UYAP uyumlu matbu dilekçe üreten Chrome eklentisi",
+   "dil": "JavaScript",
+   "lisans": "MIT",
+   "son_commit": "2026-10-05",
+   "yildiz": 4,
+   "desteklenenler": "UDF üretimi (şablon).",
+   "ana_dosyalar": [
+    "manifest.json",
+    "portal/content-uyap-sablon.js"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Okuma yok; MV3 eklenti yapısı için örnek."
+  },
+  {
+   "ad": "akapar/GoogleDocs-UYAP-Donusturucu",
+   "url": "https://github.com/akapar/GoogleDocs-UYAP-Donusturucu",
+   "ne_yapar": "Yazma: Google Dokümanlar -> UDF (Apps Script)",
+   "dil": "JavaScript (Google Apps Script)",
+   "lisans": "Yok",
+   "son_commit": "2026-04-24",
+   "yildiz": 1,
+   "desteklenenler": "Biçim, yazı tipi ve listeleri koruyarak dönüştürme (README'ye göre).",
+   "ana_dosyalar": [
+    "(Apps Script kodu, 6 KB'lık depo)"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Ters yön, ama Google Workspace entegrasyonu örneği."
+  },
+  {
+   "ad": "omertekin2002/word-to-udf",
+   "url": "https://github.com/omertekin2002/word-to-udf",
+   "ne_yapar": "Yazma: Word -> UDF",
+   "dil": "JavaScript",
+   "lisans": "MIT",
+   "son_commit": "2026-09-19",
+   "yildiz": 0,
+   "desteklenenler": "UDF üretimi (hvl-default stilleri).",
+   "ana_dosyalar": [
+    "js/udf-generator.js"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Okuma yok."
+  },
+  {
+   "ad": "eimza-kep/udf2md",
+   "url": "https://github.com/eimza-kep/udf2md",
+   "ne_yapar": "Okuma + çevirme: UDF -> Markdown, tarayıcıda (CLI de var)",
+   "dil": "JavaScript (JSZip + DOMParser)",
+   "lisans": "MIT",
+   "son_commit": "2026-10-05",
+   "yildiz": 0,
+   "desteklenenler": "Açıklamaya göre paragraf, tablo ve resim. Kod ise content öğelerinin textContent'ini okuyor; startOffset/length kullanmıyor.",
+   "ana_dosyalar": [
+    "js/udf2md-engine.js",
+    "cli.js",
+    "index.html"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "DÜŞÜK: Gerçek UDF'de content öğeleri boştur (metin CDATA havuzunda), bu yüzden büyük olasılıkla boş ya da yanlış çıktı verir. UDF'de olmayan 'fontSize' gibi öznitelikleri arıyor."
+  },
+  {
+   "ad": "eimza-kep/uyap-web-udf-editor",
+   "url": "https://github.com/eimza-kep/uyap-web-udf-editor",
+   "ne_yapar": "Okuma + yazma: tarayıcıda UDF editörü",
+   "dil": "JavaScript (JSZip + DOMParser)",
+   "lisans": "MIT",
+   "son_commit": "2026-10-05",
+   "yildiz": 0,
+   "desteklenenler": "Kenar boşlukları; bold/italic/underline; tablo düz metin.",
+   "ana_dosyalar": [
+    "js/udf-parser.js",
+    "js/udf-generator.js",
+    "js/editor-ui.js"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "DÜŞÜK: udf-parser.js de offset yerine textContent okuyor; gerçek UDF'leri doğru açması beklenmez."
+  },
+  {
+   "ad": "mertcelen/udf-okuyucu",
+   "url": "https://github.com/mertcelen/udf-okuyucu",
+   "ne_yapar": "Okuma: UDF'nin ham metnini tarayıcıda gösterir (GitHub Pages)",
+   "dil": "HTML/JavaScript (JSZip + DOMParser)",
+   "lisans": "Yok",
+   "son_commit": "2018-09-11",
+   "yildiz": 17,
+   "desteklenenler": "Yalnız CDATA ham metni; biçim, tablo, resim yok.",
+   "ana_dosyalar": [
+    "js/main.js",
+    "index.html"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "En çok yıldızlı ama en basit ve 2018'den kalma. Metni innerHTML ile basıyor (XSS riski)."
+  },
+  {
+   "ad": "ByClone/UDF-viewer",
+   "url": "https://github.com/ByClone/UDF-viewer",
+   "ne_yapar": "Okuma + görüntüleme: isikdogan.com UDF görüntüleyici sayfasının 'view-source' kopyası",
+   "dil": "HTML/JavaScript (React, JSZip, DOMParser; küçültülmüş)",
+   "lisans": "Yok. Kopyalanan sayfanın kendi metni izinsiz kopyalamayı ve dağıtmayı yasaklıyor.",
+   "son_commit": "2026-01-03",
+   "yildiz": 0,
+   "desteklenenler": "Üst/alt bilgi, tablo (colspan/rowspan, kenarlıklar), resim, Bulleted/Numbered, bgImage, resolver, doğrulama kodu ve sicil.",
+   "ana_dosyalar": [
+    "view-source_https___www.isikdogan.com_udf-viewer.html"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Özellikleri iyi, ama özgün sayfanın koşulları kullanıma izin vermiyor."
+  },
+  {
+   "ad": "bajesteras/UDF-Editor",
+   "url": "https://github.com/bajesteras/UDF-Editor",
+   "ne_yapar": "Okuma + yazma: tarayıcı/PWA UDF açma ve düzenleme",
+   "dil": "HTML/JavaScript (JSZip)",
+   "lisans": "Yok",
+   "son_commit": "2026-07-17",
+   "yildiz": 0,
+   "desteklenenler": "content parçaları (bold/italic/underline), hizalama, ilk satır girintisi; tablo sınırlı.",
+   "ana_dosyalar": [
+    "index.html",
+    "sw.js",
+    "manifest.json"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Basit."
+  },
+  {
+   "ad": "yavuzselimerdogann318924/udf-okuyucu",
+   "url": "https://github.com/yavuzselimerdogann318924/udf-okuyucu",
+   "ne_yapar": "Okuma: tarayıcıda UDF inceleme",
+   "dil": "JavaScript (JSZip + DOMParser)",
+   "lisans": "Yok",
+   "son_commit": "2026-05-02",
+   "yildiz": 0,
+   "desteklenenler": "Üst/alt bilgi ve imza bilgisi gösteriyor; startOffset kullanılmadığı için biçimli metin çıkarımı belirsiz.",
+   "ana_dosyalar": [
+    "app.js",
+    "index.html"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Ayrıntılı incelenmedi; basit görünüyor."
+  },
+  {
+   "ad": "yasinyilmazzz/udf-to-pdf-pal",
+   "url": "https://github.com/yasinyilmazzz/udf-to-pdf-pal",
+   "ne_yapar": "Okuma + çevirme: UDF -> PDF web uygulaması (Lovable)",
+   "dil": "TypeScript (JSZip)",
+   "lisans": "Yok",
+   "son_commit": "2026-06-02",
+   "yildiz": 0,
+   "desteklenenler": "Üst/alt bilgi, tab, italic, LeftIndent. Tablo ve resim sınırlı ya da yok.",
+   "ana_dosyalar": [
+    "src/lib/udf-parser.ts",
+    "src/lib/udf-to-pdf.ts"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Ayrıntılı incelenmedi."
+  },
+  {
+   "ad": "enesoral/udf-converter",
+   "url": "https://github.com/enesoral/udf-converter",
+   "ne_yapar": "Okuma: tarayıcıda UDF dönüştürme",
+   "dil": "HTML/JavaScript (JSZip)",
+   "lisans": "Yok",
+   "son_commit": "2026-04-02",
+   "yildiz": 0,
+   "desteklenenler": "startOffset kullanmıyor; büyük olasılıkla yalnız ham metin.",
+   "ana_dosyalar": [
+    "index.html"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Basit."
+  },
+  {
+   "ad": "halilselcuk/Dokuman-Editoru-Veri-Kurtarma-Yardimcisi",
+   "url": "https://github.com/halilselcuk/Dokuman-Editoru-Veri-Kurtarma-Yardimcisi",
+   "ne_yapar": "Kurtarma: Doküman Editörü'nün bellek dökümünden (.DMP) belge verisini çıkarıp tarayıcıda UDF olarak yeniden oluşturur",
+   "dil": "HTML/JavaScript",
+   "lisans": "Yok",
+   "son_commit": "2026-03-06",
+   "yildiz": 0,
+   "desteklenenler": "XML şablonu, ZIP/UDF oluşturma, CDATA tarama.",
+   "ana_dosyalar": [
+    "index.html",
+    "README.md"
+   ],
+   "tarayicida_kullanilabilir": true,
+   "kalite_notu": "Görüntüleyici değil; biçim iç yapısı hakkında bilgi veriyor."
+  },
+  {
+   "ad": "myyusuf17/zabit-katibi",
+   "url": "https://github.com/myyusuf17/zabit-katibi",
+   "ne_yapar": "Okuma + yazma: UDF okuyan ve yazan yapay zeka becerisi",
+   "dil": "Python",
+   "lisans": "MIT",
+   "son_commit": "2026-09-21",
+   "yildiz": 0,
+   "desteklenenler": "TabSet, üst/alt bilgi, italic/underline, girinti, kenar boşlukları, resolver, sign.",
+   "ana_dosyalar": [
+    "scripts/udf_tool.py"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Tek betik."
+  },
+  {
+   "ad": "solaris09/udf-to-docx",
+   "url": "https://github.com/solaris09/udf-to-docx",
+   "ne_yapar": "Okuma + çevirme: UDF -> DOCX, toplu (pandoc, LibreOffice ya da python-docx yedeği)",
+   "dil": "Python",
+   "lisans": "NOASSERTION",
+   "son_commit": "2026-01-31",
+   "yildiz": 0,
+   "desteklenenler": "content.xml'den okunabilir metin; biçim desteği sınırlı.",
+   "ana_dosyalar": [
+    "convert_udf_to_docx.py"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "Basit."
+  },
+  {
+   "ad": "bugman-007/udf-html-converter",
+   "url": "https://github.com/bugman-007/udf-html-converter",
+   "ne_yapar": "UDF <-> HTML olduğunu söylüyor",
+   "dil": "PHP",
+   "lisans": "Yok",
+   "son_commit": "2025-03-28",
+   "yildiz": 11,
+   "desteklenenler": "Kodda tablo, resim, colspan/rowspan var.",
+   "ana_dosyalar": [
+    "udf_converter.php"
+   ],
+   "tarayicida_kullanilabilir": false,
+   "kalite_notu": "ŞÜPHELİ: ZIP açmıyor (ZipArchive yok) ve startOffset kullanmıyor; gerçek UYAP UDF'yi (ZIP + CDATA havuzu) okuyamıyor gibi görünüyor."
+  }
+ ],
+ "ozet": "GitHub, npm ve PyPI'da 50'den fazla UDF projesi listelendi. Bunların yaklaşık 20'si UDF'yi okuyup görüntülüyor ya da başka biçime çeviriyor; geri kalanı yalnız UDF yazıyor, kopya ya da kalitesi düşük. Google Drive içinde .udf'yi doğrudan açan açık kaynak bir eklenti BULUNAMADI (ne Drive 'Birlikte aç' uygulaması ne Drive önizleme eklentisi). Bu yüzden hazır bir okuyucuyu yeni bir MV3 eklentisine uyarlamak gerekecek.\n\nTarayıcı eklentisi için en iyi adaylar, öncelik sırasıyla:\n1. hasanimer/legaluga-uyap-ui, dosya src/extension/udf.js (MIT, bağımlılıksız, zaten bir MV3 eklentisinde çalışıyor): https://github.com/hasanimer/legaluga-uyap-ui\n   - ZIP'i kendisi açıyor (DecompressionStream) ve DOMParser'da DTD'yi reddediyor.\n   - Destekledikleri: stil zinciri, liste, TabSet, tablo (colspan/rowspan ve iç içe), resim, üst/alt bilgi, sayfa sonu, filigran, şablon verisi, sayfa boyutu ve kenar boşlukları.\n   - Boyut, derinlik ve süre sınırları var; sayfa yalnız createElement ve textContent ile kuruluyor.\n   - Uyarlama gerekenler: globalThis.UHD ad alanı ve '.viewer' önekli CSS.\n   - En kapsamlı ve en güvenli aday bu.\n2. mfozmen/udfly, dosyalar src/parser.js ve src/render.js (MIT): https://github.com/mfozmen/udfly\n   - Temiz ve testli. Öğe sırası, üst/alt bilgi, TabSet ve stil zinciri doğru.\n   - Eksik: italik, resim, liste ve birleşik hücre.\n3. burakayax/NB_PDF_PLATFORM, dosyalar web/frontend/src/lib/udf.ts ve udfPdf.ts (MIT): https://github.com/burakayax/NB_PDF_PLATFORM\n   - fflate, DOMParser ve pdf-lib ile tarayıcıda UDF'den PDF üretiyor; resim ve sayfa sonu var.\n   - Üst/alt bilgi ve liste yok.\n4. gokselb/udfpdf (Apache-2.0; npm udfpdf 2.0.0): https://github.com/gokselb/udfpdf\n   - PDF, DOCX, HTML, Markdown ve TXT çıktısı veriyor; sayfa biçimi ve tablo iyi.\n   - Node'a bağlı; resim ve liste yok.\n   - Hata: fast-xml-parser preserveOrder olmadan kullanıldığı için paragraf ile tablo sırası kayboluyor; npm 2.0.0'da da aynı.\n5. udf-cli (murataskin/udf-cli anlık kopyası; npm udf-cli 0.5.7): https://github.com/murataskin/udf-cli\n   - Liste, resim, iç içe tablo ve birleşik hücre iyi; çift yönlü çalışıyor.\n   - Depodaki sürümde üst/alt bilgi ve sekme yok.\n   - Asıl kaynak saidsurucu/udf-cli 404 veriyor, npm sürümü obfuscate edilmiş, depoda LICENSE yok; lisans belirsiz.\n\nLisansı olmayan ama başvuru için yararlı tarayıcı kodları:\n- iseeeva/uyap (UDF'den DOCX): https://github.com/iseeeva/uyap\n- can-yesilyurt/udf-to-pdf (tek HTML, oldukça kapsamlı): https://github.com/can-yesilyurt/udf-to-pdf\n- ugarchance/udf-viewer (React): https://github.com/ugarchance/udf-viewer\n- ygzyr/UDFpad (WKWebView içinde TS; WebCrypto ile imza doğrulama): https://github.com/ygzyr/UDFpad\n- Cicikuss/JustiWise: https://github.com/Cicikuss/JustiWise\n\nBiçim bilgisi için en değerli kaynaklar:\n- saidsurucu/UDF-Toolkit, Docs.md (başka projeler biçim kaynağı olarak bunu gösteriyor): https://github.com/saidsurucu/UDF-Toolkit\n- miasimbilir/udf-cevirici README'deki eşleme tablosu: https://github.com/miasimbilir/udf-cevirici\n  - ListId/SecListTypeLevelN, NumberSetted, pageNumber-spec bit kümesi ve bgImage'ı ayrıntılı anlatıyor.\n  - Lisansı özel kullanım koşulları; kod alınamaz, yalnız bilgi kaynağı.\n- symbuzzer/Evrak, UdfHtmlConverter.kt (Apache-2.0): https://github.com/symbuzzer/Evrak\n- saidsurucu/udf-preview-win, Rust ile UDF'den HTML'e (README'ye göre MIT, LICENSE dosyası yok): https://github.com/saidsurucu/udf-preview-win\n- ssayoglu/udf-kit (MIT, Python okuyucu): https://github.com/ssayoglu/udf-kit\n- udf-cli README: renk kodlaması, borderSpec bit maskesi, ￼ resim yer tutucusu, ​ boş paragraf.\n\nÖnemli teknik ayrım, metin konumlarının (offset) nasıl sayıldığı:\n- udfpdf, udf-cli ve NB_PDF_PLATFORM kod noktası (code point) sayıyor.\n- legaluga, udfly ve evrak-md JS dizesindeki UTF-16 birimlerini sayıyor. evrak-md'nin kod açıklamasına göre Java Swing konumları da UTF-16 birimidir.\n- Türkçe metinde fark çıkmaz; BMP dışı karakterlerde (ör. emoji) kayma olur. UTF-16 tercih edilmeli.\n\nKaçınılacaklar:\n- eimza-kep/udf2md ve eimza-kep/uyap-web-udf-editor: offset yerine boş content öğelerinin textContent'ini okuyor; gerçek UDF'de büyük olasılıkla boş ya da yanlış çıktı verir.\n- mertcelen/udf-okuyucu: en çok yıldızlı (17) ama 2018'den kalma, yalnız ham metni innerHTML ile basıyor.\n- bugman-007/udf-html-converter (PHP): ZIP açmıyor, offset kullanmıyor.\n- ByClone/UDF-viewer: isikdogan.com sayfasının kopyası; sayfanın kendi koşulları kopyalamayı yasaklıyor.\n\nYalnız UDF yazan JS/TS projeler (görüntüleyici değil ama yazma örneği):\n- halitsever/uyap-pdf (npm uyap-udf)\n- saruapp/js-udf-tools\n- talhaorak/uyap-dilekce-kit\n- yesdopepe/KEYSIS\n- mustafayildiran/LexUDF (MV3 eklenti örneği)\n- omertekin2002/word-to-udf\n- akapar/GoogleDocs-UYAP-Donusturucu (Apps Script)\n\nKapalı kaynak web hizmetleri (açık kaynak değil, listeye alınmadı): imer.av.tr/udf-araclari, convertudftopdf.com, isikdogan.com/udf-viewer, udfpdf.com.tr. Chrome Web Store'daki 'UYAP Evrak Takip' eklentisinin UDF'yi otomatik PDF'e çevirdiği extscope.org'da yazıyor; kaynak kodu bulunamadı.\n\nAraştırmanın sınırları:\n- GitHub kod aramasında bazı sorgular 503 'too many shards failed' hatası verdi ('startOffset content.xml' JS/TS ve 'udf content.xml extension:html').\n- Bir aşamada arama kotası doldu; sorgular yavaşlatılarak tekrarlandı.\n- npm'de UDF okuyan ek bir paket bulunamadı (yalnız udfpdf, udf-cli ve udf-viewer-react). PyPI'da ilgili tek paket udf-tools 0.1.0; kaynak deposu bulunamadı.\n- Kaynaklar: her deponun url alanı; npm meta verisi registry.npmjs.org/<paket>; PyPI meta verisi pypi.org/pypi/udf-tools/json."
+}

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UDF Ön İzleme</title>
+<link rel="icon" href="simgeler/32.png">
+<link rel="stylesheet" href="goruntule.css">
+<script src="motor/udf-motoru.js" defer></script>
+<script src="indir.js" defer></script>
+<script src="goruntule.js" defer></script>
+</head>
+<body>
+<header class="cubuk">
+  <div class="cubuk-sol">
+    <img class="logo" src="simgeler/48.png" alt="" width="28" height="28">
+    <div class="baslik-kutu">
+      <h1 id="belge-adi">UDF Ön İzleme</h1>
+    </div>
+  </div>
+  <nav class="cubuk-sag" aria-label="Belge işlemleri">
+    <div class="cubuk-yan bas">
+      <div id="rozetler" class="rozetler" aria-live="polite"></div>
+      <button type="button" id="dugme-notlar" class="dugme" hidden aria-pressed="false" aria-label="Notlar" title="Belgedeki notları göster">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H8l-4 4z"/></svg><span id="not-sayisi" class="sayi" aria-hidden="true"></span>
+      </button>
+    </div>
+    <div id="olcek-grup" class="olcek-grup" role="group" aria-label="Yakınlaştırma" hidden>
+      <button type="button" id="dugme-uzak" class="dugme simge" title="Uzaklaştır" aria-label="Uzaklaştır">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>
+      </button>
+      <button type="button" id="olcek" class="dugme olcek" title="Sayfayı pencereye sığdır">%100</button>
+      <button type="button" id="dugme-yakin" class="dugme simge" title="Yakınlaştır" aria-label="Yakınlaştır">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg>
+      </button>
+    </div>
+    <div class="cubuk-yan son">
+      <button type="button" id="dugme-drive" class="dugme" hidden title="Dosyayı Google Drive'da aç">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></svg><span>Drive'da aç</span>
+      </button>
+      <button type="button" id="dugme-indir" class="dugme" hidden title="Asıl .udf dosyasını bilgisayara kaydet">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>İndir</span>
+      </button>
+      <button type="button" id="dugme-yazdir" class="dugme birincil" hidden title="Yazdır ya da PDF olarak kaydet (Ctrl+P)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M7 14h10v6H7z"/></svg><span>Yazdır / PDF</span>
+      </button>
+      <button type="button" id="dugme-ac" class="dugme" title="Bilgisayardan .udf dosyası aç">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Dosya aç</span>
+      </button>
+      <input type="file" id="dosya-sec" accept=".udf,.xml" hidden>
+    </div>
+  </nav>
+</header>
+
+<div class="govde">
+  <main id="alan" class="alan udf-gorunum" tabindex="-1">
+    <section id="durum" class="durum" aria-live="polite">
+      <div id="durum-simge" class="durum-simge" aria-hidden="true"></div>
+      <h2 id="durum-baslik">UDF dosyası açın</h2>
+      <p id="durum-metin">Bir .udf dosyasını bu pencereye sürükleyin ya da “Dosya aç”a basın.</p>
+      <div id="durum-dugmeler" class="durum-dugmeler"></div>
+      <p id="durum-not" class="durum-not">Dosya bilgisayarınızdan çıkmaz. Belge bu sekmede, tarayıcının içinde açılır.</p>
+    </section>
+  </main>
+  <aside id="notlar-paneli" class="notlar-paneli" hidden aria-label="Belgedeki notlar">
+    <div class="panel-baslik">
+      <h2>Notlar</h2>
+      <button type="button" id="notlar-kapat" class="dugme simge" title="Kapat (Esc)" aria-label="Notları kapat">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <ol id="not-listesi" class="not-listesi"></ol>
+  </aside>
+</div>
+<div id="birak-katmani" class="birak-katmani" hidden><div>Dosyayı bırakın</div></div>
+</body>
+</html>

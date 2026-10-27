@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?> 
+
+<template format_id="1.8" >
+<content><![CDATA[DENEME MAHKEMESİ	Esas No: 2026/1
+GÖRSEL: ¸
+DENEME İŞ MAHKEMESİNE
+DAVACI	: Deneme Kişi, Örnek Mahallesi, Uzun Bir Sokak Adı No: 1 Daire: 2 Örnekköy/DENEME ve devam eden uzun bir adres satırı
+	ORTALI
+Sağa durak	1.234,56
+  	         Varsayılan durak
+Kırmızı ve vurgulu metin üstü çizili.
+Numaralı kalem 1
+Numaralı kalem 2
+Numaralı kalem 3
+Alt düzey kalem
+NUMBER_TYPE_CHAR_SMALL_PARANTHESE
+NUMBER_TYPE_ROMAN_BIG_DOT
+NUMBER_TYPE_CHAR_BIG_D_PARANTHESE
+Madde işaretli
+​
+Hücre 1
+Hücre 2
+Birleşik satır
+​
+İkinci sayfa metni
+
+]]></content><properties><pageFormat mediaSizeName="1" leftMargin="70.875" rightMargin="70.875" topMargin="56.69291305541992" bottomMargin="56.69291305541992" paperOrientation="1" headerFOffset="20" footerFOffset="20" /></properties>
+<elements resolver="hvl-default" >
+<header startPage="2" foreground="-8355712" background="-1"><paragraph resolver="hvl-default" TabSet="309.0:0:0"><content resolver="hvl-default" bold="true" size="11" startOffset="0" length="16"/><tab resolver="hvl-default" startOffset="16" length="1"/><content resolver="hvl-default" size="11" startOffset="17" length="15"/><content resolver="hvl-default" startOffset="32" length="1"/></paragraph></header>
+<paragraph resolver="hvl-default" Alignment="1"><content resolver="hvl-default" startOffset="33" length="8"/><image width="40" height="20" imageData="iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAADklEQVR4nGP4zwADQBYAD/4B//Ga+iUAAAAASUVORK5CYII=" startOffset="41" length="1"/><content resolver="hvl-default" startOffset="42" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="1"><content resolver="hvl-default" bold="true" startOffset="43" length="21"/><content resolver="hvl-default" startOffset="64" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="3" TabSet="91.0:0:0" Hanging="111.42857"><content resolver="hvl-default" bold="true" underline="true" startOffset="65" length="6"/><tab resolver="hvl-default" startOffset="71" length="1"/><content resolver="hvl-default" startOffset="72" length="117"/><content resolver="hvl-default" startOffset="189" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="0" TabSet="67.0:2:0"><tab resolver="hvl-default" startOffset="190" length="1"/><content resolver="hvl-default" italic="true" startOffset="191" length="6"/><content resolver="hvl-default" startOffset="197" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="0" TabSet="300.0:1:1"><content resolver="hvl-default" startOffset="198" length="10"/><tab resolver="hvl-default" startOffset="208" length="1"/><content resolver="hvl-default" startOffset="209" length="8"/><content resolver="hvl-default" startOffset="217" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="0"><content resolver="hvl-default" startOffset="218" length="2"/><tab resolver="hvl-default" startOffset="220" length="1"/><content resolver="hvl-default" startOffset="221" length="25"/><content resolver="hvl-default" startOffset="246" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="3" FirstLineIndent="35.4375" LineSpacing="0.5" SpaceAbove="6" SpaceBelow="6"><content resolver="hvl-default" foreground="-65536" startOffset="247" length="7"/><content resolver="hvl-default" startOffset="254" length="4"/><content resolver="hvl-default" background="-256" startOffset="258" length="7"/><content resolver="hvl-default" startOffset="265" length="7"/><content resolver="hvl-default" strikethrough="true" startOffset="272" length="11"/><content resolver="hvl-default" startOffset="283" length="1"/><content resolver="hvl-default" startOffset="284" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="3" LeftIndent="25" Numbered="true" NumberType="NUMBER_TYPE_NUMBER_TRE" ListLevel="1" ListId="7"><content resolver="hvl-default" startOffset="285" length="16"/><content resolver="hvl-default" startOffset="301" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="3" LeftIndent="25" Numbered="true" NumberType="NUMBER_TYPE_NUMBER_TRE" ListLevel="1" ListId="7"><content resolver="hvl-default" startOffset="302" length="16"/><content resolver="hvl-default" startOffset="318" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="3" LeftIndent="25" Numbered="true" NumberType="NUMBER_TYPE_NUMBER_TRE" ListLevel="1" ListId="7"><content resolver="hvl-default" startOffset="319" length="16"/><content resolver="hvl-default" startOffset="335" length="1"/></paragraph>
+<paragraph resolver="hvl-default" Alignment="3" LeftIndent="50" Numbered="true" NumberType="NUMBER_TYPE_NUMBER_TRE" ListLevel="2" ListId="7"><content resolver="hvl-default" startOffset="336" length="15"/><content resolver="hvl-default" startOffset="351" length="1"/></paragraph>
+<paragraph resolver="hvl-default" LeftIndent="25" Numbered="true" NumberType="NUMBER_TYPE_CHAR_SMALL_PARANTHESE" ListLevel="1" ListId="NUMBER_TYPE_CHAR_SMALL_PARANTHESE"><content resolver="hvl-default" startOffset="352" length="33"/><content resolver="hvl-default" startOffset="385" length="1"/></paragraph>
+<paragraph resolver="hvl-default" LeftIndent="25" Numbered="true" NumberType="NUMBER_TYPE_ROMAN_BIG_DOT" ListLevel="1" ListId="NUMBER_TYPE_ROMAN_BIG_DOT"><content resolver="hvl-default" startOffset="386" length="25"/><content resolver="hvl-default" startOffset="411" length="1"/></paragraph>
+<paragraph resolver="hvl-default" LeftIndent="25" Numbered="true" NumberType="NUMBER_TYPE_CHAR_BIG_D_PARANTHESE" ListLevel="1" ListId="NUMBER_TYPE_CHAR_BIG_D_PARANTHESE"><content resolver="hvl-default" startOffset="412" length="33"/><content resolver="hvl-default" startOffset="445" length="1"/></paragraph>
+<paragraph resolver="hvl-default" LeftIndent="25" Bulleted="true" BulletType="BULLET_TYPE_ELLIPSE" ListLevel="1" ListId="9"><content resolver="hvl-default" startOffset="446" length="14"/><content resolver="hvl-default" startOffset="460" length="1"/></paragraph>
+<paragraph resolver="hvl-default"><content resolver="hvl-default" startOffset="461" length="1"/><content resolver="hvl-default" startOffset="462" length="1"/></paragraph>
+<table tableName="Sabit" columnCount="2" columnSpans="170,100" border="borderCell" borderWidth="1.0" borderColor="-16777216"><row rowType="dataRow"><cell><paragraph resolver="hvl-default" LeftIndent="3" RightIndent="1"><content resolver="hvl-default" startOffset="463" length="7"/><content resolver="hvl-default" startOffset="470" length="1"/></paragraph></cell><cell><paragraph resolver="hvl-default" LeftIndent="3" Alignment="2"><content resolver="hvl-default" startOffset="471" length="7"/><content resolver="hvl-default" startOffset="478" length="1"/></paragraph></cell></row><row columnSpans="270"><cell><paragraph resolver="hvl-default" LeftIndent="3"><content resolver="hvl-default" startOffset="479" length="14"/><content resolver="hvl-default" startOffset="493" length="1"/></paragraph></cell></row></table>
+<page-break><paragraph resolver="hvl-default"><content resolver="hvl-default" startOffset="494" length="1"/><content resolver="hvl-default" startOffset="495" length="1"/></paragraph></page-break>
+<paragraph resolver="hvl-default"><content resolver="hvl-default" startOffset="496" length="18"/><content resolver="hvl-default" startOffset="514" length="1"/></paragraph>
+<footer pageNumber-spec="BSP32_2120" pageNumber-color="-16777216" pageNumber-fontFace="Times New Roman" pageNumber-fontSize="11" pageNumber-fontBold="false" pageNumber-fontItalic="false" pageNumber-foreStr="" pageNumber-seperator="/"><paragraph resolver="hvl-default"><content resolver="hvl-default" startOffset="515" length="1"/></paragraph></footer>
+</elements>
+<styles><style name="default" description="Geçerli" family="Dialog" size="12" bold="false" italic="false" foreground="-13421773" /><style name="hvl-default" family="Times New Roman" size="12" description="Gövde" /></styles>
+</template>

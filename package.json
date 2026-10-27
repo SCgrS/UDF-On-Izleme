@@ -1,0 +1,16 @@
+{
+  "name": "udf-on-izleme",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Google Drive ve Gmail'deki UYAP .udf belgelerini Google'ın kendi ön izleme penceresinde açan Chrome eklentisi (geliştirme araçları).",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"testler/*.test.mjs\"",
+    "paketle": "node araclar/paketle.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0",
+    "pdfjs-dist": "^4.10.38"
+  }
+}

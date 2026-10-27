@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "name": "UDF Ön İzleme",
+  "short_name": "UDF Ön İzleme",
+  "version": "0.0.1",
+  "description": "Google Drive ve Gmail’deki UYAP .udf belgelerini Google’ın ön izlemesinde açar, sunucuya göndermez. Geliştirici: x.com/CgrShn",
+  "author": "x.com/CgrShn",
+  "homepage_url": "https://x.com/CgrShn",
+  "minimum_chrome_version": "116",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsyhMLI+Y/k63F5yARHBM3E5QzOHsePHj6N08h8yCbSlBD93gLnUfzMkHOlRm2Iy9edOC8PpbNTgodR7nKojVsn2vtRjZ2o7GOffBzLQlHDNlSSQVVvg4uslzp3A+9I9Be98TUcmVEBhXD/81eHUmy08dD8NMpNwNq4Gp7mUilKLRIimFh56IkXcnqBMDkbelnY44n0FGVYhuF8+qUx5cryQoOgzfVAKd2dbXmLMLkpK0v/Ns+0EtIffp614yTwBpZxIewQDmPo+cNcpViZlh8zbTC6niDhWtdQd2CHEH4alyKVX5P3xvLWLf2ym5VLMggz0AVt8AVEt8VFJhGKX3PwIDAQAB",
+  "icons": {
+    "16": "simgeler/16.png",
+    "32": "simgeler/32.png",
+    "48": "simgeler/48.png",
+    "128": "simgeler/128.png"
+  },
+  "host_permissions": [
+    "https://drive.usercontent.google.com/*"
+  ],
+  "background": {
+    "service_worker": "arkaplan.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://drive.google.com/drive/*",
+        "https://drive.google.com/file/*",
+        "https://mail.google.com/mail/*"
+      ],
+      "js": [
+        "drive-kimlik.js",
+        "gmail-ek.js",
+        "indir.js",
+        "icerik.js"
+      ],
+      "css": [
+        "icerik.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "gomulu.html"
+      ],
+      "matches": [
+        "https://drive.google.com/*",
+        "https://mail.google.com/*"
+      ],
+      "use_dynamic_url": true
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src https://drive.usercontent.google.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors https://drive.google.com https://mail.google.com"
+  },
+  "incognito": "split"
+}
