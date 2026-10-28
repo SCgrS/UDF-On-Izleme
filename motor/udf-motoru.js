@@ -23,9 +23,12 @@
     blok: 30000,              // paragraf + tablo + resim
     parca: 200000,
     hucre: 50000,
-    gezinti: 1000000,         // XML'de dolaşılan öğe (bilinmeyenler dahil)
+    gezinti: 1000000,         // XML'de dolaşılan öğe (bilinmeyenler dâhil)
     veriSatiri: 5000,         // şablon belgede çoğaltılan satır
     veriGezinti: 2000000,     // şablon verisinde alan aramaları
+    alanMetni: 1000000,       // şablon belgede bir alanın birleştirilmiş değeri (karakter)
+    veriMetni: 20000000,      // şablon verisinden belgeye giren bütün metin (karakter)
+    notMetni: 20000,          // bir notun metni (karakter)
     stil: 1000,
     stilZinciri: 16,
     resim: 200,
@@ -43,14 +46,15 @@
   });
 
   const ILETI = {
-    zip: 'Dosya açılamadı: bozuk ya da UDF değil.',
+    zip: 'Dosya açılamadı: Bozuk ya da UDF değil.',
     'content-xml-yok': 'UDF paketinde belge içeriği (content.xml) yok.',
     xml: 'Belge içeriği okunamadı (XML bozuk).',
+    'udf-degil': 'Dosya bir UDF belgesi değil.',
     dtd: 'Belge güvenlik nedeniyle gösterilmedi (izin verilmeyen XML tanımı).',
-    boyut: 'Belge görüntüleyicinin sınırından büyük; dosyayı indirip UYAP Doküman Editörü ile açın.',
-    belirsiz: 'Paket birden çok içerik dosyası taşıyor; güvenlik nedeniyle gösterilmedi.',
-    desteklenmiyor: 'Tarayıcınız bu belgeyi açamıyor; Chrome’u güncelleyin.',
-    sure: 'Belge zamanında hazırlanamadı; dosyayı indirip UYAP Doküman Editörü ile açın.',
+    boyut: 'Belge görüntüleyicinin sınırından büyük. Dosyayı indirip UYAP Doküman Editörü ile açın.',
+    belirsiz: 'Paket birden çok içerik dosyası taşıyor. Belge güvenlik nedeniyle gösterilmedi.',
+    desteklenmiyor: 'Tarayıcınız bu belgeyi açamıyor. Chrome’u güncelleyin.',
+    sure: 'Belge zamanında hazırlanamadı. Dosyayı indirip UYAP Doküman Editörü ile açın.',
     bos: 'Dosya boş.'
   };
 
@@ -115,11 +119,52 @@
         bayrak, yontem: dv.getUint16(p + 10, true), crc: dv.getUint32(p + 16, true),
         sik: dv.getUint32(p + 20, true), acik: dv.getUint32(p + 24, true), yerel: dv.getUint32(p + 42, true),
         ad: new TextDecoder(bayrak & 0x800 ? 'utf-8' : 'windows-1252').decode(u8.subarray(p + 46, p + 46 + adUz)),
-        mdOfset
+        adBas: p + 46, adUz, mdOfset
       });
       p += 46 + adUz + ekUz + notUz;
     }
+    yerelGirdileriDenetle(u8, dv, girdiler, mdOfset);
     return girdiler;
+  }
+
+  // Yerel başlıkları baştan sırayla okuyan bir okuyucu (Java'nın ZipInputStream'i gibi) merkezî dizindekinden başka bir
+  // içerik bulmasın: Yerel girdiler dizindekilerle aynı ad ve yöntemi taşır, 0. bayttan dizine dek art arda gelir. İki
+  // girdinin arasında ve son girdiyle dizin arasında en çok 24 baytlık boşluk (veri tanımlayıcısının yeri, 12-24 bayt)
+  // olabilir, boşluğun içeriğine bakılmaz. Yerel başlık 30 bayttan kısa olamadığı için o araya girdi sığmaz. Veri
+  // tanımlayıcılı girdide yerel başlıktaki boyutlar 0'dır, boyut yalnız tanımlayıcısız saklanmış girdide karşılaştırılır
+  // (sıralı okuyucu onun sonunu yerel başlıktaki boyuttan bulur).
+  // Veri tanımlayıcılı saklanmış girdinin (Java ve UDE yazmaz, Go ve JSZip'in akış kipi yazar) sonunu sıralı okuyucu
+  // bilemez: Tanımlayıcının imzasını arar ya da yerel başlıktaki boyuta güvenir. Verisine sahte bir tanımlayıcı ve ardından
+  // bir yerel girdi gömülebilir. Bu yüzden böyle bir girdinin verisinde yerel başlık imzası geçemez. UTF-8 XML'de bu
+  // baytlar geçemez, ikili veride (sign.sgn) rastlantıyla geçme olasılığı çok küçüktür.
+  function yerelGirdileriDenetle(u8, dv, girdiler, mdOfset) {
+    const sirali = [...girdiler].sort((a, b) => a.yerel - b.yerel);
+    let beklenen = 0, pay = 0;   // ilk girdi tam 0. baytta başlar
+    for (const g of sirali) {
+      if (g.yerel < beklenen || g.yerel - beklenen > pay) throw hata('zip', 'dizinde olmayan bayt');
+      if (g.yerel + 30 > mdOfset || dv.getUint32(g.yerel, true) !== 0x04034b50) throw hata('zip', 'yerel başlık yok');
+      const adUz = dv.getUint16(g.yerel + 26, true);
+      const veri = g.yerel + 30 + adUz + dv.getUint16(g.yerel + 28, true);
+      if (veri + g.sik > mdOfset) throw hata('zip', 'veri taşıyor');
+      if (adUz !== g.adUz) throw hata('zip', 'yerel ad farklı');
+      for (let i = 0; i < adUz; i++) if (u8[g.yerel + 30 + i] !== u8[g.adBas + i]) throw hata('zip', 'yerel ad farklı');
+      if (dv.getUint16(g.yerel + 8, true) !== g.yontem) throw hata('zip', 'yerel yöntem farklı');
+      if (g.yontem === 0) {
+        if (!(dv.getUint16(g.yerel + 6, true) & 8)) {
+          if (dv.getUint32(g.yerel + 18, true) !== g.sik || dv.getUint32(g.yerel + 22, true) !== g.acik) throw hata('zip', 'yerel boyut farklı');
+        } else if (yerelImzaVar(u8, veri, veri + g.sik)) throw hata('zip', 'saklanmış veride yerel başlık');
+      }
+      beklenen = veri + g.sik;
+      pay = 24;
+    }
+    if (mdOfset < beklenen || mdOfset - beklenen > pay) throw hata('zip', 'dizinde olmayan bayt');
+  }
+  // u8'in [bas, son) aralığında yerel başlık imzası (PK\3\4) geçiyor mu.
+  function yerelImzaVar(u8, bas, son) {
+    for (let i = u8.indexOf(0x50, bas); i >= 0 && i + 4 <= son; i = u8.indexOf(0x50, i + 1)) {
+      if (u8[i + 1] === 0x4b && u8[i + 2] === 0x03 && u8[i + 3] === 0x04) return true;
+    }
+    return false;
   }
 
   async function girdiAc(u8, g, ust, signal) {
@@ -311,10 +356,12 @@
     ustSimge: false, altSimge: false, renk: null, zemin: null
   });
 
+  // Yazı tipi adı kırpılmış hâliyle tutulur. 64 karakterden uzun adı aileListesi zaten Times New Roman'a çevirir. Uzun ad
+  // modele hiç girmez (çizimde her metin parçası için yeniden işlenmesin).
   function yaziOz(el) {
     const o = {};
     const aile = oz(el, 'family');
-    if (aile) o.aile = aile;
+    if (aile) { const t = aile.trim(); o.aile = t.length > 64 ? YAZI_VARSAYILAN.aile : t; }
     const p = sayi(oz(el, 'size'));
     if (Number.isFinite(p) && p >= 1 && p <= 400) o.punto = kistir(p, 4, 96);
     for (const [k, a] of [['kalin', 'bold'], ['italik', 'italic'], ['alti', 'underline'], ['ustu', 'strikethrough'],
@@ -369,27 +416,55 @@
   // Kapsam: aranacak düğümler + dış kapsam. Tekrarlı satır (dataRow) örneklerinin içine yalnız o satırın kapsamında inilir.
   const veriSatiriMi = el => String(oz(el, 'rowType') || '').toLowerCase() === 'datarow' && !!oz(el, 'rowName');
 
-  function veriBaglayici(s) {
+  // Kesilme nedeni (s.kesildi) bir kez, ilk nedenle yazılır. 'derinlik', 'sarmal' ve 'veri-satiri' yalnız o tabloyu,
+  // tanınmayan sarmalayıcıyı ya da şablon satırlarını atlar, okuma sürer: Belgenin ortasından bir kısım eksik kalır
+  // (s.atlanan). Öteki nedenler ('oge', 'sure') okumayı durdurur: Yalnız belgenin başı gösterilir (s.durma, s.dur). Durma,
+  // önce başka bir neden yazılmış olsa da olur.
+  const ATLAYAN = new Set(['derinlik', 'sarmal', 'veri-satiri']);
+  function kes(s, neden) {
+    s.kesildi = s.kesildi || neden;
+    if (ATLAYAN.has(neden)) { if (!s.atlanan.includes(neden)) s.atlanan.push(neden); }
+    else { s.durma = s.durma || neden; s.dur = true; }
+  }
+
+  // zamanDenetle(sayac) her 256 adımda bir iptale ve süre sınırına bakar. Süre dolunca ya da arama sınırı aşılınca
+  // okuma durur (s.dur).
+  function veriBaglayici(s, zamanDenetle) {
+    const DUR = {};
     function tara(dugumler, ziyaret) {
       const yigin = [...dugumler].reverse();
       while (yigin.length) {
-        if (++s.veriGezinti > SINIR.veriGezinti) { s.kesildi = s.kesildi || 'oge'; return; }
+        if (++s.veriGezinti > SINIR.veriGezinti) { kes(s, 'oge'); return; }
+        zamanDenetle(s.veriGezinti);
+        if (s.dur) return;
         const el = yigin.pop();
         if (veriSatiriMi(el)) { ziyaret(el, true); continue; }
-        if (ziyaret(el, false) === false) continue;
+        const r = ziyaret(el, false);
+        if (r === DUR) return;
+        if (r === false) continue;
         for (let i = el.children.length - 1; i >= 0; i--) yigin.push(el.children[i]);
       }
     }
+    // Aynı değer bir kez alınır (Set ile, süre değer sayısıyla doğru orantılı). Birleştirilmiş değer SINIR.alanMetni'ni
+    // aşınca kesilir ve arama durur. kesik: Değerin tamamı alınamadı.
     function yapraklar(dugumler, anahtar) {
-      const degerler = [];
+      const degerler = [], gorulen = new Set();
+      let uzunluk = 0, kesik = false;
       tara(dugumler, (el, satir) => {
-        if (satir) return;
-        if (!el.children.length && ad(el) === anahtar) {
-          const t = el.textContent;
-          if (t.trim() && !degerler.includes(t)) degerler.push(t);
+        if (satir || el.children.length || ad(el) !== anahtar) return;
+        const t = el.textContent;
+        if (!t.trim() || gorulen.has(t)) return;
+        gorulen.add(t);
+        const kalan = SINIR.alanMetni - uzunluk - (degerler.length ? 1 : 0);
+        if (t.length > kalan) {
+          if (kalan > 0) degerler.push(t.slice(0, kalan));
+          kesik = true;
+          return DUR;
         }
+        uzunluk += t.length + (degerler.length ? 1 : 0);
+        degerler.push(t);
       });
-      return degerler;
+      return { deger: degerler.length ? degerler.join('\n') : undefined, kesik };
     }
     function gruplar(dugumler, anahtar) {
       const bulunan = [];
@@ -399,16 +474,20 @@
       });
       return bulunan;
     }
+    // Grubun dolu olup olmadığı öğe başına bir kez hesaplanır: Aynı grubu gösteren her alan grubun bütün metnini
+    // yeniden kurmasın.
+    const doluMu = new WeakMap();
+    const dolu = el => { let d = doluMu.get(el); if (d === undefined) { d = !!el.textContent.trim(); doluMu.set(el, d); } return d; };
     function coz(kapsam, alan, grup) {
       for (let k = kapsam; k; k = k.ust) {
         if (grup) {
           const g = gruplar(k.dugumler, grup);
           if (!g.length) continue;
-          const d = alan ? yapraklar(g.flatMap(x => [...x.children]), alan) : [];
-          return { grupVar: true, grupDolu: g.some(x => x.textContent.trim()), deger: d.length ? d.join('\n') : undefined };
+          const d = alan ? yapraklar(g.flatMap(x => [...x.children]), alan) : { deger: undefined, kesik: false };
+          return { grupVar: true, grupDolu: g.some(dolu), deger: d.deger, kesik: d.kesik };
         }
         const d = yapraklar(k.dugumler, alan);
-        if (d.length) return { deger: d.join('\n') };
+        if (d.deger !== undefined) return d;
       }
       return { grupVar: false };
     }
@@ -423,9 +502,10 @@
     return { coz, satirOrnekleri };
   }
 
-  // Alan değerindeki HTML kalıntısı düz metne çevrilir; sonuç yalnız metin düğümü olarak kullanılır.
-  const htmlsiz = v => v.replace(/\r\n?/g, '\n').replace(/<\s*br\b[^>]*>/gi, '\n')
-    .replace(/<\s*\/\s*(p|div|tr|table|li)\s*>/gi, '\n').replace(/<[^>]*>/g, '')
+  // Alan değerindeki HTML kalıntısı düz metne çevrilir. Sonuç yalnız metin düğümü olarak kullanılır. Etiket en çok bir
+  // sonraki "<" işaretine kadar aranır. Böylece ">" içermeyen uzun metinde de süre uzunlukla doğru orantılı kalır.
+  const htmlsiz = v => v.replace(/\r\n?/g, '\n').replace(/<\s*br\b[^<>]*>/gi, '\n')
+    .replace(/<\s*\/\s*(p|div|tr|table|li)\s*>/gi, '\n').replace(/<[^<>]*>/g, '')
     .split('\n').map(x => x.trim()).filter(Boolean).join('\n');
 
   // ---------------------------------------------------------------- listeler
@@ -455,9 +535,13 @@
     return ek === 'D_PARANTHESE' ? `(${g})` : ek === 'PARANTHESE' ? `${g})` : ek === 'TRE' ? `${g}-` : `${g}.`;
   }
   const MADDE_ISARETI = { ELLIPSE: '•', RECTANGLE: '▪', RECTANGLE_D: '▫', ARROW: '➢', DIAMOND: '◆', DIAMOND_2: '◊', TRIANGLE: '►' };
+  // İşaretin adı son "BULLET_TYPE_"den sonraki kısımdır (ör. BULLET_TYPE_ARROW). Son ek lastIndexOf ile bulunur, kalanı
+  // başa bağlı ifadeyle sınanır: Uzun ve tekrarlı değerde de tek geçişte biter.
   function maddeIsareti(tur) {
-    const m = /BULLET_TYPE_([A-Z_0-9]+)$/.exec(String(tur || '').toUpperCase());
-    return (m && MADDE_ISARETI[m[1]]) || '•';
+    const t = String(tur || '').toUpperCase();
+    const i = t.lastIndexOf('BULLET_TYPE_');
+    const kalan = i < 0 ? '' : t.slice(i + 12);
+    return (/^[A-Z_0-9]+$/.test(kalan) && MADDE_ISARETI[kalan]) || '•';
   }
   // ListLevel ≥ 2 olan kalemde Editör NumberType/BulletType'a bakmaz; SecListTypeLevel<N> ya da varsayılan kullanılır.
   const ALT_NUMARA = { 2: 'NUMBER_TYPE_CHAR_SMALL_DOT', 3: 'NUMBER_TYPE_ROMAN_SMALL_DOT', 4: 'NUMBER_TYPE_NUMBER_D_PARANTHESE', 5: 'NUMBER_TYPE_CHAR_SMALL_D_PARANTHESE', 6: 'NUMBER_TYPE_ROMAN_SMALL_D_PARANTHESE' };
@@ -538,15 +622,17 @@
       if (notlar.length >= SINIR.not) break;
       const bas = tamsayi(oz(c, 'strtOffs')), son = tamsayi(oz(c, 'endOffs'));
       if (!Number.isInteger(bas) || !Number.isInteger(son) || bas < 0 || son <= bas) continue;
+      // Her dilim kalan bütçeyle kesilir: Metin hiçbir zaman not sınırından uzun olmaz. Sondaki boşluk trimEnd ile
+      // atılır (düzenli ifadeyle kırpmak uzun boşlukta uzunluğun karesiyle sürer).
       let metin = '';
       for (const y of c.getElementsByTagName('*')) {
         const a = tamsayi(oz(y, 'startOffset')), u = tamsayi(oz(y, 'length'));
-        if (Number.isInteger(a) && Number.isInteger(u) && a >= 0 && u > 0) metin += havuz.slice(a, a + u);
-        if (metin.length > 20000) break;
+        if (Number.isInteger(a) && Number.isInteger(u) && a >= 0 && u > 0) metin += havuz.slice(a, a + Math.min(u, SINIR.notMetni - metin.length));
+        if (metin.length >= SINIR.notMetni) break;
       }
       const zaman = /^\d{1,15}$/.test(String(oz(c, 'time') || '').trim()) ? Number(oz(c, 'time')) : null;
       notlar.push({
-        sira: notlar.length + 1, bas, son, metin: metin.replace(/\u200b/g, '').replace(/\s+$/, '').slice(0, 20000),
+        sira: notlar.length + 1, bas, son, metin: metin.replace(/\u200b/g, '').trimEnd(),
         kim: kisa(oz(c, 'usr'), 200).trim(), zaman
       });
     }
@@ -620,7 +706,7 @@
     const kok = doc.documentElement;
     const havuz = (cocuk(kok, 'content') || { textContent: '' }).textContent;
     const govde = cocuk(kok, 'elements');
-    if (!govde) throw hata('xml', 'elements yok');
+    if (!govde) throw hata('udf-degil', 'elements yok');
     const props = cocuk(kok, 'properties');
     const veri = cocuk(kok, 'data');
     const sayfa = sayfaAyari(props);
@@ -630,19 +716,35 @@
     const taban = Object.freeze({ ...YAZI_VARSAYILAN, ...(zincir(oz(govde, 'resolver') || 'hvl-default') || zincir('hvl-default') || {}) });
     const s = {
       kokAdi: ad(kok), paragraf: 0, tablo: 0, resimSayisi: 0, resimBayt: 0, resimPiksel: 0, resimReddi: 0, sayfaSonu: 0,
-      blok: 0, parca: 0, hucre: 0, gezinti: 0, veriSatiri: 0, veriGezinti: 0, ofsetSorunu: 0, bilinmeyen: 0, kesildi: null,
-      header: null, footer: null, dur: false
+      blok: 0, parca: 0, hucre: 0, gezinti: 0, veriSatiri: 0, veriGezinti: 0, veriMetni: 0, ofsetSorunu: 0, bilinmeyen: 0,
+      kesildi: null, atlanan: [], durma: null, header: null, footer: null, dur: false
     };
-    const bag = veri ? veriBaglayici(s) : null;
+    const zamanDenetle = (sayac = s.gezinti) => {
+      if ((sayac & 255) !== 0) return;
+      iptalDenetle(signal);
+      if (performance.now() - baslangic > SINIR.sure) kes(s, 'sure');
+    };
+    const bag = veri ? veriBaglayici(s, zamanDenetle) : null;
     const kokKapsam = veri ? { dugumler: [...veri.children], ust: null } : null;
     const listeler = new Map();   // ListId (ya da adsız liste) → düzey sayaçları
     let oncekiListe = null;
     const notAraliklari = veri ? [] : notlar.filter(n => n.bas < havuz.length).sort((a, b) => a.bas - b.bas);
-
-    const zamanDenetle = () => {
-      if ((s.gezinti & 255) !== 0) return;
-      iptalDenetle(signal);
-      if (performance.now() - baslangic > SINIR.sure) { s.kesildi = s.kesildi || 'sure'; s.dur = true; }
+    // Notların başı ve sonu havuzu aralıklara böler. Bir aralığın her noktasını aynı notlar kapsar. Aralığın not
+    // numaraları bir kez kurulur ve o aralığa düşen bütün parçalarca paylaşılır: Belgenin tamamını kapsayan çok sayıda
+    // not parça başına yeni bir dizi kurdurmaz. Dizi sayısı en çok not sınırı sayısı + 1'dir.
+    const notSinirlari = [...new Set(notAraliklari.flatMap(n => [n.bas, n.son]))].sort((a, b) => a - b);
+    const notKumeleri = new Map();   // aralığın sırası (kendinden küçük ya da eşit sınır sayısı) → not numaraları ya da null
+    const notKumesi = (k, x) => {
+      if (!notKumeleri.has(k)) {
+        const ns = notAraliklari.filter(n => n.bas <= x && n.son > x).map(n => n.sira);
+        notKumeleri.set(k, ns.length ? ns : null);
+      }
+      return notKumeleri.get(k);
+    };
+    const ilkBuyukSinir = x => {
+      let alt = 0, ust = notSinirlari.length;
+      while (alt < ust) { const o = (alt + ust) >> 1; if (notSinirlari[o] <= x) alt = o + 1; else ust = o; }
+      return alt;
     };
 
     const aralik = el => {
@@ -654,6 +756,15 @@
     };
 
     // Şablon belgede parçanın metni: alan ise veriden, gruba bağlı düz metinse grup doluysa. Yer tutucu adı hiç gösterilmez.
+    // Veriden gelen metin SINIR.veriMetni bütçesine sayılır. Alanın değeri ya da bütçe kesilince veriTasti kurulur:
+    // Kesilen metin eklendikten sonra durulur (gösterilen, belgenin ilk bölümü olur).
+    let veriTasti = false;
+    function veriMetni(deger) {
+      const kalan = SINIR.veriMetni - s.veriMetni;
+      if (deger.length > kalan) { deger = deger.slice(0, Math.max(0, kalan)); veriTasti = true; }
+      s.veriMetni += deger.length;
+      return deger;
+    }
     function sablonMetni(c, kapsam) {
       const r = aralik(c);
       const ham = r ? havuz.slice(r.a, r.b) : '';
@@ -671,15 +782,16 @@
         return (String(x.deger || '').trim().toLowerCase() === 'true' ? '\n' : '') + sonSatir;
       }
       const x = bag.coz(kapsam, alan, grup);
-      return (x.deger === undefined ? '' : htmlsiz(x.deger)) + sonSatir;
+      if (x.kesik) veriTasti = true;
+      return (x.deger === undefined ? '' : veriMetni(htmlsiz(x.deger))) + sonSatir;
     }
 
-    // Modele eklenen her parça (sekme ve not bölmeleri dahil) parça sınırına sayılır; süre ya da öğe sınırı aşılınca durulur.
-    // Süre dolması kesilme nedeninden ayrı tutulur: önce 'derinlik' ya da 'veri-satiri' yazılmış olsa da durulur.
-    const durdu = () => s.dur || s.kesildi === 'oge' || s.kesildi === 'sure';
+    // Modele eklenen her parça (sekme ve not bölmeleri dâhil) parça sınırına sayılır. Süre ya da öğe sınırı aşılınca
+    // durulur (kes).
+    const durdu = () => s.dur;
     function parcaEkle(cikti, x) {
       if (durdu()) return false;
-      if (++s.parca > SINIR.parca) { s.kesildi = s.kesildi || 'oge'; return false; }
+      if (++s.parca > SINIR.parca) { kes(s, 'oge'); return false; }
       cikti.push(x);
       return true;
     }
@@ -695,25 +807,21 @@
       }
     }
     function yaprakEkle(cikti, c, kapsam, stil, bosIse) {
-      if (kapsam) { metinEkle(cikti, sablonMetni(c, kapsam), stil, null); return; }
+      if (kapsam) {
+        metinEkle(cikti, sablonMetni(c, kapsam), stil, null);
+        if (veriTasti) kes(s, 'oge');
+        return;
+      }
       const r = aralik(c);
       if (!r) { if (bosIse) metinEkle(cikti, bosIse, stil, null); return; }
       if (!notAraliklari.length) { metinEkle(cikti, havuz.slice(r.a, r.b), stil, null); return; }
-      const sinirlar = new Set([r.a, r.b]);
-      const ilgili = [];
-      for (const n of notAraliklari) {
-        if (n.bas >= r.b) break;
-        if (n.son <= r.a) continue;
-        ilgili.push(n);
-        if (n.bas > r.a) sinirlar.add(n.bas);
-        if (n.son < r.b) sinirlar.add(n.son);
-      }
-      if (!ilgili.length) { metinEkle(cikti, havuz.slice(r.a, r.b), stil, null); return; }
-      const sirali = [...sinirlar].sort((x, y) => x - y);
-      for (let i = 0; i + 1 < sirali.length && !durdu(); i++) {
-        const x = sirali[i], y = sirali[i + 1];
-        const ns = ilgili.filter(n => n.bas <= x && n.son >= y).map(n => n.sira);
-        metinEkle(cikti, havuz.slice(x, y), stil, ns.length ? ns : null);
+      // Yaprak, içine düşen not sınırlarında dilimlenir (ikili aramayla bulunur). i, dilimin başından küçük ya da ona eşit
+      // sınır sayısıdır, yani dilimin düştüğü aralığın sırası.
+      let i = ilkBuyukSinir(r.a);
+      for (let x = r.a; x < r.b && !durdu(); i++) {
+        const y = i < notSinirlari.length && notSinirlari[i] < r.b ? notSinirlari[i] : r.b;
+        metinEkle(cikti, havuz.slice(x, y), stil, notKumesi(i, x));
+        x = y;
       }
     }
 
@@ -736,15 +844,21 @@
       let turAdi;
       if (duzey === 1) turAdi = oz(p, madde ? 'BulletType' : 'NumberType') || oz(p, 'SecListTypeLevel1');
       else turAdi = oz(p, 'SecListTypeLevel' + duzey) || (madde ? ALT_MADDE[duzey] : ALT_NUMARA[duzey]);
-      turAdi = String(turAdi || (madde ? 'BULLET_TYPE_ELLIPSE' : 'NUMBER_TYPE_NUMBER_DOT')).toUpperCase();
+      // Gerçek tür adları 40 karakterden kısadır. 64 karakterden uzun değer tanınmaz, varsayılan kullanılır.
+      turAdi = String(turAdi || '');
+      if (!turAdi || turAdi.length > 64) turAdi = madde ? 'BULLET_TYPE_ELLIPSE' : 'NUMBER_TYPE_NUMBER_DOT';
+      turAdi = turAdi.toUpperCase();
       const maddeMi = /^BULLET_TYPE/.test(turAdi) || (madde && !/^NUMBER_TYPE/.test(turAdi));
       return { tur: maddeMi ? 'madde' : 'numara', duzey, isaret: maddeMi ? maddeIsareti(turAdi) : numaraYaz(sayac[duzey], turAdi), stil: pStil };
     }
 
+    // Kendi stili olan öğe o stilin zincirini belge tabanının üstüne alır, üst öğesini (paragrafı) devralmaz. "default"a
+    // bağlı öğe de belge tabanını alır ("default" zincire katılmaz). Tanımsız stil adı yok sayılır: Öğe stilsiz gibi üst
+    // öğesini devralır.
     function stilIcin(el, tabanStil) {
       const r = oz(el, 'resolver') || oz(el, 'style');
       const z = r ? zincir(r) : null;
-      const temel = z ? { ...taban, ...z } : tabanStil;
+      const temel = z ? { ...taban, ...z } : String(r).toLowerCase() === 'default' ? taban : tabanStil;
       const kendi = yaziOz(el);
       return Object.keys(kendi).length ? { ...temel, ...kendi } : temel;
     }
@@ -757,7 +871,8 @@
       }).filter(d => Number.isFinite(d.konum) && d.konum > 0 && d.konum <= 4000).sort((a, b) => a.konum - b.konum);
     }
 
-    function paragraf(p, kapsam) {
+    // yapraklar: Paragrafın çocukları. Paragrafsız yaprak özniteliksiz bir paragrafın tek yaprağı olarak verilir.
+    function paragraf(p, kapsam, yapraklar = [...p.children]) {
       s.paragraf++;
       const pStil = stilIcin(p, taban);
       const liste = listeBilgisi(p, pStil);
@@ -773,10 +888,9 @@
         duraklar: durakOku(p), liste, stil: pStil, parcalar: []
       };
       const icTablolar = [];
-      const yapraklar = [...p.children];
       for (let i = 0; i < yapraklar.length; i++) {
         const c = yapraklar[i];
-        if (++s.gezinti > SINIR.gezinti) { s.kesildi = s.kesildi || 'oge'; break; }
+        if (++s.gezinti > SINIR.gezinti) { kes(s, 'oge'); break; }
         zamanDenetle();
         if (durdu()) break;
         const a = ad(c);
@@ -797,7 +911,7 @@
           yaprakEkle(model.parcalar, c, kapsam, stilIcin(c, pStil));
         } else if (c.children.length) {
           s.bilinmeyen++;
-          if (yapraklar.length + c.children.length > SINIR.parca) { s.kesildi = s.kesildi || 'oge'; break; }
+          if (yapraklar.length + c.children.length > SINIR.parca) { kes(s, 'oge'); break; }
           // Büyük diziyi tek seferde yaymak yığını taşırır; dilimlerle eklenir.
           const ek = Array.from(c.children);
           for (let j = 0; j < ek.length; j += 10000) yapraklar.splice(i + 1 + j, 0, ...ek.slice(j, j + 10000));
@@ -838,17 +952,17 @@
       const hamSatirlar = [];
       for (const r of cocuklar(t, 'row')) {
         if (durdu()) break;
-        if (++s.gezinti > SINIR.gezinti) { s.kesildi = s.kesildi || 'oge'; break; }
+        if (++s.gezinti > SINIR.gezinti) { kes(s, 'oge'); break; }
         zamanDenetle();
         const ornekler = kapsam && veriSatiriMi(r) ? bag.satirOrnekleri(kapsam, String(oz(r, 'rowName')).toLowerCase()) : [];
         const kapsamlar = ornekler.length ? ornekler.map(o => ({ dugumler: [...o.children], ust: kapsam })) : [kapsam];
         const rAgirlik = agirlikOku(oz(r, 'columnSpans'));
         const yukseklik = sayi(oz(r, 'height'));
         for (const k of kapsamlar) {
-          if (ornekler.length && ++s.veriSatiri > SINIR.veriSatiri) { s.kesildi = s.kesildi || 'veri-satiri'; break; }
+          if (ornekler.length && ++s.veriSatiri > SINIR.veriSatiri) { kes(s, 'veri-satiri'); break; }
           const hucreler = [];
           for (const h of cocuklar(r, 'cell')) {
-            if (++s.hucre > SINIR.hucre) { s.kesildi = s.kesildi || 'oge'; break; }
+            if (++s.hucre > SINIR.hucre) { kes(s, 'oge'); break; }
             const dikeyAd = String(oz(h, 'vAlign') || oz(h, 'align') || '').toLowerCase();
             const zemin = renk(oz(h, 'fillColor') || oz(h, 'bgColor') || oz(h, 'cellColor'));
             hucreler.push({
@@ -921,14 +1035,15 @@
     const gorunurMetinVar = b => b.t !== 'p' || b.parcalar.some(x => x.t === 'resim' || (x.t === 'metin' && x.yazi.trim()));
 
     // Blok listesi. Açık sayfa sonları yalnız en üst düzeyde bölüm ayırır (bolumler verildiğinde).
+    let bosParagraf = null;
     function bloklar(el, d, kapsam, bolumler) {
       const out = [];
       if (bolumler) bolumler.push(out);
-      if (d > SINIR.derinlik) { s.kesildi = s.kesildi || 'derinlik'; return out; }
+      if (d > SINIR.derinlik) { kes(s, 'derinlik'); return out; }
       let hedef = out;
       for (const c of el.children) {
         if (durdu()) break;
-        if (++s.gezinti > SINIR.gezinti) { s.kesildi = s.kesildi || 'oge'; break; }
+        if (++s.gezinti > SINIR.gezinti) { kes(s, 'oge'); break; }
         zamanDenetle();
         const a = ad(c);
         if (a === 'page-break' || a === 'pagebreak') {
@@ -947,29 +1062,31 @@
           continue;
         }
         if (a !== 'paragraph' && a !== 'table' && a !== 'image') {
-          // Tanınmayan sarmalayıcının içindeki bloklar sırayla işlenir; paragrafsız yaprak kendi paragrafı sayılır.
+          // Tanınmayan sarmalayıcının içindeki bloklar sırayla işlenir. Paragrafsız yaprak kendi paragrafı sayılır ve blok
+          // sınırına sayılır. Derinlik sınırını aşan sarmalayıcı atlanır, okuma sürer.
           if (oz(c, 'startOffset') != null) {
+            if (++s.blok > SINIR.blok) { kes(s, 'oge'); break; }
             s.bilinmeyen++;
-            const sahte = doc.createElement('paragraph');
-            sahte.append(c.cloneNode(false));
-            const { model } = paragraf(sahte, kapsam);
-            hedef.push(model);
-          } else if (c.children.length && d + 1 <= SINIR.derinlik) {
+            bosParagraf = bosParagraf || doc.createElement('paragraph');
+            hedef.push(paragraf(bosParagraf, kapsam, [c]).model);
+          } else {
             s.bilinmeyen++;
-            for (const b of bloklar(c, d + 1, kapsam)) hedef.push(b);
-          } else s.bilinmeyen++;
+            if (!c.children.length) continue;
+            if (d + 1 > SINIR.derinlik) kes(s, 'sarmal');
+            else for (const b of bloklar(c, d + 1, kapsam)) hedef.push(b);
+          }
           continue;
         }
-        if (++s.blok > SINIR.blok) { s.kesildi = s.kesildi || 'oge'; break; }
+        if (++s.blok > SINIR.blok) { kes(s, 'oge'); break; }
         if (a === 'paragraph') {
           const { model, icTablolar } = paragraf(c, kapsam);
           hedef.push(model);
           for (const t of icTablolar) {
-            if (d + 1 > SINIR.derinlik) { s.kesildi = s.kesildi || 'derinlik'; break; }
+            if (d + 1 > SINIR.derinlik) { kes(s, 'derinlik'); break; }
             hedef.push(tablo(t, d + 1, kapsam));
           }
         } else if (a === 'table') {
-          if (d + 1 > SINIR.derinlik) { s.kesildi = s.kesildi || 'derinlik'; continue; }
+          if (d + 1 > SINIR.derinlik) { kes(s, 'derinlik'); continue; }
           hedef.push(tablo(c, d + 1, kapsam));
         } else hedef.push(blokResim(c));
       }
@@ -994,7 +1111,7 @@
     const payi = (sinir, n) => (n ? Math.floor(sinir / n) : Infinity);
     const enCokBolum = Math.max(1, Math.min(SINIR.bolum, payi(SINIR.blok, ekM.blok), payi(SINIR.hucre, ekM.hucre),
       payi(SINIR.parca, ekM.parca), payi(SINIR.resim, ekM.resim)));
-    if (bolumler.length > enCokBolum) { bolumler.length = enCokBolum; s.kesildi = s.kesildi || 'oge'; }
+    if (bolumler.length > enCokBolum) { bolumler.length = enCokBolum; kes(s, 'oge'); }
 
     let filigran = null;
     const bg = cocuk(props, 'bgimage');
@@ -1008,7 +1125,8 @@
     }
     return {
       sayfa, metinEn, taban, bolumler, ust: s.header, alt: s.footer, filigran,
-      sablon: !!veri, kesildi: s.kesildi, kokAdi: s.kokAdi, bicimSurumu: kisa(oz(kok, 'format_id'), 16) || null,
+      sablon: !!veri, kesildi: s.kesildi, eksik: s.kesildi ? { son: s.durma, orta: [...s.atlanan] } : null,
+      kokAdi: s.kokAdi, bicimSurumu: kisa(oz(kok, 'format_id'), 16) || null,
       notlar: veri ? [] : notlar,
       sayac: { paragraf: s.paragraf, tablo: s.tablo, resim: s.resimSayisi, resimReddi: s.resimReddi, sayfaSonu: s.sayfaSonu, ofsetSorunu: s.ofsetSorunu, bilinmeyen: s.bilinmeyen, veriSatiri: s.veriSatiri, blok: s.blok }
     };
@@ -1045,10 +1163,16 @@
       // Ek dosyalar belgeyi göstermek için gerekmez, bozuksa yok sayılır. Üçü birlikte açılır.
       const ek = async isim => { const g = bul(isim); if (g.length !== 1) return null; try { return await girdiAc(u8, g[0], SINIR.ekDosya, signal); } catch (e) { if (e && e.name === 'AbortError') throw e; return null; } };
       const [ozBayt, notBayt, imzaBayt] = await Promise.all([ek('documentproperties.xml'), ek('comments.xml'), ek('sign.sgn')]);
+      iptalDenetle(signal);
       if (ozBayt) try { ozellikler = ozellikleriOku(ozBayt); } catch { ozellikler = null; }
       if (notBayt) try { notlar = notlariOku(notBayt); } catch { notlar = []; }
-      if (imzaBayt) imza = await imzaDenetle(icerikBayt, imzaBayt);
-      else if (girdiler.some(g => /(^|\/)sign\.sgn$/i.test(g.ad))) imza = { var: true, durum: 'bilinmiyor' };
+      // İmza dosyası kökte tek değilse (iki tane ya da yalnız alt klasörde), açılamadıysa ya da içinde içerikle
+      // karşılaştırılabilecek bir özet yoksa durum 'bilinmiyor'dur: Belge içerikle karşılaştırılamamıştır.
+      if (imzaBayt) {
+        imza = await imzaDenetle(icerikBayt, imzaBayt);
+        // İptal edilen okuma AbortError ile biter, sonradan bozuk çıkan içeriğin hatasıyla bitmez.
+        iptalDenetle(signal);
+      } else if (girdiler.some(g => /(^|\/)sign\.sgn$/i.test(g.ad))) imza = { var: true, durum: 'bilinmiyor' };
     } else if (xmlMi(u8)) {
       if (u8.length > SINIR.icerik) throw hata('boyut', 'xml');
       icerikBayt = u8;
@@ -1056,7 +1180,8 @@
     } else throw hata('zip', 'imza yok');
     const { metin, kodlama } = metneCevir(icerikBayt);
     const xml = xmlCozumle(metin);
-    if (ad(xml.documentElement) !== 'template' && !cocuk(xml.documentElement, 'elements')) throw hata('xml', 'kök');
+    // Sağlam ama UDF olmayan XML (ör. adı .udf yapılmış başka bir belge) bozuk sayılmaz.
+    if (ad(xml.documentElement) !== 'template' && !cocuk(xml.documentElement, 'elements')) throw hata('udf-degil', 'kök');
     const model = modelKur(xml, { baslangic, signal, notlar });
     model.kodlama = kodlama;
     model.ham = ham;
@@ -1084,6 +1209,33 @@
   const saydamMi = c => c && c[3] === 0;
   const ONCU = { 1: 'dotted', 2: 'dashed', 3: 'solid', 4: 'solid', 5: 'double' };
 
+  // Kesilme notunun metni. son: Okumayı durduran neden ('oge', 'sure'), yalnız belgenin başı gösterildi. orta: Atlanan
+  // öğelerin nedenleri ('derinlik', 'sarmal', 'veri-satiri'), sonrası gösterildi. ekran: Sayfaların altındaki not. baski:
+  // Yazdırılan kâğıttaki kısa karşılığı. Atlanan tablo ve sarmalayıcı birlikteyse tek söz olur.
+  const ATLANAN = {
+    derinlik: 'çok iç içe geçmiş bazı tablolar', sarmal: 'çok iç içe geçmiş bazı öğeler',
+    'derinlik+sarmal': 'çok iç içe geçmiş bazı tablolar ve öğeler', 'veri-satiri': 'şablon verisinden gelen bazı tablo satırları'
+  };
+  const buyukBasla = v => v.charAt(0).toLocaleUpperCase('tr') + v.slice(1);
+  function kesilmeNotu(eksik) {
+    const { son = null, orta = [] } = eksik || {};
+    const birlikte = orta.includes('derinlik') && orta.includes('sarmal');
+    const atlanan = orta.filter(n => !(birlikte && n === 'sarmal')).map(n => ATLANAN[birlikte && n === 'derinlik' ? 'derinlik+sarmal' : n])
+      .filter(Boolean).join(' ve ');
+    const ekran = [], baski = [];
+    if (son) {
+      ekran.push(son === 'sure' ? 'Belgenin hazırlanması uzun sürdü.' : 'Belge çok uzun ya da karmaşık.', 'Yalnız ilk bölümü gösteriliyor.');
+      baski.push('Belgenin yalnız ilk bölümü basıldı.');
+    }
+    if (atlanan) {
+      ekran.push(`${son ? 'Ayrıca ' + atlanan : buyukBasla(atlanan)} gösterilemedi.`);
+      baski.push(`${son ? 'Ayrıca ' + atlanan : buyukBasla(atlanan)} basılmadı.`);
+    }
+    if (!baski.length) { ekran.push('Belgenin bir kısmı gösterilemedi.'); baski.push('Belgenin bir kısmı basılmadı.'); }
+    ekran.push('Tamamı için dosyayı indirip UYAP Doküman Editörü ile açın.');
+    return { ekran: ekran.join(' '), baski: 'Eksik baskı: ' + baski.join(' ') };
+  }
+
   function ciz(model, { signal, belge = globalThis.document } = {}) {
     const E = (etiket, sinif) => { const e = belge.createElement(etiket); if (sinif) e.className = sinif; return e; };
     const { sayfa, taban } = model;
@@ -1097,22 +1249,26 @@
     kok.setAttribute('aria-label', 'UDF belgesi');
     kok.lang = 'tr';
 
-    // Parçanın biçimi paragraf ya da sayfa tabanından farklıysa tek tek CSS özelliği olarak verilir.
+    // Parçanın biçimi paragraf ya da sayfa tabanından farklıysa tek tek CSS özelliği olarak verilir (alt öğeye kalıtılır).
     function bicimle(e, st, ust) {
       if (st.aile !== ust.aile) e.style.setProperty('font-family', aileListesi(st.aile));
       if (st.punto !== ust.punto) e.style.setProperty('font-size', pt(st.punto));
       if (st.kalin !== ust.kalin) e.style.setProperty('font-weight', st.kalin ? '700' : '400');
       if (st.italik !== ust.italik) e.style.setProperty('font-style', st.italik ? 'italic' : 'normal');
-      const cizgi = [st.alti && 'underline', st.ustu && 'line-through'].filter(Boolean).join(' ');
-      const ustCizgi = [ust.alti && 'underline', ust.ustu && 'line-through'].filter(Boolean).join(' ');
-      if (cizgi !== ustCizgi) e.style.setProperty('text-decoration-line', cizgi || 'none');
       const r = st.renk && !saydamMi(st.renk) ? rgb(st.renk) : '', ur = ust.renk && !saydamMi(ust.renk) ? rgb(ust.renk) : '';
       if (r !== ur) e.style.setProperty('color', r || 'rgb(0, 0, 0)');
-      if (st.zemin && !beyazMi(st.zemin) && !saydamMi(st.zemin) && st.zemin !== ust.zemin) e.style.setProperty('background-color', rgb(st.zemin));
       if ((st.ustSimge || st.altSimge) && !(ust.ustSimge || ust.altSimge)) {
         e.style.setProperty('vertical-align', st.ustSimge ? 'super' : 'sub');
         e.style.setProperty('font-size', pt(st.punto * 0.7));
       }
+    }
+    // Altı ve üstü çizgi ile zemin bloklara (sayfa, paragraf) hiç verilmez, her metin parçasına kendi çözülmüş stilinden
+    // verilir: CSS'te bloktan yayılan çizgi alt öğede kaldırılamaz, bloğa verilen zemin de metnin arkasını değil bütün
+    // satırı boyar.
+    function susle(e, st) {
+      const cizgi = [st.alti && 'underline', st.ustu && 'line-through'].filter(Boolean).join(' ');
+      if (cizgi) e.style.setProperty('text-decoration-line', cizgi);
+      if (st.zemin && !beyazMi(st.zemin) && !saydamMi(st.zemin)) e.style.setProperty('background-color', rgb(st.zemin));
     }
     const fontKisa = st => `${st.italik ? 'italic ' : ''}${st.kalin ? '700 ' : ''}${st.punto}pt ${aileListesi(st.aile)}`;
     const genislikPt = (metin, st) => {
@@ -1205,12 +1361,29 @@
       kok.append(baski);
     }
 
+    // Parçalar aynı aralıktaki not dizisini paylaşır. Numara listesi ve ipucu metni dizi başına bir kez kurulur. İpucu
+    // 2000 karakterde kesilir: Notlar sırayla eklenir, her not metni önce kısaltılır, sınıra varınca durulur.
+    const notYazilari = new Map();   // parçanın not dizisi → { no, baslik }
+    const notYazisi = notlar => {
+      let y = notYazilari.get(notlar);
+      if (y) return y;
+      let baslik = null;
+      for (const n of notlar) {
+        const not = model.notlar[n - 1];
+        if (!not) continue;
+        baslik = (baslik === null ? '' : baslik + '\n') + `Not ${not.sira}: ${(not.metin || '(boş)').slice(0, 2000)}`;
+        if (baslik.length >= 2000) break;
+      }
+      y = { no: notlar.join(' '), baslik: baslik === null ? null : baslik.slice(0, 2000) };
+      notYazilari.set(notlar, y);
+      return y;
+    };
     const notSinifi = (e, notlar) => {
       if (!notlar) return;
+      const y = notYazisi(notlar);
       e.classList.add('udf-notlu');
-      e.dataset.not = notlar.join(' ');
-      const metinler = notlar.map(n => model.notlar[n - 1]).filter(Boolean).map(n => `Not ${n.sira}: ${n.metin || '(boş)'}`);
-      if (metinler.length) e.title = metinler.join('\n').slice(0, 2000);
+      e.dataset.not = y.no;
+      if (y.baslik !== null) e.title = y.baslik;
     };
 
     // Sekme durağı paragrafın sol girintisine görelidir. Durak hizası: 0 sola, 1 sağa, 2 ortaya, 4 ondalık.
@@ -1244,12 +1417,12 @@
       if (p.aralik) st.setProperty('line-height', String(Math.round(1.15 * (1 + p.aralik) * 1000) / 1000));
       bicimle(d, p.stil, taban);
       if (p.liste) {
-        // Numara metnin başlangıcının ~6 punto soluna sağa yaslı, madde işareti ~18 punto soluna konur.
+        // Numara metnin başlangıcının ~6 punto soluna sağa yaslı, madde işareti ~18 punto soluna konur. İşaret çizgi ve
+        // zemin almaz. Paragrafın ilk öğesidir ve ekran okuyucudan gizlenmez: Madde numarası metinden önce okunur.
         const bas = p.sol + p.ilk;
         const im = E('span', 'udf-isaret');
         im.textContent = p.liste.isaret;
-        im.setAttribute('aria-hidden', 'true');
-        bicimle(im, { ...p.liste.stil, alti: false, ustu: false, zemin: null }, p.stil);
+        bicimle(im, p.liste.stil, p.stil);
         if (p.liste.tur === 'numara') im.style.setProperty('right', `calc(100% - ${pt(Math.max(0, bas - 6))})`);
         else im.style.setProperty('left', pt(Math.max(0, bas - 18)));
         im.style.setProperty('top', pt(p.once));
@@ -1263,6 +1436,7 @@
           const sp = E('span');
           sp.textContent = c.yazi;
           bicimle(sp, c.stil, p.stil);
+          susle(sp, c.stil);
           notSinifi(sp, c.notlar);
           d.append(sp);
           if (c.yazi.trim()) bos = false;
@@ -1283,7 +1457,9 @@
           const sp = E('span', 'udf-sekme');
           sp.setAttribute('aria-hidden', 'true');
           sp.style.setProperty('width', pt(genislik));
-          bicimle(sp, { ...c.stil, alti: false, ustu: false }, p.stil);
+          // Altı çizili sekmenin çizgisi öncü çizgisiyle çizilir.
+          bicimle(sp, c.stil, p.stil);
+          susle(sp, { ...c.stil, alti: false, ustu: false });
           const oncu = ONCU[durak.oncu] || (c.stil.alti ? 'solid' : null);
           if (oncu) {
             sp.style.setProperty('border-bottom-style', oncu);
@@ -1413,12 +1589,16 @@
       }
       isler.push(() => { if (aralikta(model.alt, i + 1) && ekDolu(model.alt)) sd.append(ekBilgi(model.alt, 'udf-alt')); });
     });
+    // Kesilmiş belgede sayfaların altına not konur. Yazdırırken onun yerine kısa karşılığı son sayfanın sonuna basılır
+    // (motor CSS'i): Kâğıtta da eksik olduğu görünür.
     if (model.kesildi) {
       isler.push(() => {
+        const { ekran, baski } = kesilmeNotu(model.eksik);
         const n = E('div', 'udf-not');
-        n.textContent = model.kesildi === 'sure'
-          ? 'Belgenin hazırlanması uzun sürdü; ilk bölüm gösteriliyor. Tamamı için dosyayı indirip UYAP Doküman Editörü ile açın.'
-          : 'Belge çok uzun ya da karmaşık; ilk bölüm gösteriliyor. Tamamı için dosyayı indirip UYAP Doküman Editörü ile açın.';
+        const ek = E('span', 'udf-not-ekran'), bs = E('span', 'udf-not-baski');
+        ek.textContent = ekran;
+        bs.textContent = baski;
+        n.append(ek, bs);
         kok.append(n);
       });
     }
@@ -1501,7 +1681,7 @@
         if (!stil && c.yazi.trim()) stil = c.stil;
         if (sekmeGordu) sag += c.yazi; else sol += c.yazi;
       }
-      sol = sol.replace(/\s+$/, ''); sag = sag.trim();
+      sol = sol.trimEnd(); sag = sag.trim();
       if (!sol && !sag) return;
       const hiza = b.hiza === 'center' || b.hiza === 'right' ? b.hiza : 'left';
       if (hiza === 'left') { if (sol) kutular.left.push(sol); if (sag) kutular.right.push(sag); }
@@ -1582,6 +1762,8 @@
     return satirlar.join('\n');
   }
 
+  // Notun vurgusu ve seçili not, metin parçasının zemininin (susle, satır içi background-color) üstüne binen bir katmandır
+  // (background-image): Zeminli yazıda da görünür. Kâğıda yalnız zemin basılır.
   const CSS = `
 .udf-gorunum .udf{display:flex;flex-direction:column;align-items:center;gap:16px;padding:16px 8px 32px;width:max-content;min-width:100%;box-sizing:border-box}
 .udf-gorunum .udf-sayfa{position:relative;box-sizing:border-box;background:#fff;color:#000;box-shadow:0 1px 3px rgba(16,24,40,.18),0 4px 12px rgba(16,24,40,.08);line-height:1.15;font-kerning:normal;text-rendering:optimizeLegibility;color-scheme:light;overflow-wrap:anywhere}
@@ -1599,18 +1781,21 @@
 .udf-gorunum .udf-ust,.udf-gorunum .udf-alt{color:#667085}
 .udf-gorunum .udf-ust{border-bottom:1px dashed #d0d5dd;margin-bottom:6pt;padding-bottom:2pt}
 .udf-gorunum .udf-alt{border-top:1px dashed #d0d5dd;margin-top:6pt;padding-top:2pt}
-.udf-gorunum .udf-notlu{background-color:rgba(255,213,79,.45);border-bottom:1px solid rgba(214,158,0,.9);cursor:help}
-.udf-gorunum .udf-notlu.secili{background-color:rgba(255,171,0,.6)}
+.udf-gorunum .udf-notlu{background-image:linear-gradient(rgba(255,213,79,.45),rgba(255,213,79,.45));border-bottom:1px solid rgba(214,158,0,.9);cursor:help}
+.udf-gorunum .udf-notlu.secili{background-image:linear-gradient(rgba(255,171,0,.6),rgba(255,171,0,.6))}
 .udf-gorunum .udf-not{max-width:600px;padding:10px 12px;border-radius:8px;background:#fff4e5;color:#7a4b00;font:13px/1.45 "Segoe UI",system-ui,sans-serif}
+.udf-gorunum .udf-not-baski{display:none}
 @media print{
 .udf-gorunum .udf{display:block;padding:0;gap:0;width:auto;min-width:0;zoom:1!important;position:relative;z-index:0}
 .udf-gorunum .udf-sayfa{width:auto!important;min-height:0!important;padding:0!important;box-shadow:none;break-after:page;background:none!important}
 .udf-gorunum .udf-filigran-baski{display:block;position:fixed;inset:0;z-index:-1;background-repeat:no-repeat;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.udf-gorunum .udf-sayfa:last-child{break-after:auto}
+.udf-gorunum .udf-sayfa:last-child,.udf-gorunum .udf-sayfa:has(+ .udf-not){break-after:auto}
 .udf-gorunum .udf-dilim{content-visibility:visible;contain-intrinsic-size:none}
-.udf-gorunum .udf-ust:not(.akista),.udf-gorunum .udf-alt:not(.akista),.udf-gorunum .udf-not{display:none}
+.udf-gorunum .udf-ust:not(.akista),.udf-gorunum .udf-alt:not(.akista),.udf-gorunum .udf-not-ekran{display:none}
+.udf-gorunum .udf-not{max-width:none;margin:12pt 0 0;padding:4pt 6pt;border:1px solid #000;border-radius:0;background:none;color:#000;font:9pt/1.3 "Segoe UI",system-ui,sans-serif;break-inside:avoid}
+.udf-gorunum .udf-not-baski{display:inline}
 .udf-gorunum .udf-ust,.udf-gorunum .udf-alt{color:inherit;border:0}
-.udf-gorunum .udf-notlu{background:none;border-bottom:0}
+.udf-gorunum .udf-notlu,.udf-gorunum .udf-notlu.secili{background-image:none;border-bottom:0}
 .udf-gorunum .udf-tablo tr{break-inside:avoid}
 }
 `;

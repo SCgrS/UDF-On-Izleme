@@ -1,5 +1,6 @@
-// Drive sayfasından dosya kimliği, adı ve hesap sırasını okuyan saf işlevler (içerik betiği ve testler kullanır).
-// Karartılmış sınıf adları kullanılmaz; dayanaklar: önizlemedeki #drive-active-item-info JSON'u ve /file/d/<id>/
+// Drive sayfasından dosya kimliği, adı ve hesabı (sırası ya da e-posta adresi) okuyan saf işlevler (içerik betiği ve testler
+// kullanır).
+// Karartılmış sınıf adları kullanılmaz. Dayanaklar: Ön izlemedeki #drive-active-item-info JSON'u ve /file/d/<id>/
 // adresleri. Dile bağlı metinlere (sekme başlığı) yalnız ".udf" uzantısını bulmak için bakılır.
 (() => {
   'use strict';
@@ -12,11 +13,18 @@
 
   const rkTemizle = rk => (rk && KAYNAK_ANAHTARI.test(rk) ? rk : null);
 
+  // authuser hesabın e-posta adresi de olabilir (?authuser=ad@ornek.com). Yalnız bu sıkı biçimdeki adres kabul edilir: En
+  // çok 254 karakter, tek @, boşluk, denetim karakteri ve / ? # & = yok, alan adı noktalı (indir.js ve arkaplan.js aynı
+  // biçimi kullanır).
+  const HESAP_EPOSTASI = /^(?=.{1,254}$)[A-Za-z0-9!$%'*+^_`{|}~.-]{1,64}@[A-Za-z0-9-]{1,63}(?:\.[A-Za-z0-9-]{1,63})+$/;
+
+  // Hesap: Yoldaki /u/<n>/ ya da authuser'daki sıra (sayı), yoksa authuser'daki e-posta adresi (olduğu gibi), yoksa null.
   function hesapNo(u) {
     const m = /\/u\/(\d{1,2})(?:\/|$)/.exec(u.pathname);
     if (m) return Number(m[1]);
     const a = u.searchParams.get('authuser');
-    return a && /^\d{1,2}$/.test(a) ? Number(a) : null;
+    if (a && /^\d{1,2}$/.test(a)) return Number(a);
+    return a && HESAP_EPOSTASI.test(a) ? a : null;
   }
 
   function urldenBilgi(href) {
@@ -30,7 +38,7 @@
     return { id: id && KIMLIK.test(id) ? id : null, au: hesapNo(u), rk: rkTemizle(u.searchParams.get('resourcekey')) };
   }
 
-  // Sayfanın hesap sırası: adres (/u/<n>/ ya da authuser), yoksa og:url'deki /u/<n>/.
+  // Sayfanın hesabı: Adres (/u/<n>/ ya da authuser), yoksa og:url'deki hesap (hesapNo).
   function sayfaHesabi(belge, href) {
     const b = urldenBilgi(href);
     if (b && b.au != null) return b.au;
@@ -39,9 +47,9 @@
     return ogBilgi ? ogBilgi.au : null;
   }
 
-  // Önizleme açıkken Drive'ın gizli öğesinde {"id","title","mimeType"} JSON'u durur.
-  function aktifOge(belge) {
-    const e = belge.getElementById('drive-active-item-info');
+  // Ön izleme açıkken Drive'ın gizli öğesinde {"id","title","mimeType"} JSON'u durur. e: Görüntüleyicinin bilgi öğesi
+  // (verilmezse belgedeki, Gmail'de içerik betiği GmailEk.bilgiOgesi'nin doğruladığını verir).
+  function aktifOge(belge, e = belge.getElementById('drive-active-item-info')) {
     if (!e) return null;
     let j;
     try { j = JSON.parse(e.textContent || ''); } catch { return null; }

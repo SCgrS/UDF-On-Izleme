@@ -1,9 +1,8 @@
 // Arka plan (service worker): Drive ya da Gmail sekmesinden gelen "aç" isteğini görüntüleyiciye (Google'ın görüntüleyicisine
-// gömülü ya da, yapısı tanınmazsa, yeni sekmede) çevirir; gömülü görüntüleyicinin Drive için yedek indirmesini yapar;
-// Gmail ekinin baytlarını görüntüleyiciye, ekin açıldığı Gmail sekmesinden aktarır. Simgenin eylemi yoktur (geliştiricinin
-// X sayfası manifest'in homepage_url alanında). Dosya adı adrese konmaz (müvekkil adı ya da esas numarası taşıyabilir): Görüntüleyici
-// belgenin kaydını rastgele bir anahtarla bir kez alır. Kayıtlar yalnız bu service worker'ın belleğinde durur, hiçbir
-// depoya yazılmaz.
+// gömülü ya da, yapısı tanınmazsa, yeni sekmede) çevirir. Gömülü görüntüleyicinin Drive için yedek indirmesini yapar,
+// Gmail ekinin baytlarını görüntüleyiciye, ekin açıldığı Gmail sekmesinden aktarır. Dosya adı adrese konmaz (müvekkil adı
+// ya da esas numarası taşıyabilir): Görüntüleyici belgenin kaydını rastgele bir anahtarla bir kez alır. Kayıtlar yalnız bu
+// service worker'ın belleğinde durur, hiçbir depoya yazılmaz.
 'use strict';
 importScripts('indir.js', 'gmail-ek.js');
 
@@ -30,11 +29,15 @@ function kayitAl(anahtar) {
   return k ? k.kayit : null;
 }
 
-const hesapSirasi = au => (Number.isInteger(au) && au >= 0 && au < 100 ? au : null);
+// Hesap (authuser): Sıra (0-99) ya da e-posta adresi. Adres yalnız sıkı biçimdeyse, olduğu gibi kabul edilir: En çok 254
+// karakter, tek @, boşluk, denetim karakteri ve / ? # & = yok, alan adı noktalı (drive-kimlik.js ve indir.js aynı biçimi
+// kullanır). Başka her değer null (hesapsız istek).
+const HESAP_EPOSTASI = /^(?=.{1,254}$)[A-Za-z0-9!$%'*+^_`{|}~.-]{1,64}@[A-Za-z0-9-]{1,63}(?:\.[A-Za-z0-9-]{1,63})+$/;
+const hesapSirasi = au => ((Number.isInteger(au) && au >= 0 && au < 100) || (typeof au === 'string' && HESAP_EPOSTASI.test(au)) ? au : null);
 const kaynakAnahtari = rk => (typeof rk === 'string' && /^[A-Za-z0-9_.-]{1,200}$/.test(rk) ? rk : null);
-// Kaydın doğrulanmış biçimi ya da null. Drive: Kimlik, ad, hesap sırası (authuser) ve paylaşım bağlantısının kaynak
-// anahtarı. Gmail eki: Ad, ekin doğrulanmış indirme bilgisi ve ekin açıldığı sekme (baytları o sekmedeki içerik betiği
-// indirir, gmailIndir). İçerik betiğinin bildirdiği dosyaya da görüntüleyicinin geri gönderdiği kayda da uygulanır.
+// Kaydın doğrulanmış biçimi ya da null. Drive: Kimlik, ad, hesap (authuser) ve paylaşım bağlantısının kaynak anahtarı.
+// Gmail eki: Ad, ekin doğrulanmış indirme bilgisi ve ekin açıldığı sekme (baytları o sekmedeki içerik betiği indirir,
+// gmailIndir). İçerik betiğinin bildirdiği dosyaya da görüntüleyicinin geri gönderdiği kayda da uygulanır.
 function kayitTemizle(b, sekme) {
   if (!b || typeof b !== 'object') return null;
   const ad = typeof b.ad === 'string' ? b.ad.slice(0, 300) : '';
@@ -51,8 +54,8 @@ function kayitYaz(b, sekme, { onIndir: indirilsin = false } = {}) {
   const kayit = kayitTemizle(b, sekme);
   if (!kayit) throw new Error('Dosya bilgisi geçersiz');
   const anahtar = crypto.randomUUID();
-  // Sekmenin yeni gömme kaydı: İçerik betiği önceki çerçevesini kaldırdı, o sekmenin kullanılmamış ön indirmesi bırakılır.
-  if (indirilsin) sekmeninOnIndirmeleriniBirak(sekme);
+  // Sekmenin yeni gömme kaydı: İçerik betiği önceki çerçevesini kaldırdı, o sekmenin indirmeleri artık gerekmez.
+  if (indirilsin) sekmeninIndirmeleriniBirak(sekme);
   if (indirilsin && kayit.kaynak !== 'gmail') onIndir(anahtar, kayit, sekme);
   while (kayitlar.size >= KAYIT_EN_COK) kayitBirak(kayitlar.keys().next().value);
   kayitlar.set(anahtar, { kayit, sure: setTimeout(() => kayitBirak(anahtar), KAYIT_SURESI) });
@@ -67,20 +70,26 @@ async function sekmeAc(url, yanindaki) {
 }
 
 // Drive'a gömülü görüntüleyicinin indirmesi. Gömülü sayfanın kendi isteği Drive sayfasının içinden (üçüncü taraf
-// bağlamında) gider; üçüncü taraf çerezleri kapalıyken yalnız SameSite=None çerezler gitmez. Service worker'ın isteği
+// bağlamında) gider, üçüncü taraf çerezleri kapalıyken yalnız SameSite=None çerezler gitmez. Service worker'ın isteği
 // bütün çerezlerle gider (2026-10-06 ölçümü, belgeler/DRIVE-TEKNIGI.md §6). Baytlar iletide base64 olarak, 1 MB'lık
 // dilimlerle taşınır: 'indir' boyu döndürür, çerçeve dilimleri 'indir-dilim' ile sırayla ister. Tek parça ileti büyük
 // dosyada süreçte dosyanın 6-8 katı geçici bellek tutuyordu (bağımsız ölçüm, 2026-10-07: 30 MB'lık dosyada +330 MB).
 // İndirilen baytlar son dilim verilene ya da en çok 15 sn tutulur (çerçeve arada kapanırsa), bırakılırken sıfırlanır.
 // Gömülü görünümde indirme kayıtla birlikte başlar (onIndir), çerçeve yüklenirken sürer. Çerçeve 'indir' deyince o
 // indirmenin sonucu verilir (bir kez). Çerçeve kendi indirmesine ancak bu yol başaramazsa geçer (goruntule.js).
-// Drive'da oklarla hızlı gezinince her dosya için bir kayıt gelir: Gmail'in ön indirmesi gibi (icerik.js) istenmemiş ön
-// indirme ve tutulan bayt kaydı en çok üçer, sınır aşılınca en eskisi bırakılır. Aynı sekmeden yeni bir gömme kaydı
-// gelince o sekmenin henüz istenmemiş ön indirmesi (sürüyorsa sonucu da) bırakılır: Çerçevesi artık yok.
+// Süren her indirme izlenir (surenler) ve kesilebilir (AbortController): Kesilen indirmenin o ana dek inen baytları
+// sıfırlanır (indir.js govdeOku), sonucu tutulmaz. Onu bekleyen görüntüleyici yoktur (çerçevesi kaldırıldı ya da yeniden
+// denedi), yine de varsa AG alır ve dosyayı kendisi indirir. Drive'da oklarla hızlı gezinince her dosya için bir kayıt
+// gelir: İstenmemiş ön indirme ve tutulan bayt kaydı en çok üçer, sınır aşılınca en eskisi bırakılır (indirmesi sürüyorsa
+// kesilir). İçerik betiği yeni gömme kaydından önce sekmedeki eski çerçeveyi kaldırır: Aynı sekmeden yeni bir kayıt
+// gelince o sekmenin istenmemiş ön indirmesi bırakılır, süren indirmeleri (görüntüleyicinin istedikleri de) kesilir.
+// Böylece bir sekmede yalnız son çerçevenin indirmesi sürer. Ön izleme kapatılınca (yeni kayıt gelmeden) süren indirme
+// biter, baytları en çok 15 sn tutulur.
 const DILIM = 1 << 20;
 const SURE = 15000, EN_COK = 3;
 const yedekler = new Map();   // anahtar → { bayt, sure }
-const onIndirmeler = new Map();   // anahtar → { soz, sure, sekme, birakildi }: kayıtla başlayan, henüz istenmemiş indirme
+const onIndirmeler = new Map();   // anahtar → { soz, sure, sekme }: Kayıtla başlayan, henüz istenmemiş indirme
+const surenler = new Map();   // anahtar → { iptal, sekme }: Süren (henüz bitmemiş) indirme
 // Tarayıcının kendi base64 çeviricisi varsa o (indir.js base64).
 function base64(bayt) {
   if (typeof bayt.toBase64 === 'function') return bayt.toBase64();
@@ -97,43 +106,56 @@ function yedekKoy(anahtar, bayt) {
   while (yedekler.size >= EN_COK) yedekBirak(yedekler.keys().next().value);
   yedekler.set(anahtar, { bayt, sure: setTimeout(() => yedekBirak(anahtar), SURE) });
 }
-// istendi: Baytlar inince hâlâ isteniyor mu (bırakılan ön indirmenin baytları tutulmaz, sıfırlanır).
-async function driveIndir(anahtar, kayit, istendi = () => true) {
+// Süren indirmeyi keser.
+function indirmeyiKes(anahtar) {
+  const s = surenler.get(anahtar);
+  if (s) { surenler.delete(anahtar); s.iptal.abort(); }
+}
+// sekme: Çerçevenin bulunduğu Drive ya da Gmail sekmesi (bilinmiyorsa null). Aynı anahtarın süren indirmesi kesilir
+// (görüntüleyici yeniden denedi, öncekinin sonucunu beklemiyor). Kesilen indirme sonradan inerse baytları tutulmaz,
+// sıfırlanır.
+async function driveIndir(anahtar, kayit, sekme = null) {
+  indirmeyiKes(anahtar);
+  const s = { iptal: new AbortController(), sekme };
+  surenler.set(anahtar, s);
   try {
-    const r = await DriveIndir.udfIndir(kayit);
-    if (!istendi()) { r.bayt.fill(0); return { hata: 'AG' }; }
+    const r = await DriveIndir.udfIndir(kayit, { signal: s.iptal.signal });
+    if (s.iptal.signal.aborted) { r.bayt.fill(0); return { hata: 'AG' }; }
     yedekKoy(anahtar, r.bayt);
     return { uzunluk: r.bayt.length, dilim: DILIM, ad: r.ad, hesap: r.hesap };
   } catch (e) {
     return { hata: (e && e.kod) || 'AG' };
+  } finally {
+    if (surenler.get(anahtar) === s) surenler.delete(anahtar);
   }
 }
-// İstenmemiş ön indirmeyi bırakır: Süren indirmenin sonucu tutulmaz, inmiş baytlar atılır.
+// İstenmemiş ön indirmeyi bırakır: Süren indirme kesilir, inmiş baytlar atılır.
 function onBirak(anahtar) {
   const o = onIndirmeler.get(anahtar);
   if (!o) return;
   clearTimeout(o.sure);
-  o.birakildi = true;
   onIndirmeler.delete(anahtar);
+  indirmeyiKes(anahtar);
   yedekBirak(anahtar);
 }
-function sekmeninOnIndirmeleriniBirak(sekme) {
+// Sekmenin çerçevesi kaldırıldı: İstenmemiş ön indirmesi bırakılır, süren indirmeleri kesilir. Görüntüleyicinin istediği
+// ve inmiş baytlar son dilime ya da 15 sn'ye dek kalır.
+function sekmeninIndirmeleriniBirak(sekme) {
   for (const [anahtar, o] of [...onIndirmeler]) if (o.sekme === sekme) onBirak(anahtar);
+  for (const [anahtar, s] of [...surenler]) if (s.sekme === sekme) indirmeyiKes(anahtar);
 }
 function onIndir(anahtar, kayit, sekme) {
   while (onIndirmeler.size >= EN_COK) onBirak(onIndirmeler.keys().next().value);
-  const o = { soz: null, sure: setTimeout(() => onBirak(anahtar), SURE), sekme, birakildi: false };
-  o.soz = driveIndir(anahtar, kayit, () => !o.birakildi);
-  onIndirmeler.set(anahtar, o);
+  onIndirmeler.set(anahtar, { soz: driveIndir(anahtar, kayit, sekme), sure: setTimeout(() => onBirak(anahtar), SURE), sekme });
 }
 // Görüntüleyicinin isteği: Kayıtla başlayan ön indirme varsa onun sonucu (bir kez), yoksa görüntüleyicinin gönderdiği
-// kayıtla yeni indirme ("Yeniden dene", sekmede açılan Gmail eki).
-async function indir(anahtar, gelen) {
+// kayıtla yeni indirme ("Yeniden dene", sekmede açılan Gmail eki). sekme: Görüntüleyicinin bulunduğu sekme.
+async function indir(anahtar, gelen, sekme) {
   const on = onIndirmeler.get(anahtar);
   if (on) { clearTimeout(on.sure); onIndirmeler.delete(anahtar); return on.soz; }
   const kayit = kayitTemizle(gelen, gelen && gelen.sekme);
   if (!kayit) return { hata: 'KIMLIK' };
-  return kayit.kaynak === 'gmail' ? gmailIndir(anahtar, kayit) : driveIndir(anahtar, kayit);
+  return kayit.kaynak === 'gmail' ? gmailIndir(anahtar, kayit) : driveIndir(anahtar, kayit, sekme);
 }
 function dilimVer(anahtar, i) {
   const y = yedekler.get(anahtar);
@@ -143,9 +165,9 @@ function dilimVer(anahtar, i) {
   return { parca };
 }
 
-// Gmail eki: görüntüleyici (gömülü ya da sekmede) Gmail'e kendisi istek atamaz (gömülüyken üçüncü taraf bağlamındadır;
+// Gmail eki: Görüntüleyici (gömülü ya da sekmede) Gmail'e kendisi istek atamaz (gömülüyken üçüncü taraf bağlamındadır,
 // Gmail'in ek adresi de yalnız Gmail kökenine CORS izni veriyor). Eki, açıldığı Gmail sekmesindeki içerik betiği
-// birinci taraf olarak indirir ve baytları tutar; arka plan dilimleri ondan alıp görüntüleyiciye aynen aktarır (bayt
+// birinci taraf olarak indirir ve baytları tutar. Arka plan dilimleri ondan alıp görüntüleyiciye aynen aktarır (bayt
 // tutmaz). Sekme görüntüleyicinin kaydından gelir. Sekme kapanmışsa ya da içerik betiği eskimişse (eklenti güncellendi)
 // GMAIL_SEKME.
 async function gmailIndir(anahtar, kayit) {
@@ -165,7 +187,7 @@ async function gmailDilimi(anahtar, i, sekme) {
 }
 
 // Görüntüleyici sayfasından mı (sekmede ya da Drive'a gömülü)? Gömülü sayfa (gomulu.html) web_accessible_resources'ın dinamik
-// adresiyle açıldığı için adresin kökeni eklenti kimliği değil oturumluk bir GUID olabilir; iletiyi zaten yalnız bu
+// adresiyle açıldığı için adresin kökeni eklenti kimliği değil oturumluk bir GUID olabilir. İletiyi zaten yalnız bu
 // eklentinin sayfaları gönderebilir (gonderen.id), içerik betiklerinin adresi ise https'tir.
 function goruntuleyiciden(g) {
   try { const u = new URL(g.url); return u.protocol === 'chrome-extension:' && (u.pathname === '/goruntule.html' || u.pathname === '/gomulu.html'); } catch { return false; }
@@ -175,8 +197,9 @@ chrome.runtime.onMessage.addListener((ileti, gonderen, yanit) => {
   if (!ileti || gonderen.id !== chrome.runtime.id) return;
   // Gmail'de .udf ek kartına basıldı: Yalnız service worker'ı uyandırır (ardından gelecek gömme kaydı açılışını beklemesin).
   if (ileti.tur === 'uyan') { yanit({}); return; }
+  // Görüntüleyicinin "Drive'da aç" bağlantısı: Yalnız drive.google.com adresi, görüntüleyicinin yanında yeni sekmede.
   if (ileti.tur === 'drive-ac') {
-    if (!goruntuleyiciden(gonderen) || !DRIVE.test(String(ileti.url || ''))) return;
+    if (!goruntuleyiciden(gonderen) || typeof ileti.url !== 'string' || !DRIVE.test(ileti.url)) return;
     sekmeAc(ileti.url, gonderen.tab).then(() => yanit({ tamam: true }), () => yanit({ tamam: false }));
     return true;
   }
@@ -188,7 +211,7 @@ chrome.runtime.onMessage.addListener((ileti, gonderen, yanit) => {
   }
   if (ileti.tur === 'indir') {
     if (!goruntuleyiciden(gonderen) || !ANAHTAR.test(String(ileti.anahtar || ''))) return;
-    indir(ileti.anahtar, ileti.kayit).then(yanit, () => yanit({ hata: 'AG' }));
+    indir(ileti.anahtar, ileti.kayit, gonderen.tab ? gonderen.tab.id : null).then(yanit, () => yanit({ hata: 'AG' }));
     return true;
   }
   if (ileti.tur === 'indir-dilim') {
@@ -197,7 +220,7 @@ chrome.runtime.onMessage.addListener((ileti, gonderen, yanit) => {
     gmailDilimi(ileti.anahtar, ileti.i, ileti.sekme).then(yanit, () => yanit({ hata: 'AG' }));
     return true;
   }
-  // Bundan sonrakiler Drive ya da Gmail sekmesindeki içerik betiğinden gelir. Gmail eki yalnız Gmail sekmesinden; Drive
+  // Bundan sonrakiler Drive ya da Gmail sekmesindeki içerik betiğinden gelir. Gmail eki yalnız Gmail sekmesinden, Drive
   // dosyası ikisinden de (Gmail, iletideki Drive bağlantılarını da aynı görüntüleyicide gösterebilir).
   if (!gonderen.tab || gonderen.frameId !== 0 || !(DRIVE.test(gonderen.url || '') || GMAIL.test(gonderen.url || ''))) return;
   if (ileti.kaynak === 'gmail' ? !GMAIL.test(gonderen.url) || !GmailEk.ekTemizle(ileti.ek) : !KIMLIK.test(String(ileti.id || ''))) return;
@@ -207,7 +230,7 @@ chrome.runtime.onMessage.addListener((ileti, gonderen, yanit) => {
     yanit(anahtar ? { anahtar } : {});
     return;
   }
-  // Google'ın görüntüleyicisinin yapısı tanınmadığında çıkan "UDF olarak aç" düğmesi: belge yeni sekmede açılır.
+  // Google'ın görüntüleyicisinin yapısı tanınmadığında çıkan "UDF olarak aç" düğmesi: Belge yeni sekmede açılır.
   if (ileti.tur === 'udf-ac') {
     let anahtar = null;
     try { anahtar = kayitYaz(ileti, gonderen.tab.id); } catch { /* geçersiz dosya bilgisi */ }

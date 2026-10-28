@@ -11,7 +11,7 @@ const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Doküman Editörü simgesinin ölçülen ana rengi. Büyük çizim 128'lik alanın ortasındaki 96'lık kısımdadır (Chrome'un
 // önerdiği 16 px saydam kenar, mağaza simgesi de bu). 48 px'te kenar daraltılır: Görüntüleyicinin başlığında 28 px'e
 // küçülünce çizim fazla küçük kalmasın. 16 ve 32 px'te yazı okunmadığı için rozet yazısızdır,
-// kâğıt geniş tutulur (araç çubuğunda dar görünmesin, kullanıcı isteği, 2026-10-27), şekiller tam piksellerde durur.
+// kâğıt geniş tutulur (araç çubuğunda dar görünmesin), şekiller tam piksellerde durur.
 const MAVI = '#4285F4', YESIL = '#34A853', SARI = '#FBBC05', KIRMIZI = '#c42127', KENAR = '#bdc1c6', KIVRIM = '#dadce0';
 const buyukSvg = (viewBox = '0 0 128 128') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="100%" height="100%">
   <g transform="translate(4 0)"><path d="M42 17H80L104 41V103A8 8 0 0 1 96 111H42A8 8 0 0 1 34 103V25A8 8 0 0 1 42 17Z" fill="#fff" stroke="${KENAR}" stroke-width="2" stroke-linejoin="round"/>

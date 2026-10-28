@@ -268,6 +268,13 @@ export async function driveSina(udfYolu, ekranYolu) {
   const { sunucu, istekler, port } = await sunucuKur(bayt, sunucuAyari);
   const o = await oturumKur({ port });
   const { c, eklenti, s, deger, satir, ciftTikla, tus, cerceveBul, belgeDurumu, gommeDurumu, sekmeHedefleri } = o;
+  // Gömülü çubukta görünen düğmeler ve yazılar. innerText görünmeyen öğeleri (display: none, hidden) almaz: Rozetin yazısı da
+  // görünen yazısıdır (iki biçimli rozette yalnız görünen biçim).
+  const cubukIcerigi = g => deger(g, "({ notlar: !document.getElementById('notlar-paneli').hidden, not: document.querySelectorAll('#not-listesi li').length, rozet: [...document.querySelectorAll('#rozetler .rozet')].map(r => r.innerText), dugmeler: [...document.querySelectorAll('.cubuk button')].filter(d => d.checkVisibility()).map(d => d.id), yazilar: document.querySelector('.cubuk').innerText.split('\\n').map(s => s.trim()).filter(Boolean) })");
+  // Çubukta yazı olarak yalnız rozetler, not sayısı, ölçek ve "Yazdır / PDF" görünür.
+  const cubukYazilariDuzgun = ek => ek.yazilar.every(y => ek.rozet.includes(y) || y === String(ek.not) || /^%\d+$/.test(y) || y === 'Yazdır / PDF');
+  // E-imzası içerikle karşılaştırılamayan belgedeki nötr rozetin title'ı (her nedende aynı).
+  const KARSILASTIRILAMADI_ACIKLAMA = 'Belgede e-imza dosyası var, ama belge içeriğiyle karşılaştırılamadı (örneğin içindeki özet okunamadı ya da imza dosyası tek değil). İmza ve sertifika doğrulanmaz.';
   const cspIhlalleri = await cspIzle(c, eklenti);
   try {
     console.log('— Drive’ın içinde görünümü (varsayılan)');
@@ -290,18 +297,19 @@ export async function driveSina(udfYolu, ekranYolu) {
       sonuc('dosya bir kez istenir, arka plan görüntüleyici yüklenirken indirmeye başlar', d1.length === 1 && hazir > 0 && d1[0].zaman < hazir,
         `${d1.length} istek · istek görüntüleyicinin hazır olmasından ${hazir - (d1[0] ? d1[0].zaman : 0)} ms önce`);
     }
-    sonuc('gömme yeri: ana alanın gölge kökünde, çubuğun altında, Drive içeriği ve "Yorum" düğmesi gizli, oklar üstte', gom.var && gom.golgede && gom.yorum === false && gom.gizli === 1 && gom.ust === 112 && gom.alt === 0 && gom.en === gom.anaEn && gom.kartGizli && gom.okUstte && gom.sayi === 1,
+    sonuc('gömme yeri: Ana alanın gölge kökünde, çubuğun altında, Drive içeriği ve "Yorum" düğmesi gizli, oklar üstte', gom.var && gom.golgede && gom.yorum === false && gom.gizli === 1 && gom.ust === 112 && gom.alt === 0 && gom.en === gom.anaEn && gom.kartGizli && gom.okUstte && gom.sayi === 1,
       JSON.stringify(gom));
     if (ekranYolu && f) {
       await ifadeBekle(f.g, "[...document.querySelectorAll('.udf-resim img')].every(x => x.complete)", 5000).catch(() => {});
       fs.writeFileSync(ekranYolu, Buffer.from((await s.g('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
       console.log('ekran görüntüsü:', ekranYolu);
     }
-    sonuc('gömülü kip: koyu hap altta, odak belgede', kip === 'fixed' && gom.odak, `kip=${kip} · odak=${gom.odak}`);
-    const ek = f ? await deger(f.g, "({ notlar: !document.getElementById('notlar-paneli').hidden, not: document.querySelectorAll('#not-listesi li').length, rozet: [...document.querySelectorAll('#rozetler .rozet')].map(r => r.textContent), sekme: !!document.getElementById('dugme-sekme'), kod: /doğrulama/i.test(document.querySelector('.cubuk').textContent) })") : null;
+    sonuc('gömülü kip: Koyu hap altta, odak belgede', kip === 'fixed' && gom.odak, `kip=${kip} · odak=${gom.odak}`);
+    const ek = f ? await cubukIcerigi(f.g) : null;
     sonuc('notlu belgede not bölmesi kendiliğinden açık', !!ek && ek.notlar && ek.not > 0, JSON.stringify(ek));
-    sonuc('e-imzalı belgede yalnız "E-imzalıdır" yazar', !!ek && ek.rozet.filter(r => /imza/i.test(r)).join() === 'E-imzalıdır', ek ? ek.rozet.join(' | ') : '');
-    sonuc('gömülü çubukta "Yeni sekmede aç" ve doğrulama kodu yok', !!ek && !ek.sekme && !ek.kod, JSON.stringify(ek));
+    sonuc('e-imza özeti içerikle tutan belgede yalnız "E-imzalıdır" yazar', !!ek && ek.rozet.filter(r => /imza/i.test(r)).join() === 'E-imzalıdır', ek ? ek.rozet.join(' | ') : '');
+    sonuc('gömülü çubukta yalnız notlar, yakınlaştırma ve "Yazdır / PDF" düğmeleri, yazı olarak yalnız rozetler, not sayısı ve ölçek',
+      !!ek && ek.dugmeler.join() === 'dugme-notlar,dugme-uzak,olcek,dugme-yakin,dugme-yazdir' && cubukYazilariDuzgun(ek), JSON.stringify(ek));
     // D1c. Drive ana alanı ve çubuğu yeniden çizer (kendi koymadığı çocukları siler): Belge yerinde kalır, yeniden kaydedilmez ve
     // indirilmez, Drive'ın yeni içeriği ve yeni Yorum düğmesi de gizlenir.
     if (f) {
@@ -480,7 +488,7 @@ export async function driveSina(udfYolu, ekranYolu) {
       const basim = await deger(f.g, 'window.__basim');
       const cerceveBasligi = await deger(f.g, 'window.__basimBasligi');
       const gecikme = (await deger(f.g, 'window.__basimZamani || 0')) - basladi;
-      sonuc('Ctrl+P: belge hemen yazdırılır, Drive sekmesinin başlığı değişmez', basliklar.length === 0 && basim === 1 && gecikme < 1500 && cerceveBasligi === 'Dilekce',
+      sonuc('Ctrl+P: Belge hemen yazdırılır, Drive sekmesinin başlığı değişmez', basliklar.length === 0 && basim === 1 && gecikme < 1500 && cerceveBasligi === 'Dilekce',
         `Drive başlık değişikliği: ${JSON.stringify(basliklar)} · baskı: ${basim} · ${gecikme} ms · çerçeve başlığı: ${cerceveBasligi}`);
       // Odak Drive'dayken Ctrl+P da belgeyi yazdırır (Drive'ınki değil).
       await deger(s.g, "document.getElementById('baslik').tabIndex = -1; document.getElementById('baslik').focus(); 1");
@@ -696,6 +704,41 @@ export async function driveSina(udfYolu, ekranYolu) {
       await bekle(500);
     }
 
+    // D11. E-imza dosyasının özeti okunamayan belge (içerikle karşılaştırılamaz): Gömülü çubukta nötr rozet, tam açıklama
+    // title'da. Geniş pencerede uzun yazı, dar pencerede (eşit yanlar sığmayınca) kısa yazı. İkisinde de yakınlaştırma
+    // çubuğun ortasında, rozet kırpılmaz, düğmeler hapın içinde, çubukta yazı olarak yalnız görünen rozet yazısı ve ölçek.
+    {
+      sunucuAyari.bayt = fs.readFileSync(path.join(KOK, 'testler', 'ornekler', 'imza-okunamayan.udf'));
+      await ciftTikla(s.g, await satir(KIMLIK.udf));
+      f = await cerceveBul();
+      durum = f ? await belgeDurumu(f.g) : 'çerçeve yok';
+      const olc = async en => {
+        if (en) await s.g('Emulation.setDeviceMetricsOverride', { width: en, height: 900, deviceScaleFactor: 1, mobile: false });
+        await bekle(600);
+        return f ? { ...await deger(f.g, `(() => {
+          const k = e => e.getBoundingClientRect();
+          const c = k(document.querySelector('.cubuk')), z = k(document.getElementById('olcek-grup')), rz = k(document.getElementById('rozetler'));
+          const r = document.querySelector('#rozetler .rozet'), rr = k(r);
+          const gorunen = [...document.querySelectorAll('.cubuk-sag .dugme, #rozetler .rozet')].filter(e => e.offsetParent).map(k);
+          return { yazi: r.innerText, sinif: r.className, title: r.title, kisa: document.querySelector('.cubuk').classList.contains('kisa'),
+            sikisik: document.querySelector('.cubuk').classList.contains('sikisik'), fark: Math.abs((c.left + c.right) / 2 - (z.left + z.right) / 2),
+            kirpik: rr.left < rz.left - 0.5 || rr.right > rz.right + 0.5, tasan: gorunen.filter(b => b.left < c.left - 1 || b.right > c.right + 1).length };
+        })()`), icerik: await cubukIcerigi(f.g) } : null;
+      };
+      const genis = await olc(0), dar = await olc(640);
+      await s.g('Emulation.clearDeviceMetricsOverride');
+      await bekle(500);
+      delete sunucuAyari.bayt;
+      // Çubuğun yazıları da D1'deki gibi: Görünen rozet yazısı, not sayısı, ölçek ve "Yazdır / PDF".
+      const duzgun = o => !!o && o.sinif === 'rozet' && o.title === KARSILASTIRILAMADI_ACIKLAMA && !o.sikisik &&
+        o.fark <= 1 && !o.kirpik && o.tasan === 0 && o.icerik.rozet.join() === o.yazi && cubukYazilariDuzgun(o.icerik);
+      sonuc('e-imzası içerikle karşılaştırılamayan belge: Nötr rozet, genişte uzun, darda kısa yazı, yakınlaştırma ortada', /^BELGE: metin var/.test(durum) &&
+        duzgun(genis) && genis.yazi === 'E-imza dosyası var, içerikle karşılaştırılamadı' && !genis.kisa &&
+        duzgun(dar) && dar.yazi === 'E-imza karşılaştırılamadı' && dar.kisa, `${durum} · geniş: ${JSON.stringify(genis)} · 640 px: ${JSON.stringify(dar)}`);
+      await tus(s.g, 'Escape');
+      await bekle(500);
+    }
+
     // ================================================================ Büyük görünüm (yeni sekme)
     console.log('— Büyük görünüm');
     const goruntuleyiciBekle = (sure = 10000) => c.olayBekle(m => (m.method === 'Target.targetCreated' || m.method === 'Target.targetInfoChanged') &&
@@ -710,7 +753,7 @@ export async function driveSina(udfYolu, ekranYolu) {
     };
 
     // Y1. Drive'ın görüntüleyicisinin yapısı tanınmazsa üstte "UDF olarak aç" düğmesi çıkar, belge yeni sekmede (büyük
-    // görünümde) açılır. Büyük görünüme yalnız bu yol götürür (gömülü çubukta "Yeni sekmede aç" düğmesi yok).
+    // görünümde) açılır. Büyük görünüme yalnız bu yol götürür (gömülü çubuğun düğmeleri D1'de sınanır).
     // Düğme kapalı gölge kökte: CDP'nin DOM ağacından bulunup gerçek fare tıklamasıyla basılır.
     {
       const y = await sekmeAc(c, `https://drive.google.com/file/d/${KIMLIK.udf}/view?yapisiz=1`);
@@ -801,26 +844,28 @@ export async function driveSina(udfYolu, ekranYolu) {
       const ekranda = await dolgu();
       await b.g('Emulation.setEmulatedMedia', { media: 'print' });
       const baskida = await dolgu();
-      sonuc('gömülü görünüm: alt boşluk ekranda var, baskıda yok', ekranda === '96px' && baskida === '0px', `ekran ${ekranda} · baskı ${baskida}`);
+      sonuc('gömülü görünüm: Alt boşluk ekranda var, baskıda yok', ekranda === '96px' && baskida === '0px', `ekran ${ekranda} · baskı ${baskida}`);
       await c.gonder('Target.closeTarget', { targetId: b.targetId });
     }
 
-    // B2. Çubuğun sol yanı (gömülü görünümle aynı kod): e-imzalıda "E-imzalıdır"; e-imzasız ve notsuzda "E-imzasız" (sol yan
-    // boş kalmasın); e-imzasız notluda rozet yok, solda Notlar durur. Notlar düğmesi yazısız: simge ve not sayısı.
+    // B2. Çubuğun sol yanı (gömülü görünümle aynı kod). E-imza dosyasındaki özet içerikle tutan belgede "E-imzalıdır", tutmayanda
+    // uyarı, özeti okunamayanda nötr "E-imza dosyası var, içerikle karşılaştırılamadı" (tam açıklama title'da). E-imzasız ve
+    // notsuzda "E-imzasız" (sol yan boş kalmasın), e-imzasız notluda rozet yok, solda Notlar durur. Notlar düğmesi yazısız:
+    // Simge ve not sayısı. Rozetin yazısı görünen yazıdır (innerText).
     {
       const b = await sekmeAc(c, `chrome-extension://${eklenti}/goruntule.html`);
       await ifadeBekle(b.g, "document.readyState === 'complete' && !!document.getElementById('dosya-sec')");
       const durumlar = [];
-      for (const ad of ['dilekce.udf', 'yatay-a5.udf', 'notlu-imzasiz.udf']) {
+      for (const ad of ['dilekce.udf', 'yatay-a5.udf', 'notlu-imzasiz.udf', 'imza-bozuk.udf', 'imza-okunamayan.udf']) {
         const { root } = await b.g('DOM.getDocument', { depth: 0 });
         const { nodeId } = await b.g('DOM.querySelector', { nodeId: root.nodeId, selector: '#dosya-sec' });
         await b.g('DOM.setFileInputFiles', { files: [path.join(KOK, 'testler', 'ornekler', ad)], nodeId });
         await ifadeBekle(b.g, `document.getElementById('belge-adi').textContent === ${JSON.stringify(ad)} && !!document.querySelector('.udf-sayfa')`);
-        durumlar.push(await deger(b.g, `(() => { const n = document.getElementById('dugme-notlar'); return { ad: ${JSON.stringify(ad)},
-          rozet: [...document.querySelectorAll('#rozetler .rozet')].map(r => r.textContent).join('|'),
+        durumlar.push(await deger(b.g, `(() => { const n = document.getElementById('dugme-notlar'), r = [...document.querySelectorAll('#rozetler .rozet')]; return { ad: ${JSON.stringify(ad)},
+          rozet: r.map(e => e.innerText).join('|'), sinif: r.map(e => e.className).join('|'), title: r.map(e => e.title).join('|'),
           notlar: n.hidden ? null : { yazi: n.textContent.trim(), etiket: n.getAttribute('aria-label') } }; })()`));
       }
-      const [d, y, n] = durumlar;
+      const [d, y, n, t, k] = durumlar;
       // B3. Verisi yarıda kesik resim (başlığı sağlam): <img> onu hatasız ama boş gösterirdi; motor doğrulayıp uyarı yazısı
       // koyar. Yanındaki sağlam resim resim olarak kalır.
       {
@@ -833,22 +878,25 @@ export async function driveSina(udfYolu, ekranYolu) {
         sonuc('bozuk resim yerine "[Resim gösterilemedi]", sağlam resim gösterilir', !!bozuk && bozuk.red.length === 1 && bozuk.red[0] === '[Resim gösterilemedi]' &&
           bozuk.img === 1 && bozuk.yuklu, JSON.stringify(bozuk));
       }
-      sonuc('rozet: e-imzalıda "E-imzalıdır", e-imzasız notsuzda "E-imzasız", e-imzasız notluda yok; Notlar yazısız (sayı)',
-        d.rozet === 'E-imzalıdır' && y.rozet === 'E-imzasız' && n.rozet === '' && !y.notlar && !!d.notlar && d.notlar.yazi === '1' &&
-        d.notlar.etiket === 'Notlar (1)' && !!n.notlar && n.notlar.yazi === '1', JSON.stringify(durumlar));
+      sonuc('rozet: Özet tutunca "E-imzalıdır", tutmayınca uyarı, okunamayınca nötr "içerikle karşılaştırılamadı", e-imzasız notsuzda "E-imzasız", e-imzasız notluda yok, Notlar yazısız (sayı)',
+        d.rozet === 'E-imzalıdır' && d.sinif === 'rozet' && y.rozet === 'E-imzasız' && n.rozet === '' && !y.notlar && !!d.notlar && d.notlar.yazi === '1' &&
+        d.notlar.etiket === 'Notlar (1)' && !!n.notlar && n.notlar.yazi === '1' &&
+        t.rozet === 'E-imza içerikle uyuşmuyor' && t.sinif === 'rozet uyari' &&
+        k.rozet === 'E-imza dosyası var, içerikle karşılaştırılamadı' && k.sinif === 'rozet' &&
+        k.title === KARSILASTIRILAMADI_ACIKLAMA, JSON.stringify(durumlar));
       await c.gonder('Target.closeTarget', { targetId: b.targetId });
     }
 
-    // ================================================================ Eklenti simgesi
-    // E1. Simgenin eylemi yok (açılır pencere, tıklama), geliştiricinin X sayfası eklentinin bilgilerinde (homepage_url).
-    // Eklentinin ek izni ve depolama izni yok: Sayfalarında chrome.storage tanımsız.
-    console.log('— Eklenti simgesi');
+    // ================================================================ Eklentinin bilgileri ve izinleri
+    // E1. Manifest'te action yok (chrome.action tanımsız), geliştiricinin X sayfası eklentinin bilgilerinde (homepage_url).
+    // Eklentinin izni yok: Sayfalarında chrome.storage tanımsız.
+    console.log('— Eklentinin bilgileri ve izinleri');
     const p = await sekmeAc(c, `chrome-extension://${eklenti}/goruntule.html`);
     for (const a of ['Runtime.enable', 'Page.enable']) await p.g(a);
     await ifadeBekle(p.g, "document.readyState === 'complete'");
     const simge = await deger(p.g, `(async () => ({ eylemYok: chrome.runtime.getManifest().action === undefined && !chrome.action,
       site: chrome.runtime.getManifest().homepage_url, depo: typeof chrome.storage, izinler: (await chrome.permissions.getAll()).permissions }))()`);
-    sonuc('simgenin eylemi yok, geliştirici eklentinin bilgilerinde, izin ve depo yok', simge.eylemYok && simge.site === 'https://x.com/CgrShn' &&
+    sonuc("manifest'te action yok, geliştirici eklentinin bilgilerinde, izin ve depo yok", simge.eylemYok && simge.site === 'https://x.com/CgrShn' &&
       simge.depo === 'undefined' && simge.izinler.length === 0, JSON.stringify(simge));
 
     // S8. Eklenti yeniden yüklenince (güncelleme; chrome://extensions'tan kapatınca ya da kaldırınca da betiğin bağlamı aynı
@@ -893,7 +941,7 @@ export async function driveSina(udfYolu, ekranYolu) {
     const durum = f ? await o2.belgeDurumu(f.g) : 'çerçeve yok';
     const udfIstekleri = s2.istekler.filter(i => i.id === KIMLIK.udf);
     const arkaplandanNoneli = udfIstekleri.length === 1 && /ornekNone/.test(udfIstekleri[0].cerez);
-    sonuc('çerezler kapalı: belge arka plan yoluyla gelir, tek istek', /^BELGE: metin var/.test(durum) && arkaplandanNoneli,
+    sonuc('çerezler kapalı: Belge arka plan yoluyla gelir, tek istek', /^BELGE: metin var/.test(durum) && arkaplandanNoneli,
       `${durum} · istek: ${udfIstekleri.length} · None'lu: ${arkaplandanNoneli}`);
   } finally {
     o2.c.kapat();

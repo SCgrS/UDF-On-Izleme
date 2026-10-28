@@ -1,14 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { motorYukle, modelMetni } from './yardimci.mjs';
-import { ornekler } from '../araclar/ornek-uret.mjs';
+import { ornekler, Belge, udfZip, sahteImza } from '../araclar/ornek-uret.mjs';
 
 const { motor: M, pencere } = motorYukle();
 const O = ornekler();
 const oku = ad => M.oku(new Uint8Array(O[ad]));
 const tumParagraflar = bloklar => bloklar.flatMap(b => b.t === 'p' ? [b] : b.t === 'tablo' ? b.satirlar.flatMap(r => r.hucreler.flatMap(h => tumParagraflar(h.bloklar))) : []);
 
-test('dilekçe: bölüm, üst/alt bilgi, belge özellikleri, imza ve notlar', async () => {
+test('dilekçe: Bölüm, üst/alt bilgi, belge özellikleri, imza ve notlar', async () => {
   const m = await oku('dilekce.udf');
   assert.equal(m.bolumler.length, 2, 'sayfa sonu iki bölüm verir');
   assert.equal(m.ust.bas, 2);
@@ -34,7 +34,7 @@ test('liste numaraları UYAP türlerine göre', async () => {
   assert.equal(M.numaraYaz(7, 'BILINMEYEN'), '7.');
 });
 
-test('paragraf: asılı girinti, sekme durakları, boş paragraf, satır aralığı', async () => {
+test('paragraf: Asılı girinti, sekme durakları, boş paragraf, satır aralığı', async () => {
   const m = await oku('dilekce.udf');
   const ps = tumParagraflar(m.bolumler[0]);
   const davaci = ps.find(p => p.parcalar.some(c => c.yazi === 'DAVACI'));
@@ -54,7 +54,7 @@ test('paragraf: asılı girinti, sekme durakları, boş paragraf, satır aralı�
   assert.ok(!metin.includes('\u00b8'), 'resim yer tutucusu metin olarak çizilmez');
 });
 
-test('tablo: kenarlık türü ve satır düzeyinde birleştirme', async () => {
+test('tablo: Kenarlık türü ve satır düzeyinde birleştirme', async () => {
   const m = await oku('dilekce.udf');
   const t = m.bolumler[0].find(b => b.t === 'tablo');
   assert.equal(t.kenar, 'hucre');
@@ -91,7 +91,173 @@ test('hatalı ve kötü niyetli dosyalar', async () => {
   await assert.rejects(M.oku(new Uint8Array(0)), e => e.kod === 'bos');
 });
 
-test('çizim: girinti, işaret, sekme, not, üst bilgi aralığı ve güvenlik', async () => {
+test('e-imza içerikle karşılaştırılamazsa durum "bilinmiyor": Özet okunamaz, uzunluğu tanınmaz ya da imza dosyası kökte tek değil', async () => {
+  const BILINMIYOR = { var: true, durum: 'bilinmiyor' };
+  assert.deepEqual((await oku('imza-okunamayan.udf')).imza, BILINMIYOR, 'özniteliğin değer kümesi bozuk');
+  const b = new Belge();
+  const icerik = Buffer.from(b.xml({ ogeler: [b.paragraf({}, [['İmzalı metin']])] }), 'utf8');
+  const imzasi = async (...ekler) => (await M.oku(new Uint8Array(udfZip([['content.xml', icerik], ...ekler])))).imza;
+  // messageDigest özniteliği, verilen uzunlukta özetle (MD5 uzunluğu 16 bayt: Desteklenen bir özet algoritması yok).
+  const oid = [0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x09, 0x04];
+  const ozetli = ozet => Buffer.from([0x30, oid.length + 4 + ozet.length, ...oid, 0x31, ozet.length + 2, 0x04, ozet.length, ...ozet]);
+  assert.deepEqual(await imzasi(['sign.sgn', Buffer.from([0])]), BILINMIYOR, 'tek baytlık imza dosyası');
+  assert.deepEqual(await imzasi(['sign.sgn', ozetli(Buffer.alloc(16, 7))]), BILINMIYOR, '16 baytlık özet');
+  assert.deepEqual(await imzasi(['x/sign.sgn', sahteImza(icerik)]), BILINMIYOR, 'imza dosyası yalnız alt klasörde');
+  assert.deepEqual(await imzasi(['sign.sgn', sahteImza(icerik)], ['SIGN.SGN', sahteImza(icerik)]), BILINMIYOR, 'iki imza dosyası');
+  assert.deepEqual(await imzasi(['sign.sgn', sahteImza(icerik)]), { var: true, durum: 'tutarli', algoritma: 'SHA-256' });
+  assert.equal(await imzasi(), null, 'imza dosyası yok');
+});
+
+test('okuma ek dosyalar açılırken ya da e-imza özeti hesaplanırken iptal edilirse AbortError ile biter, içeriğin hatasıyla bitmez', async () => {
+  const b = new Belge();
+  const saglam = Buffer.from(b.xml({ ogeler: [b.paragraf({}, [['Metin']])] }), 'utf8');
+  const bozuk = Buffer.from('<template><content>', 'utf8');
+  const iptalMi = e => e && e.name === 'AbortError';
+  // E-imza özeti hesaplanırken: Özet hesabı başlayınca okuma iptal edilir, özet yine de döner.
+  const subtle = globalThis.crypto.subtle;
+  for (const [ad, icerik] of [['sağlam içerik', saglam], ['bozuk XML', bozuk]]) {
+    const d = new AbortController();
+    subtle.digest = function (...a) { d.abort(); return Object.getPrototypeOf(subtle).digest.apply(this, a); };
+    try {
+      await assert.rejects(M.oku(new Uint8Array(udfZip([['content.xml', icerik], ['sign.sgn', sahteImza(icerik)]])), { signal: d.signal }), iptalMi, 'özet: ' + ad);
+    } finally { delete subtle.digest; }
+  }
+  // Ek dosya açılırken: İptal, ek dosyanın akışı bitip son okuma yanıtlanmadan hemen önce gelir (ek dosya yine de açılır).
+  const Asil = globalThis.DecompressionStream;
+  for (const [ad, icerik] of [['sağlam içerik', saglam], ['bozuk XML', bozuk]]) {
+    const d = new AbortController();
+    let sira = 0;
+    globalThis.DecompressionStream = function (bicim) {
+      const ic = new Asil(bicim);
+      if (++sira <= 2) return ic;   // destek denetimi ve content.xml
+      const okuyucu = ic.readable.getReader();
+      return { writable: ic.writable, readable: new ReadableStream({ async pull(k) {
+        const { done, value } = await okuyucu.read();
+        if (done) { d.abort(); k.close(); } else k.enqueue(value);
+      } }, { highWaterMark: 0 }) };
+    };
+    try {
+      await assert.rejects(M.oku(new Uint8Array(udfZip([['content.xml', icerik], ['documentproperties.xml', '<properties/>']])), { signal: d.signal }), iptalMi, 'ek dosya: ' + ad);
+    } finally { globalThis.DecompressionStream = Asil; }
+    assert.ok(sira >= 3, 'ek dosya açıldı');
+  }
+});
+
+test('UDF olmayan ya da gövdesiz sağlam XML "UDF değil" iletisiyle, bozuk XML "XML bozuk" iletisiyle reddedilir', async () => {
+  const hata = async u8 => { try { await M.oku(u8); return 'açıldı'; } catch (e) { return [e.kod, e.message, e.ayrinti]; } };
+  const zip = girdiler => new Uint8Array(udfZip(girdiler));
+  const UDF_DEGIL = 'Dosya bir UDF belgesi değil.';
+  assert.equal(M.ILETI['udf-degil'], UDF_DEGIL);
+  // Adı .udf yapılmış bir metin belgesi (ODT): Zip ve XML sağlam, kök başka.
+  const odt = '<?xml version="1.0" encoding="UTF-8"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0">' +
+    '<office:body><office:text>metin</office:text></office:body></office:document-content>';
+  assert.deepEqual(await hata(zip([['mimetype', 'application/vnd.oasis.opendocument.text'], ['content.xml', odt]])), ['udf-degil', UDF_DEGIL, 'kök']);
+  assert.deepEqual(await hata(new TextEncoder().encode('<?xml version="1.0"?><kok><a/></kok>')), ['udf-degil', UDF_DEGIL, 'kök']);
+  assert.deepEqual(await hata(zip([['content.xml', '<template><content><![CDATA[abc\n]]></content></template>']])), ['udf-degil', UDF_DEGIL, 'elements yok']);
+  assert.deepEqual((await hata(zip([['content.xml', '<template><content>']]))).slice(0, 2), ['xml', M.ILETI.xml], 'bozuk XML');
+  const baska = await M.oku(zip([['content.xml', '<document><content><![CDATA[abc\n]]></content><elements><paragraph><content startOffset="0" length="4"/></paragraph></elements></document>']]));
+  assert.equal(modelMetni(baska.bolumler[0])[0], 'abc', 'kökü başka adlı ama gövdesi olan belge açılır');
+});
+
+test('"default" stiline bağlı yaprak belge tabanını alır, tanımsız stile bağlı yaprak paragrafı devralır', async () => {
+  const b = new Belge();
+  const stiller = '<style name="edf_2" resolver="hvl-default" size="20" bold="true" />';
+  const ogeler = [b.paragraf({ resolver: 'edf_2' }, [['V', { resolver: 'default' }], ['K', { resolver: 'hvl-default' }], ['T', { resolver: 'yok_stil' }], ['S', { resolver: '' }]])];
+  const m = await M.oku(new Uint8Array(udfZip([['content.xml', b.xml({ ogeler, stiller })]])));
+  const p = m.bolumler[0][0];
+  const stil = st => [st.aile, st.punto, st.kalin];
+  assert.deepEqual(stil(p.stil), ['Times New Roman', 20, true]);
+  assert.deepEqual(stil(m.taban), ['Times New Roman', 12, false]);
+  const yaprak = yazi => stil(p.parcalar.find(x => x.yazi === yazi).stil);
+  assert.deepEqual(yaprak('V'), stil(m.taban), '"default": Belge tabanı (paragraf da Dialog da değil)');
+  assert.deepEqual(yaprak('K'), stil(m.taban), 'kendi stili olan yaprak paragrafı devralmaz');
+  assert.deepEqual(yaprak('T'), stil(p.stil), 'tanımsız stil adı yok sayılır');
+  assert.deepEqual(yaprak('S'), stil(p.stil), 'stilsiz yaprak paragrafı devralır');
+});
+
+test('altı ve üstü çizgi ile zemin metin parçasına kendi stilinden verilir, sayfaya ve paragrafa verilmez', async () => {
+  const ciz = async xml => { const g = M.ciz(await M.oku(new Uint8Array(udfZip([['content.xml', xml]]))), { belge: pencere.document }); await g.bitti; return g; };
+  const susleme = e => [e.style.getPropertyValue('text-decoration-line'), e.style.getPropertyValue('background-color')];
+  const SARI = 'rgb(255, 255, 0)';
+  // Belge tabanında (hvl-default) çizgi ve zemin: Stilli ve stilsiz bütün yapraklar çizilir.
+  const b = new Belge();
+  const xml = b.xml({ ogeler: [b.paragraf({}, [['Taban'], ['Paragraftan', { resolver: '' }]])] })
+    .replace('<style name="hvl-default" family="Times New Roman" size="12"', '$& underline="true" strikethrough="true" background="-256"');
+  const g = await ciz(xml);
+  const p = g.kok.querySelector('.udf-p');
+  assert.deepEqual(susleme(g.kok.querySelector('.udf-sayfa')), ['', '']);
+  assert.deepEqual(susleme(p), ['', '']);
+  assert.deepEqual([...p.children].map(susleme), [['underline line-through', SARI], ['underline line-through', SARI]]);
+  g.birak();
+  // Paragrafta çizgi ve zemin: Stilsiz yaprak (ve sekmesi) devralır, kendi stili olan yaprak devralmaz.
+  const b2 = new Belge();
+  const g2 = await ciz(b2.xml({ ogeler: [b2.paragraf({ underline: 'true', background: '-256' }, [['Kendi', { resolver: 'hvl-default' }], ['Devralan\tsekmeden sonra', { resolver: '' }]])] }));
+  const p2 = g2.kok.querySelector('.udf-p');
+  assert.deepEqual(susleme(p2), ['', '']);
+  const parca = metin => [...p2.children].find(e => e.textContent === metin);
+  assert.deepEqual(susleme(parca('Kendi')), ['', '']);
+  assert.deepEqual(susleme(parca('Devralan')), ['underline', SARI]);
+  assert.deepEqual(susleme(parca('sekmeden sonra')), ['underline', SARI]);
+  const sekme = p2.querySelector('.udf-sekme');
+  assert.deepEqual(susleme(sekme), ['', SARI], 'sekmenin zemini boyanır, çizgisi öncü çizgisiyle');
+  assert.equal(sekme.style.getPropertyValue('border-bottom-style'), 'solid');
+  g2.birak();
+});
+
+test('not vurgusu ve seçili not metnin zemininin üstüne binen katmandır, kâğıda yalnız zemin basılır', async () => {
+  const kurallar = metin => [...metin.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(k => ({ secici: k[1].split(',').map(x => x.trim()), govde: k[2] }));
+  const i = M.CSS.indexOf('@media print');
+  const ekran = kurallar(M.CSS.slice(0, i)), baski = kurallar(M.CSS.slice(i));
+  const notKurallari = liste => liste.filter(k => k.secici.some(s => s.includes('.udf-notlu')));
+  // Ekranda vurgu background-image ile verilir: Metin parçasının satır içi background-color'ı onu örtmez.
+  for (const secici of ['.udf-gorunum .udf-notlu', '.udf-gorunum .udf-notlu.secili']) {
+    const k = ekran.find(x => x.secici.includes(secici));
+    assert.match(k.govde, /background-image:linear-gradient\(rgba\(/, secici);
+  }
+  assert.ok(notKurallari(ekran).every(k => !/background(-color)?:/.test(k.govde)), 'not kuralı zemin rengini değiştirmez');
+  // Kâğıtta vurgu (seçili not dâhil) kalkar, zemin rengine dokunulmaz.
+  const kagit = notKurallari(baski);
+  assert.ok(kagit.some(k => k.secici.includes('.udf-gorunum .udf-notlu') && k.secici.includes('.udf-gorunum .udf-notlu.secili') && /background-image:none/.test(k.govde)));
+  assert.ok(kagit.every(k => !/background(-color)?:/.test(k.govde)));
+
+  // Zemini paragraftan gelen notlu parça: Zemin satır içi, vurgu sınıfla.
+  const b = new Belge();
+  const icerik = b.xml({ ogeler: [b.paragraf({ background: '-256' }, [['Notlu', { resolver: '' }]])] });
+  const yorum = '<?xml version="1.0"?><template><content><![CDATA[Not\n]]></content><elements><comment strtOffs="0" endOffs="5"><paragraph><content startOffset="0" length="3"/></paragraph></comment></elements></template>';
+  const g = M.ciz(await M.oku(new Uint8Array(udfZip([['content.xml', icerik], ['comments.xml', yorum]]))), { belge: pencere.document });
+  await g.bitti;
+  const n = g.kok.querySelector('.udf-notlu');
+  assert.equal(n.textContent, 'Notlu');
+  assert.equal(n.style.getPropertyValue('background-color'), 'rgb(255, 255, 0)');
+  g.birak();
+});
+
+test('hata iletileri cümle cümle yazılır', () => {
+  for (const [kod, ileti] of Object.entries(M.ILETI)) {
+    assert.ok(!ileti.includes(';') && !ileti.includes('  '), kod);
+    assert.match(ileti, /^\p{Lu}.*\.$/u, kod);
+    // Noktadan ve iki noktadan sonra büyük harf.
+    for (const c of ileti.split(/(?<=[.:]) /).slice(1)) assert.match(c, /^\p{Lu}/u, `${kod}: ${c}`);
+  }
+});
+
+test('liste numarası ve madde işareti ekran okuyucudan gizlenmez, paragrafın ilk öğesidir', async () => {
+  const g = M.ciz(await oku('dilekce.udf'), { belge: pencere.document });
+  await g.bitti;
+  const isaretler = [...g.kok.querySelectorAll('.udf-isaret')];
+  assert.ok(isaretler.some(e => e.textContent === '1-') && isaretler.some(e => e.textContent === '•'));
+  for (const im of isaretler) {
+    assert.equal(im.closest('[aria-hidden]'), null, im.textContent);
+    assert.equal(im.parentElement.firstChild, im, 'okuma sırasında numara metinden önce gelir');
+    // Görünüm aynı: Numara sağa yaslı, madde işareti metnin soluna, ikisi de çizgisiz ve zeminsiz.
+    assert.ok(im.style.getPropertyValue(im.textContent === '•' ? 'left' : 'right'));
+    assert.equal(im.style.getPropertyValue('text-decoration-line') + im.style.getPropertyValue('background-color'), '');
+  }
+  for (const s of g.kok.querySelectorAll('.udf-sekme')) assert.equal(s.getAttribute('aria-hidden'), 'true', 'sekme boşluğu gizli kalır');
+  g.birak();
+});
+
+test('çizim: Girinti, işaret, sekme, not, üst bilgi aralığı ve güvenlik', async () => {
   const m = await oku('dilekce.udf');
   const g = M.ciz(m, { belge: pencere.document });
   await g.bitti;
@@ -143,7 +309,7 @@ test('resimler <img>: tek blob adresi (antet her bölümde aynı), kapanınca b�
   assert.ok(resimler.every(r => !r.hasAttribute('src')), 'kapanınca adresler bırakılır');
 });
 
-test('resim baytları: tarayıcının base64 çeviricisiyle (fromBase64) ve onsuz aynı', async () => {
+test('resim baytları: Tarayıcının base64 çeviricisiyle (fromBase64) ve onsuz aynı', async () => {
   const { antetliBelge, antetPng } = await import('../araclar/ornek-uret.mjs');
   const { udf } = antetliBelge({ sayfa: 2, paragraf: 1 });
   const beklenen = antetPng(1654, 290, { gurultu: 0.25 });
@@ -159,7 +325,7 @@ test('resim baytları: tarayıcının base64 çeviricisiyle (fromBase64) ve onsu
   try { assert.deepEqual(await resimBaytlari(), beklenen); } finally { delete Uint8Array.fromBase64; }
 });
 
-test('yazdırma CSS: sayfa boyutu, kenar kutuları ve kaçış', async () => {
+test('yazdırma CSS: Sayfa boyutu, kenar kutuları ve kaçış', async () => {
   const css = M.yazdirmaCss(await oku('dilekce.udf'));
   assert.match(css, /@page \{ size: 595\.28pt 841\.89pt;/);
   assert.match(css, /@top-left \{ content: "DENEME MAHKEMESİ";/);

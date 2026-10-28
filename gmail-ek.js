@@ -2,9 +2,9 @@
 // Gmail'in ek ön izlemesi Drive'ın görüntüleyicisinin aynısıdır (2026-10-26'da gerçek Gmail'de ölçüldü): #drive-active-item-info
 // JSON'unda ad var, kimlik boş. Hangi ekin gösterildiği adresten anlaşılmaz: Gmail oklarla öbür eke geçince adresteki
 // messagePartId'yi güncellemiyor. Görüntüleyicide her ek için bir ana alan ([role=main]) iletideki ek sırasıyla durur
-// (Gmail bunları sırayla, gerektikçe ekler). Gösterilen ek: en son tıklanan ek kartının iletisindeki eklerden, etkin ana
-// alanın sırasındaki ek; adı pencerenin adıyla tutmalı. Ekin indirme adresi iletideki ek kartlarından okunur
-// ([download_url] ve a[href*="view=att"]); karartılmış sınıf adları kullanılmaz. Okunan değerler sıkı biçimde doğrulanır,
+// (Gmail bunları sırayla, gerektikçe ekler). Gösterilen ek: En son tıklanan ek kartının iletisindeki eklerden, etkin ana
+// alanın sırasındaki ek. Adı pencerenin adıyla tutmalı. Ekin indirme adresi iletideki ek kartlarından okunur
+// ([download_url] ve a[href*="view=att"]), karartılmış sınıf adları kullanılmaz. Okunan değerler sıkı biçimde doğrulanır,
 // indirme adresi yalnız bunlardan yeniden kurulur (sayfadaki adres olduğu gibi kullanılmaz).
 (() => {
   'use strict';
@@ -20,7 +20,7 @@
   const adTemizle = ad => String(ad == null ? '' : ad).normalize('NFC').trim().slice(0, 300);
   const metinMi = (v, d) => typeof v === 'string' && d.test(v);
 
-  // Ek bilgisini doğrular; geçersizse null. au: hesap sırası (/mail/u/<n>/), th: iletinin kimliği (onaltılık).
+  // Ek bilgisini doğrular, geçersizse null. au: Hesap sırası (/mail/u/<n>/), th: İletinin kimliği (onaltılık).
   function ekTemizle(e) {
     if (!e || typeof e !== 'object') return null;
     const au = e.au == null ? null : e.au;
@@ -32,7 +32,7 @@
   }
 
   // Gmail'in ek adresinden ek bilgisi. Gmail'in download_url'ündeki adres bazen "…/mail/u/1/https://mail.google.com/mail/u/1?ui=2…"
-  // biçiminde (2026-10-26 ölçümü): yalnız sorgu ve ilk hesap sırası okunur.
+  // biçiminde (2026-10-26 ölçümü): Yalnız sorgu ve ilk hesap sırası okunur.
   function adrestenEk(adres) {
     const s = String(adres || '');
     const soru = s.indexOf('?');
@@ -46,7 +46,7 @@
     });
   }
 
-  // Ek kartı: download_url="<tür>:<ad>:<adres>" (ad yüzde kodlu) ya da kartın bağlantısı (href; adı yok).
+  // Ek kartı: download_url="<tür>:<ad>:<adres>" (ad yüzde kodlu) ya da kartın bağlantısı (href, adı yok).
   function kartBilgisi(oge) {
     if (!oge || typeof oge.getAttribute !== 'function') return null;
     const du = oge.getAttribute('download_url');
@@ -68,7 +68,7 @@
     return ek ? { ...ek, ad: null } : null;
   }
 
-  // Sayfadaki ekler, sayfadaki sırayla; aynı ek (ileti + attid) bir kez. Adı bilinen kart (download_url) bağlantıdan önce gelir.
+  // Sayfadaki ekler, sayfadaki sırayla. Aynı ek (ileti + attid) bir kez. Adı bilinen kart (download_url) bağlantıdan önce gelir.
   function ekListesi(belge) {
     const ekler = new Map();
     for (const oge of belge.querySelectorAll('[download_url], a[href*="view=att"]')) {
@@ -82,9 +82,33 @@
     return [...ekler.values()];
   }
 
+  // Görüntüleyicinin bilgi öğesi (#drive-active-item-info) ya da null. Gmail'de öğe tektir ve görüntüleyicinin konumu sabit
+  // kök katmanında, ekin kendi ana alanında durur (2026-10-26 ölçümü). Katman pencereyi kaplayan ayrı bir köktür, Gmail'in
+  // kendi ana alanının (posta alanı, role=main) içinde durması beklenmez (ayrıca ölçülmedi, sahte Gmail de dışında kurar).
+  // Bu yüzden yalnız böyle bir öğe kabul edilir: Katman bir ana alanın içinde olmamalı, öğeyle katman arasında en çok bir
+  // ana alan bulunmalı. Böylece e-postanın gövdesine aynı kimlikle konmuş bir öğe (Gmail kimliği koruyorsa) konumu sabit
+  // bir kabın içinde, kendi penceresi ve ana alanıyla da gösterilen dosya sayılmaz. Gmail'in kendi kabuğu konumu sabit
+  // olsaydı (ölçülmedi) gövdedeki ana alansız öğe kabul edilirdi, ama posta alanı gömme yeri olmadığı için yalnız "UDF
+  // olarak aç" düğmesi çıkardı (icerik.js gomulecekAlan). Belgede birden çok varsa hiçbirine güvenilmez.
+  function bilgiOgesi(belge) {
+    const bilgi = belge.getElementById('drive-active-item-info');
+    if (!bilgi || belge.querySelectorAll('#drive-active-item-info').length !== 1) return null;
+    const katman = sabitKatman(bilgi);
+    if (!katman || (katman.parentElement && katman.parentElement.closest('[role="main"]'))) return null;
+    let ana = 0;
+    for (let e = bilgi.parentElement; e && e !== katman; e = e.parentElement) if (e.getAttribute('role') === 'main' && ++ana > 1) return null;
+    return bilgi;
+  }
+  // Öğenin konumu sabit en yakın atası (body hariç) ya da null.
+  function sabitKatman(oge) {
+    const belge = oge.ownerDocument, w = belge.defaultView;
+    for (let e = oge.parentElement; e && e !== belge.body; e = e.parentElement) if (w.getComputedStyle(e).position === 'fixed') return e;
+    return null;
+  }
+
   // Görüntüleyicinin gösterdiği öğe: { bilgi (öğe), id (Gmail ekinde boş), ad }.
   function gorunenOge(belge) {
-    const bilgi = belge.getElementById('drive-active-item-info');
+    const bilgi = bilgiOgesi(belge);
     if (!bilgi) return null;
     let j;
     try { j = JSON.parse(bilgi.textContent || ''); } catch { return null; }
@@ -92,7 +116,7 @@
     return { bilgi, id: typeof j.id === 'string' ? j.id : '', ad: adTemizle(j.title) };
   }
 
-  // Etkin ana alanın, kardeş ana alanlar arasındaki sırası (görüntüleyicideki ek sırası); bulunamazsa -1.
+  // Etkin ana alanın, kardeş ana alanlar arasındaki sırası (görüntüleyicideki ek sırası), bulunamazsa -1.
   function etkinSira(bilgi) {
     const ana = bilgi && bilgi.closest('[role="main"]');
     if (!ana || !ana.parentElement) return -1;
@@ -100,9 +124,9 @@
   }
 
   // Gmail'in ön izlemesinde gösterilen .udf eki: { ...ek, ad } ya da null (Gmail eki değil, .udf değil ya da hangi ek
-  // olduğu kesin değil: Gmail'in kendi kartı kalır, başka bir belge gösterilmez). son: bu ön izlemeyi açan ek kartının
-  // iletisi ({ th }) ya da null. tiklamasizOlur: tıklama bilinmiyorsa sayfadaki iletilerden tahmin edilebilir mi (yalnız
-  // ön izleme açıkken sayfa yenilendiyse; gelen kutusu listesindeki ek düğmesi gibi kartsız açılışta tahmin, sayfada
+  // olduğu kesin değil: Gmail'in kendi kartı kalır, başka bir belge gösterilmez). son: Bu ön izlemeyi açan ek kartının
+  // iletisi ({ th }) ya da null. tiklamasizOlur: Tıklama bilinmiyorsa sayfadaki iletilerden tahmin edilebilir mi (yalnız
+  // ön izleme açıkken sayfa yenilendiyse. Gelen kutusu listesindeki ek düğmesi gibi kartsız açılışta tahmin, sayfada
   // duran başka bir iletinin aynı adlı ekini gösterebilirdi).
   function gosterilenEk(belge, son, { tiklamasizOlur = false } = {}) {
     const o = gorunenOge(belge);
@@ -113,7 +137,7 @@
       if (!iletiler.has(e.th)) iletiler.set(e.th, []);
       iletiler.get(e.th).push(e);
     }
-    // Önce sıradaki ek (adı pencereninkiyle aynıysa); tutmazsa iletide o adda tek ek varsa o. Adı bilinmeyen kart (yalnız
+    // Önce sıradaki ek (adı pencereninkiyle aynıysa), tutmazsa iletide o adda tek ek varsa o. Adı bilinmeyen kart (yalnız
     // bağlantı) yalnız tıklanan iletide ve sırasıyla kabul edilir.
     const sec = (liste, adsizOlur) => {
       const e = sira >= 0 ? liste[sira] : null;
@@ -124,7 +148,7 @@
     // Tıklanan iletide eşleşme belirsizse başka iletiye bakılmaz.
     let bulunan = son ? sec(iletiler.get(son.th) || [], true) : null;
     if (!son && tiklamasizOlur) {
-      // Tıklama bilinmiyor (sayfa ön izleme açıkken yenilendi): yalnız tek bir ileti tutuyorsa.
+      // Tıklama bilinmiyor (sayfa ön izleme açıkken yenilendi): Yalnız tek bir ileti tutuyorsa.
       const adaylar = [...iletiler.values()].map(l => sec(l, false)).filter(Boolean);
       bulunan = adaylar.length === 1 ? adaylar[0] : null;
     }
@@ -154,6 +178,6 @@
   }
 
   globalThis.GmailEk = Object.freeze({
-    udfAdiMi, ekTemizle, adrestenEk, kartBilgisi, ekListesi, gorunenOge, etkinSira, gosterilenEk, indirmeAdresi, sayfaHesabi
+    udfAdiMi, ekTemizle, adrestenEk, kartBilgisi, ekListesi, bilgiOgesi, sabitKatman, gorunenOge, etkinSira, gosterilenEk, indirmeAdresi, sayfaHesabi
   });
 })();

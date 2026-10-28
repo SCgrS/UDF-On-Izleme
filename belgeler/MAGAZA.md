@@ -1,7 +1,8 @@
 # Chrome Web Mağazası metinleri ve görselleri
 
 Mağaza panosundaki (Chrome Web Store Developer Dashboard) alanlara kopyalanacak metinler. Paket:
-`node araclar/paketle.mjs --magaza` (manifest'te `key` yok, mağaza kabul etmiyor). Görseller `belgeler/magaza/`
+`node araclar/paketle.mjs --magaza` (manifest'te `key` yok, mağaza kabul etmiyor). Paket git deposunda üretilir: Ona
+yalnız git'in izlediği dosyalar girer, dosyaları GitHub sürüm zip'iyle aynıdır. Görseller `belgeler/magaza/`
 (`node araclar/tanitim-gorselleri.mjs`, ardından `node araclar/magaza-gorselleri.mjs`).
 
 ## 1. Paket (Package)
@@ -28,11 +29,11 @@ NELER YAPAR
 • Yazdır / PDF: Belgeyi yazdırın ya da PDF olarak kaydedin (Ctrl+P).
 • Yakınlaştırma: −, +. Yüzdeye basınca sayfa pencereye sığar.
 • Notlar: Belgeye Editör'de eklenmiş notlar yan bölmede listelenir. Bir nota basınca işaretlediği yere gidilir.
-• E-imza: Belgede e-imza dosyası varsa "E-imzalıdır" yazar. Belge içeriği imzalanan içerikle uyuşmuyorsa uyarır. (İmza ve sertifika doğrulanmaz.)
+• E-imza: Belgedeki e-imza dosyasının özeti içerikle tutuyorsa "E-imzalıdır" yazar, tutmuyorsa "E-imza içerikle uyuşmuyor" uyarısı çıkar. İmza dosyası içerikle karşılaştırılamıyorsa (ör. özeti okunamıyorsa) "E-imza dosyası var, içerikle karşılaştırılamadı" yazar. (İmza ve sertifika doğrulanmaz.)
 • Ayarı ve açılır penceresi yoktur, kurunca çalışır. Simgeye sağ tıklayınca en üstteki eklenti adı geliştiricinin X sayfasını açar. Kapatmak için chrome://extensions sayfası kullanılır.
 
 GİZLİLİK
-Belgeleriniz hiçbir yere gönderilmez. Eklenti belgeyi yalnız Google'dan, kendi oturumunuzla alır ve yalnız tarayıcınızda gösterir. Drive'da yalnız ön izlemedeki dosyanın kimliğini, adını ve türünü, açık hesabın sırasını, paylaşım bağlantısının erişim anahtarını ve dosya sayfasında sekme başlığını okur. Gmail'de yalnız ön izlemedeki dosyanın adını, açık e-postadaki ek kartlarının indirme bağlantılarını ve hangi karta bastığınızı okur. E-postaların metnine, konusuna ya da kişilere bakmaz. Bir .udf ekinin kartına basınca ek, belge çabuk açılsın diye Gmail sayfasının içinden indirilmeye başlar. Eklenti hiçbir şey saklamaz, hiçbir bilgi toplamaz, bir sunucusu da yoktur.
+Belgeleriniz hiçbir yere gönderilmez. Eklenti belgeyi yalnız Google'dan, kendi oturumunuzla alır ve yalnız tarayıcınızda gösterir. Drive'da yalnız ön izlemedeki dosyanın kimliğini, adını ve türünü, açık hesabın sırasını (adreste yazılıysa e-posta adresini), paylaşım bağlantısının erişim anahtarını ve dosya sayfasında sekme başlığını okur. Gmail'de yalnız ön izlemedeki dosyanın adını, açık e-postadaki ek kartlarının adlarını, indirme bağlantılarını ve hangi karta bastığınızı okur. Bastığınız bağlantının adresine Drive dosyası bağlantısı mı diye bakar, bastığınız son Drive bağlantısının dosya kimliğini ve erişim anahtarını alır. E-postaların metnine, konusuna ya da kişilere bakmaz. Drive dosyası Drive'ın indirme adresinden, Drive'da açık hesabınızla indirilir. Bir .udf ekinin kartına basınca ek, belge çabuk açılsın diye Gmail sayfasının içinden indirilmeye başlar. Eklenti hiçbir şey saklamaz, hiçbir bilgi toplamaz, bir sunucusu da yoktur.
 
 Bu eklenti bağımsızdır. Google, Google Drive, Gmail ya da UYAP ile bağlantılı değildir.
 ```
@@ -63,15 +64,15 @@ destek için `https://x.com/CgrShn` yazılabilir). Yetişkinlere yönelik içeri
 Google Drive'daki ve Gmail'deki UYAP .udf belgelerini Google'ın kendi ön izleme penceresinde görüntülemek, yazdırmak ve PDF olarak kaydetmek.
 ```
 
-**İzinler:** Manifest'te `permissions` yok (izin gerekçesi istenmez). Simgenin açılır penceresi ve tıklama işlevi yoktur,
-geliştiricinin X sayfası manifest'in `author` ve `homepage_url` alanlarındadır.
+**İzinler:** Manifest'te `permissions` yok (izin gerekçesi istenmez). Geliştiricinin X sayfası manifest'in `author` ve
+`homepage_url` alanlarındadır.
 
 **Ana makine izinlerinin gerekçesi** (Host permission justification: `host_permissions`'taki
 drive.usercontent.google.com ile içerik betiğinin çalıştığı drive.google.com ve mail.google.com):
 
 ```
-drive.google.com (yalnız /drive/ ve /file/ sayfaları): Drive'ın ön izleme penceresinde açık olan dosyanın .udf olup olmadığını anlamak ve belgeyi o pencerenin içinde göstermek için. Yalnız ön izlemedeki dosyanın kimliği, adı ve türü, Drive'da açık hesabın sırası, paylaşım bağlantısının erişim anahtarı (resourcekey) ve dosya sayfasında sekmenin başlığı okunur. Sayfanın başka içeriği okunmaz.
-mail.google.com (yalnız /mail/ sayfaları): Gmail'in ek ön izleme penceresinde açık olan ekin .udf olup olmadığını anlamak ve belgeyi o pencerenin içinde göstermek için. Yalnız ön izleme penceresindeki dosyanın adı, açık e-postadaki ek kartlarının indirme bağlantıları ve kullanıcının hangi ek kartına bastığı okunur (e-postadaki bir Drive bağlantısı bu pencerede açılırsa o dosyanın Drive bilgileri). E-postaların metni, konusu, gönderen ve alıcılar okunmaz. Kullanıcı bir .udf ekinin kartına basınca ek, Gmail sayfasının içinden kullanıcının kendi oturumuyla indirilmeye başlar ve yalnız tarayıcının içinde gösterilir. Ön izleme açılmazsa 15 saniye sonra bellekten silinir. Başka hiçbir adrese gönderilmez. Eklenti e-posta göndermez, silmez ya da değiştirmez.
+drive.google.com (yalnız /drive/ ve /file/ sayfaları): Drive'ın ön izleme penceresinde açık olan dosyanın .udf olup olmadığını anlamak ve belgeyi o pencerenin içinde göstermek için. Yalnız ön izlemedeki dosyanın kimliği, adı ve türü, Drive'da açık hesabın sırası (adreste yazılıysa hesabın e-posta adresi), paylaşım bağlantısının erişim anahtarı (resourcekey) ve dosya sayfasında sekmenin başlığı okunur. Sayfanın başka içeriği okunmaz.
+mail.google.com (yalnız /mail/ sayfaları): Gmail'in ek ön izleme penceresinde açık olan ekin .udf olup olmadığını anlamak ve belgeyi o pencerenin içinde göstermek için. Yalnız ön izleme penceresindeki dosyanın adı, açık e-postadaki ek kartlarının adları ile indirme bağlantıları ve kullanıcının hangi ek kartına bastığı okunur. E-postadaki bir Drive dosyası bu pencerede açılırsa o dosyanın Drive bilgileri okunur. Kullanıcının bastığı bağlantının adresine Drive dosyası bağlantısı mı diye bakılır, erişim anahtarı için son basılan Drive bağlantısının dosya kimliği ve erişim anahtarı alınır. E-postaların metni, konusu, gönderen ve alıcılar okunmaz. Kullanıcı bir .udf ekinin kartına basınca ek, Gmail sayfasının içinden kullanıcının kendi oturumuyla indirilmeye başlar ve yalnız tarayıcının içinde gösterilir. Ön izleme açılmazsa en geç 15 saniye sonra bellekten silinir, indirme sürüyorsa kesilir. Başka hiçbir adrese gönderilmez. Eklenti e-posta göndermez, silmez ya da değiştirmez.
 drive.usercontent.google.com: Kullanıcının açtığı .udf dosyasını Drive'ın indirme adresinden, kullanıcının Drive'da açık olan hesabıyla almak için. Dosya yalnız tarayıcının içinde gösterilir. Başka hiçbir adrese gönderilmez.
 ```
 
@@ -90,11 +91,11 @@ UDF Ön İzleme gizlilik politikası
 
 UDF Ön İzleme hiçbir kişisel veri toplamaz, saklamaz ya da üçüncü taraflarla paylaşmaz. Eklentinin bir sunucusu yoktur. Belgeler geliştiriciye ya da Google dışında başka bir sunucuya gönderilmez, yalnız tarayıcınızın içinde gösterilir.
 
-Okunan bilgiler: Google Drive'da yalnız ön izleme penceresindeki dosyanın kimliği, adı ve türü, Drive'da açık olan hesabın sırası, paylaşım bağlantısının erişim anahtarı ve dosya sayfasında sekmenin başlığı. Gmail'de yalnız ön izleme penceresindeki dosyanın adı, açık e-postadaki ek kartlarının indirme bağlantıları ve hangi ek kartına bastığınız (e-postadaki bir Drive bağlantısı bu pencerede açılırsa o dosyanın Drive bilgileri). E-postaların metnine, konusuna ya da kişilere bakılmaz.
+Okunan bilgiler: Google Drive'da yalnız ön izleme penceresindeki dosyanın kimliği, adı ve türü, Drive'da açık olan hesabın sırası (adreste yazılıysa hesabın e-posta adresi), paylaşım bağlantısının erişim anahtarı ve dosya sayfasında sekmenin başlığı. Gmail'de yalnız ön izleme penceresindeki dosyanın adı, açık e-postadaki ek kartlarının adları ile indirme bağlantıları ve hangi ek kartına bastığınız. E-postadaki bir Drive dosyası bu pencerede açılırsa o dosyanın Drive bilgileri. Bastığınız bağlantının adresine Drive dosyası bağlantısı mı diye bakılır, erişim anahtarı için bastığınız son Drive bağlantısının dosya kimliği ve erişim anahtarı alınır. E-postaların metnine, konusuna ya da kişilere bakılmaz.
 
-İndirme: Drive'da açtığınız .udf belgesi Drive'dan, Drive'da açık olan hesabınızla indirilir. Gmail'de bir .udf ekinin kartına bastığınızda ek, Gmail sayfasının içinden kendi oturumunuzla indirilmeye başlar. Ön izleme açılmazsa 15 saniye sonra bellekten silinir.
+İndirme: Drive'da açtığınız .udf belgesi Drive'ın indirme adresinden (drive.usercontent.google.com), Drive'da açık olan hesabınızla indirilir. Gmail'de bir .udf ekinin kartına bastığınızda ek, Gmail sayfasının içinden (mail.google.com) kendi oturumunuzla indirilmeye başlar. Ön izleme açılmazsa ek en geç 15 saniye sonra bellekten silinir, indirme sürüyorsa kesilir.
 
-Saklama: Eklentinin ayarı, geçmişi ya da kaydı yoktur, tarayıcının deposunu kullanmaz. Açılan belgenin bilgisi ve baytları yalnız belge açılırken bellekte durur ve en geç bir dakikada silinir. Belgenin adı sekme başlığına ve adrese konmaz. Reklam, izleme ya da kullanım istatistiği yoktur.
+Saklama: Eklentinin ayarı, geçmişi ya da kaydı yoktur, tarayıcının deposunu kullanmaz. Açılan belgenin bilgisi ve baytları belge açılırken bellekte durur: Bilgisi eklentinin arka planında en geç bir dakikada, baytları indirme bittikten en geç 15 saniye sonra silinir. Belge gösterilirken yalnız ön izleme penceresinin belleğindedir, pencere kapanınca gider. Drive ya da Gmail sekmesinin belleğinde sekme yenilenene ya da kapanana dek yalnız son açılan dosyanın kimliği, Gmail'de bastığınız son ek kartının e-postasının kimliği ve bastığınız son Drive bağlantısının dosya kimliğiyle erişim anahtarı kalabilir. Belgenin adı sekme başlığına ve adrese konmaz. Reklam, izleme ya da kullanım istatistiği yoktur.
 
 Eklentinin ayarı ve açılır penceresi yoktur. Eklentiyi kapatmak için chrome://extensions sayfası kullanılır.
 

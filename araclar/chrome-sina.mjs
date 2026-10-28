@@ -99,8 +99,8 @@ async function gorsel(klasor, cikti) {
 
 // GitHub'ın yeşil Code → Download ZIP'i (HEAD'in git archive'ı, önek <Depo>-main/) Windows'un "Tümünü ayıkla"sı gibi
 // <zip adı>/<Depo>-main/ klasörüne çıkarılır. Eklenti dosyaları depo kökünde olduğu için içteki klasör (manifest.json
-// orada) doğrudan yüklenir (kullanıcı isteği, 2026-10-07: UYAP Haciz Yardımcısı'ndaki gibi); dıştaki klasör Chrome'da
-// "manifest eksik" verir. Kimlik sabit (key), sürüm manifest'teki, bir örnek belge CSP ihlalsiz çizilir.
+// orada) doğrudan yüklenir. Dıştaki klasör Chrome'da "manifest eksik" verir. Kimlik sabit (key), sürüm manifest'teki,
+// bir örnek belge CSP ihlalsiz çizilir.
 async function github() {
   const { zipOku } = await import('./paketle.mjs');
   const os = await import('node:os');

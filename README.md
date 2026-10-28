@@ -32,8 +32,11 @@ Google, UYAP veya Adalet Bakanlığı tarafından geliştirilmiş bir ürün de�
   Pencere daraldıkça bölme de daralır, belge tek başına sıkışmaz.
 
   ![Not bölmesi açık: Belgedeki iki not ve işaretli yerleri](belgeler/gorseller/drive-notlar.png)
-- **E-imza:** **E-imzalıdır**, belgede e-imza dosyası olduğunu gösterir. İmza ve sertifika burada doğrulanmaz. Belge
-  imzadan sonra değiştirilmişse **E-imza içerikle uyuşmuyor** uyarısı çıkar.
+- **E-imza:** **E-imzalıdır**, belgede e-imza dosyası olduğunu ve dosyadaki özetin belge içeriğiyle tuttuğunu gösterir.
+  Özet tutmuyorsa **E-imza içerikle uyuşmuyor** uyarısı çıkar. İmza dosyası var ama içerikle karşılaştırılamıyorsa (ör.
+  içindeki özet okunamıyorsa) **E-imza dosyası var, içerikle karşılaştırılamadı** yazar, dar pencerede kısaca **E-imza
+  karşılaştırılamadı**. İmza ve sertifika burada doğrulanmaz: **E-imzalıdır**, belgenin imzadan sonra değişmediğinin
+  kanıtı değildir.
 - **Eklenti simgesi:** Eklentinin ayarı ve açılır penceresi yoktur. Simgeye sağ tıklayınca en üstteki eklenti adı
   geliştiricinin X sayfasını ([x.com/CgrShn](https://x.com/CgrShn)) açar. Kapatmak için `chrome://extensions` sayfasında
   eklentinin kartındaki anahtarı kapatın ve açık Drive ve Gmail sekmelerini yenileyin (F5).
@@ -89,24 +92,32 @@ sunucusu yoktur.
 **Okuduğu bilgiler.** Eklenti belgenin içeriği dışında yalnız şunları okur:
 
 - **Drive'da:** Ön izleme penceresindeki dosyanın kimliği, adı ve türü, Drive'da açık olan hesabın sırası (birden çok
-  Google hesabıyla giriş yaptıysanız hangisi olduğu), paylaşım bağlantısının erişim anahtarı (`resourcekey`) ve dosya
-  sayfasında (`drive.google.com/file/…`) sekmenin başlığı (dosyanın `.udf` olduğunu anlamak için).
-- **Gmail'de:** Ön izleme penceresindeki dosyanın adı, açık e-postadaki ek kartlarının indirme bağlantıları ve hangi ek
-  kartına bastığınız. E-postadaki bir Drive bağlantısı bu pencerede açılırsa o dosyanın yukarıdaki Drive bilgileri.
-  E-postaların metnine, konusuna, gönderenine ya da alıcılarına bakmaz.
+  Google hesabıyla giriş yaptıysanız hangisi olduğu, Drive'ın adresinde yazılıysa hesabın e-posta adresi), paylaşım
+  bağlantısının erişim anahtarı (`resourcekey`) ve dosya sayfasında (`drive.google.com/file/…`) sekmenin başlığı (dosyanın
+  `.udf` olduğunu anlamak için).
+- **Gmail'de:** Ön izleme penceresindeki dosyanın adı, açık e-postadaki ek kartlarının adları ve indirme bağlantıları,
+  hangi ek kartına bastığınız. E-postadaki bir Drive dosyası bu pencerede açılırsa o dosyanın yukarıdaki Drive bilgileri.
+  Bastığınız bağlantının adresine Drive dosyası bağlantısı mı diye bakar, erişim anahtarı için bastığınız son Drive
+  bağlantısının dosya kimliğini ve erişim anahtarını alır. E-postaların metnine, konusuna, gönderenine ya da alıcılarına
+  bakmaz.
 
-**İndirme.** Drive'daki `.udf` dosyası, ön izleme penceresinde açıldığı anda Drive'dan, Drive'da açık olan hesabınızla
-indirilir. Gmail'de bir `.udf` ekinin kartına bastığınız anda ek, belge daha çabuk açılsın diye Gmail sayfasının içinden
-kendi oturumunuzla indirilmeye başlar. Ön izleme açılmazsa indirilen ek 15 saniye sonra bellekten silinir.
+**İndirme.** Drive'daki `.udf` dosyası, ön izleme penceresinde açıldığı anda Drive'ın indirme adresinden
+(`drive.usercontent.google.com`), Drive'da açık olan hesabınızla indirilir. Gmail'de bir `.udf` ekinin kartına bastığınız
+anda ek, belge daha çabuk açılsın diye Gmail sayfasının içinden kendi oturumunuzla indirilmeye başlar. Ön izleme
+açılmazsa ek en geç 15 saniye sonra bellekten silinir, indirme sürüyorsa kesilir.
 
 **Saklama.** Eklenti hiçbir şey saklamaz: Ayarı, geçmişi ya da kaydı yoktur, tarayıcının hiçbir deposunu kullanmaz.
-Açılan belgenin bilgisi ve baytları eklentinin arka planında yalnız belge açılırken durur ve en geç bir dakikada silinir.
-Belge gösterilirken yalnız ön izleme penceresinin belleğindedir, pencere kapanınca gider. Belgenin adı sekme başlığına ve adrese konmaz, bu yüzden tarayıcı
-geçmişine düşmez. Belgeyi eklentinin **İndir** düğmesiyle bilgisayarınıza kaydederseniz dosya, adıyla Chrome'un
+Açılan belgenin bilgisi ve baytları belge açılırken bellekte durur: Bilgisi eklentinin arka planında en geç bir
+dakikada, baytları indirme bittikten en geç 15 saniye sonra silinir. Belge gösterilirken yalnız ön izleme penceresinin
+belleğindedir, pencere kapanınca gider. Drive ya da Gmail sekmesinin belleğinde sekme yenilenene ya da kapanana dek
+yalnız son açılan dosyanın kimliği, Gmail'de bastığınız son ek kartının e-postasının kimliği ve bastığınız son Drive
+bağlantısının dosya kimliğiyle erişim anahtarı kalabilir. Belgenin adı sekme başlığına ve adrese konmaz, bu yüzden
+tarayıcı geçmişine düşmez. Belgeyi eklentinin **İndir** düğmesiyle bilgisayarınıza kaydederseniz dosya, adıyla Chrome'un
 indirilenler listesine girer.
 
-**İzinler.** Eklenti yalnız Drive'ın (`drive.google.com`) ve Gmail'in (`mail.google.com`) sayfalarında çalışır ve
-yalnız Drive'ın indirme adresine (`drive.usercontent.google.com`) bağlanabilir. Başka bir izin istemez.
+**İzinler.** Eklenti yalnız Drive'ın (`drive.google.com`) ve Gmail'in (`mail.google.com`) sayfalarında çalışır. Drive
+dosyalarını yalnız Drive'ın indirme adresinden (`drive.usercontent.google.com`), Gmail eklerini Gmail sayfasının içinden
+(`mail.google.com`) kendi oturumunuzla indirir. Başka bir izin istemez.
 
 ---
 

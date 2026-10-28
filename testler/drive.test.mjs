@@ -24,7 +24,31 @@ test('adresten kimlik, hesap ve kaynak anahtarı', () => {
   assert.equal(K.urldenBilgi('https://drive.google.com/file/d/1AbcDEFghij_KLMnop-123/view?resourcekey=a<b').rk, null);
 });
 
-test('önizleme JSON\'u ve sayfa hesabı', () => {
+test('adreste hesap e-posta adresiyle (authuser=ad@ornek.com): Olduğu gibi, yoldaki /u/<n>/ önce gelir, biçimsiz adres hesapsız', () => {
+  const dosya = 'https://drive.google.com/file/d/1AbcDEFghij_KLMnop-123/view';
+  assert.deepEqual({ ...K.urldenBilgi(`${dosya}?authuser=ikinci@ornek.com`) }, { id: '1AbcDEFghij_KLMnop-123', au: 'ikinci@ornek.com', rk: null });
+  assert.equal(K.urldenBilgi(`${dosya}?authuser=ikinci%40ornek.com&usp=sharing`).au, 'ikinci@ornek.com', 'kodlanmış');
+  assert.equal(K.urldenBilgi(`${dosya}?authuser=Ad.Soyad%2Bdava%40buro.com.tr`).au, 'Ad.Soyad+dava@buro.com.tr');
+  assert.equal(K.urldenBilgi('https://drive.google.com/open?id=1AbcDEFghij_KLMnop-123&authuser=ikinci@ornek.com').au, 'ikinci@ornek.com');
+  assert.equal(K.urldenBilgi('https://drive.google.com/file/u/3/d/1AbcDEFghij_KLMnop-123/view?authuser=ikinci@ornek.com').au, 3);
+  assert.equal(K.urldenBilgi(`${dosya}?authuser=1`).au, 1, 'sıra sayı olarak kalır');
+  for (const a of ['ikinci@ornek', 'ikinci+ek@ornek.com', 'a%20b@ornek.com', 'a%26x%3D1@ornek.com', 'a@b@ornek.com', 'a%0A@ornek.com',
+    'a%2Fb@ornek.com', 'a%3Fb@ornek.com', 'a%23b@ornek.com', '%3Cb%3E@ornek.com', `${'a'.repeat(250)}@ornek.com`, '123', 'x']) {
+    assert.equal(K.urldenBilgi(`${dosya}?authuser=${a}`).au, null, a);
+  }
+  // Sayfanın hesabı: Adresten, yoksa og:url'den.
+  const d = w.document;
+  assert.equal(K.sayfaHesabi(d, `${dosya}?authuser=ikinci@ornek.com`), 'ikinci@ornek.com');
+  const og = d.createElement('meta');
+  og.setAttribute('property', 'og:url');
+  og.setAttribute('content', `${dosya}?authuser=ucuncu%40ornek.com`);
+  d.head.append(og);
+  assert.equal(K.sayfaHesabi(d, dosya), 'ucuncu@ornek.com');
+  assert.equal(K.sayfaHesabi(d, 'https://drive.google.com/drive/u/2/folders/abc'), 2, 'adresteki önce gelir');
+  og.remove();
+});
+
+test('ön izleme JSON\'u ve sayfa hesabı', () => {
   const d = w.document;
   d.body.innerHTML = '';
   assert.equal(K.aktifOge(d), null);
@@ -33,6 +57,11 @@ test('önizleme JSON\'u ve sayfa hesabı', () => {
   e.textContent = '{"id": "1ZzzYyyXxxWwwVvvUuuTttSssRrrQqq", "title": "Takip Talebi.udf", "mimeType": "text\\/xml"}';
   d.body.append(e);
   assert.deepEqual({ ...K.aktifOge(d) }, { id: '1ZzzYyyXxxWwwVvvUuuTttSssRrrQqq', ad: 'Takip Talebi.udf', tur: 'text/xml' });
+  // Bilgi öğesi verilirse (Gmail'de içerik betiği doğrulananı verir) belgedekine bakılmaz.
+  assert.equal(K.aktifOge(d, null), null);
+  const verilen = d.createElement('div');
+  verilen.textContent = '{"id": "1AbcDEFghij_KLMnop-123", "title": "Başka.udf"}';
+  assert.equal(K.aktifOge(d, verilen).id, '1AbcDEFghij_KLMnop-123');
   e.textContent = '{bozuk';
   assert.equal(K.aktifOge(d), null);
   e.textContent = '{"id": "../../x", "title": "a.udf"}';

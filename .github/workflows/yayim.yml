@@ -2,13 +2,17 @@ name: Yayım
 on:
   push:
     tags: ['v*']
+# İş akışının belirteci yalnız okur. Depoya yalnız sürümü yayımlayan son iş yazar: O iş depoyu çekmez, npm'i ve deponun
+# kodunu çalıştırmaz, paketi ve notu ilk işin çıktısından alır.
 permissions:
-  contents: write
+  contents: read
 jobs:
-  yayim:
+  paket:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -20,7 +24,24 @@ jobs:
       - run: node araclar/paketle.mjs cikti/UDF-On-Izleme.zip
       - name: Sürüm notu
         run: node araclar/surum-notu.mjs "${GITHUB_REF_NAME#v}" > cikti/not.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paket
+          path: cikti/
+          retention-days: 1
+          if-no-files-found: error
+  yayim:
+    needs: paket
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: paket
+          path: cikti
       - name: Sürümü yayımla
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: gh release create "$GITHUB_REF_NAME" cikti/UDF-On-Izleme.zip --title "UDF Ön İzleme ${GITHUB_REF_NAME#v}" --notes-file cikti/not.md --latest

@@ -79,12 +79,13 @@ export class Belge {
 }
 
 // Ayrık CMS imzasını taklit eden en küçük DER: imzalı özniteliklerde messageDigest (OID 1.2.840.113549.1.9.4).
-export function sahteImza(icerik, { bozuk = false } = {}) {
+// bozuk: Özet içerikle tutmaz. okunamaz: Özniteliğin değer kümesinin etiketi SET (0x31) değil, özet bulunamaz.
+export function sahteImza(icerik, { bozuk = false, okunamaz = false } = {}) {
   const ozet = crypto.createHash('sha256').update(icerik).digest();
   if (bozuk) ozet[0] ^= 0xff;
   const oid = Buffer.from([0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x09, 0x04]);
   const dize = Buffer.concat([Buffer.from([0x04, ozet.length]), ozet]);
-  const kume = Buffer.concat([Buffer.from([0x31, dize.length]), dize]);
+  const kume = Buffer.concat([Buffer.from([okunamaz ? 0x32 : 0x31, dize.length]), dize]);
   const oznitelik = Buffer.concat([oid, kume]);
   return Buffer.concat([Buffer.from([0x30, oznitelik.length]), oznitelik]);
 }
@@ -195,6 +196,8 @@ export function ornekler() {
     const ozellik = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">\n<properties>\n<entry key="uyapdogrulamakodu">AbCd+123</entry>\n<entry key="uyapsicil">1234567</entry>\n</properties>\n';
     sonuc['dilekce.udf'] = udfZip([['documentproperties.xml', ozellik], ['content.xml', icerik], ['sign.sgn', sahteImza(icerik)], ['comments.xml', notXml]]);
     sonuc['imza-bozuk.udf'] = udfZip([['content.xml', icerik], ['sign.sgn', sahteImza(icerik, { bozuk: true })]]);
+    // E-imza dosyası var ama içindeki özet okunamıyor: Belge içerikle karşılaştırılamaz (imza durumu 'bilinmiyor').
+    sonuc['imza-okunamayan.udf'] = udfZip([['content.xml', icerik], ['sign.sgn', sahteImza(icerik, { okunamaz: true })]]);
     sonuc['notlu-imzasiz.udf'] = udfZip([['content.xml', icerik], ['comments.xml', notXml]]);
     sonuc['saklanmis.udf'] = udfZip([['content.xml', icerik]], { saklanmis: true });
     sonuc['ham-xml.udf'] = icerik;

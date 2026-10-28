@@ -19,10 +19,10 @@ Bu şartname, aşağıda listelenen kaynak kodların gerçekten okunmasıyla yaz
 | [PAD] | ygzyr/UDFpad `src/udf/cms.ts`, `types.ts`, `zip.ts` @8fa67600de |
 | [PRV] | saidsurucu/udf-preview-win `crates/udf-core/src/rune.rs` |
 | [JDK] | openjdk/jdk master (2026-10-05), `java.desktop/.../javax/swing/text/{StyleConstants,TabStop,ParagraphView,AbstractDocument}.java`, `java/awt/print/PageFormat.java` |
-| [RES-S] / [RES-M] / [RES-Z] / [RES-MOD] | Kullanıcının projesi: `C:\projeler\udf_resimcisi\src-tauri\src\udf\serialize.rs` / `model.rs` / `zip.rs` / `mod.rs` |
-| [RES-J] | `C:\projeler\udf_resimcisi\tools\macospasterich\UdeXml.java`: saidsurucu/ude-win-x64 başvuru yazıcısının MIT lisanslı kopyası |
-| [RES-DOG] | `C:\projeler\udf_resimcisi\DOGRULAMA.md` (UDE 5.4.20 ile yapılmış ölçümler) |
-| [RES-TD] | `C:\projeler\udf_resimcisi\testdata\turnusol.udf` ve `pano-yapistir.udf`: UDE 5.4.20'nin kendi kaydettiği dosyalar. Burada ölçüldü. |
+| [RES-S] / [RES-M] / [RES-Z] / [RES-MOD] | Geliştiricinin UDF Resimcisi projesi (yollar o projenin köküne göre): `src-tauri/src/udf/serialize.rs` / `model.rs` / `zip.rs` / `mod.rs` |
+| [RES-J] | UDF Resimcisi `tools/macospasterich/UdeXml.java`: saidsurucu/ude-win-x64 başvuru yazıcısının MIT lisanslı kopyası |
+| [RES-DOG] | UDF Resimcisi `DOGRULAMA.md` (UDE 5.4.20 ile yapılmış ölçümler) |
+| [RES-TD] | UDF Resimcisi projesinin test örnekleri `testdata/turnusol.udf` ve `pano-yapistir.udf`: UDE 5.4.20'nin kendi kaydettiği dosyalar. Burada ölçüldü. |
 | [ORN] | Herkese açık gerçek UYAP çıktıları: https://github.com/AvHakanOrhan/eypport/tree/HEAD/scratch/udf_evrak_13360401060 (`document.zip`, `content.xml`, `documentproperties.xml`, `sign.sgn`) ve `scratch/unzip_ilam`. Yalnız yapısı ölçüldü. |
 
 ## 1. Paket (ZIP)
@@ -37,15 +37,16 @@ Bu şartname, aşağıda listelenen kaynak kodların gerçekten okunmasıyla yaz
   - ZIP64, şifreli girdi ve çok parçalı arşiv beklenmez; legaluga bunları reddeder [LEG L86-90, L113].
   - Tarayıcıda açma: `DecompressionStream('deflate-raw')` [LEG L127] ya da fflate/JSZip.
   - Açılan bayt sayılmalı ve beyan edilen boyutla karşılaştırılmalı (zip bombasına karşı) [LEG L125-146].
+- **Yerel başlıklar da denetlenmeli:** Girdiler merkezî dizinden okunsa da yerel başlıkları sırayla okuyan bir okuyucu (Java `ZipInputStream`) başka bir `content.xml` bulmasın. Girdiler 0. bayttan merkezî dizine dek art arda gelir, aralarında yalnız veri tanımlayıcısı (12, 16, 20 ya da 24 bayt) olabilir. Yerel başlıktaki ad ve yöntem merkezî dizindekiyle aynıdır, veri tanımlayıcısız saklanmış girdide boyutlar da. UDE 5.4.20'nin kaydettiği dosyalar (bayrak 0x0808, 16 baytlık veri tanımlayıcısı) bu düzene uyar [RES-TD]. Bu eklentinin motoru (`zipGirdileri`, `yerelGirdileriDenetle`) girdiler arasında en çok 24 baytlık boşluğa izin verir, boşluğun veri tanımlayıcısı olup olmadığına bakmaz: 30 baytlık bir yerel başlık o boşluğa sığmaz. Veri tanımlayıcılı saklanmış girdinin verisinde yerel başlık imzası geçemez (sıralı okuyucu böyle bir girdinin sonunu bilemez). Ad, yöntem ya da boyutu uymayan, girdileri art arda gelmeyen paketi reddeder.
 - **İsteğe bağlı girdiler:** `documentproperties.xml` ve `sign.sgn` (§13) [DIL L23-32].
   - `signature.p7s`, `binary/` ve `styles/` girdileri olduğu iddia ediliyor ama doğrulanmadı [DIL L140-143]. evrak-md `*.p7s` dosyasını da imza sayar [EMD L14].
 
-## 2. content.xml: kodlama, önsöz, kök
+## 2. content.xml: Kodlama, ön söz, kök
 
-- **Kodlama:** UTF-8, BOM yok, satır sonu yalnız LF, CR hiç yok [DIL L46-47], [ORN], [RES-Z L13-14]. Yine de BOM, UTF-16 ve önsözdeki kodlama beyanı tanınmalı; legaluga'daki yedekleme zinciri (utf-8, sonra windows-1254) iyi bir örnek [LEG L156-167].
-- **UDE ve UYAP çıktısının önsözü:** `<?xml version="1.0" encoding="UTF-8" ?> ` + `\n\n` + `<template format_id="1.8" >` [ORN], [RES-TD], [MIA-D L1962-1963], [DIL L37].
+- **Kodlama:** UTF-8, BOM yok, satır sonu yalnız LF, CR hiç yok [DIL L46-47], [ORN], [RES-Z L13-14]. Yine de BOM, UTF-16 ve ön sözdeki kodlama beyanı tanınmalı, legaluga'daki yedekleme zinciri (utf-8, sonra windows-1254) iyi bir örnek [LEG L156-167].
+- **UDE ve UYAP çıktısının ön sözü:** `<?xml version="1.0" encoding="UTF-8" ?> ` + `\n\n` + `<template format_id="1.8" >` [ORN], [RES-TD], [MIA-D L1962-1963], [DIL L37].
   - [TK L51] "bildirimden sonra boşluk yok" diyor; gerçek dosyalar bunu tutmuyor. Okuma için önemsizdir.
-- **DTD ve varlık:** meşru `content.xml`'de DTD de varlık tanımı da yoktur. Önsözde `<!DOCTYPE` ya da `<!ENTITY` görülürse belge reddedilmeli (XXE ve varlık bombası) [LEG L169-178].
+- **DTD ve varlık:** Meşru `content.xml`'de DTD de varlık tanımı da yoktur. Ön sözde `<!DOCTYPE` ya da `<!ENTITY` görülürse belge reddedilmeli (XXE ve varlık bombası) [LEG L169-178].
   - Bu kural `documentproperties.xml`'e uygulanmaz; o dosya DOCTYPE taşır (§13).
 - **Kök öğe** `<template format_id="1.8">`. Çocukları **adla** bulunmalı, sırayla değil: `content`, `properties`, `elements`, `styles`, `webID` [ORN], [DIL L36-44].
   - Şablon belgelerde kökte `<data>` de olabilir [LEG L455-457, L557]. [TK L167-181] bunu "varsayımsal" sayıyor.
@@ -83,7 +84,7 @@ Bu şartname, aşağıda listelenen kaynak kodların gerçekten okunmasıyla yaz
   - Yazıcılar U+FFFC kullanır [RES-S L20-21], [CLI-R L299], [TK L86, L519].
   - **Kural:** Resim (ve barkod) yaprağının kapladığı havuz karakteri asla metin olarak çizilmez.
 - **Sekme:** `\t` (U+0009) hem `<tab>` yaprağında hem de `content` metninin içinde bulunabilir [DIL L103-104], [TK L362-370]. Sekme her yerde işlenmeli.
-- **Havuzdaki sıra:** önce üst bilgi metni, sonra gövde (tablo hücreleri dahil), en son alt bilgi metni [MIA-D L24-26], [TK L81], [ORN: üst bilgi ofset 0'da, alt bilgi sonda].
+- **Havuzdaki sıra:** Önce üst bilgi metni, sonra gövde (tablo hücreleri dâhil), en son alt bilgi metni [MIA-D L24-26], [TK L81], [ORN: Üst bilgi ofset 0'da, alt bilgi sonda].
   - Görüntüleyici bu sıraya dayanmamalı; her yaprağı kendi ofsetinden dilimlemeli.
 - **Tablo hücreleri:** Hücre paragrafları havuzu satır satır, soldan sağa, iç içe tablolarda da özyinelemeli olarak sırayla tüketir [RES-J L106-112], [ORN: ofsetler 789..822 hücre hücre ilerliyor].
 - **CR:** XML çözücüler CDATA içinde de CRLF'yi LF'ye çevirir. UYAP çıktısında CR olmadığı için kayma olmaz [ORN], [DIL L47].
@@ -91,6 +92,7 @@ Bu şartname, aşağıda listelenen kaynak kodların gerçekten okunmasıyla yaz
 - **Metinde `]]>`:** Yazıcılar bunu `]]&gt;` diye bozuyor (kayıplı) [RES-S L319-322]. UDE'nin ne yaptığı **bulunamadı**.
 - **Ofset doğrulama:** legaluga sınır dışı dilimi kırpıp sayar [LEG L577-582]; evrak-md hata fırlatır [EMD L31-32]. **Öneri:** kırpın ve sayın.
   - `elements` çözülemezse havuzu düz metin olarak gösterin [NBP L400-412], [EMD L84].
+  - Bu eklentinin motoru bunu yapmaz: Gövdesi (`elements`) olmayan `template`'i ve kökü `template` olmayan, `elements`'ı da olmayan sağlam XML'i "Dosya bir UDF belgesi değil." iletisiyle reddeder (kod `udf-degil`). Bozuk XML "XML bozuk" iletisiyle reddedilir.
 
 ## 4. properties
 
@@ -186,7 +188,7 @@ Ortak öznitelikler: `startOffset`, `length`, karakter öznitelikleri ve `resolv
   - udf-cli bu öğeyi düşürüyor; bu bir hata [CLI-P L187-189]. udfly'ın notu: düşürülünce sütunlar birbirine yapışır [FLY-P L128-130].
 - **`image`:** `imageData` (base64), `startOffset`, `length="1"`, isteğe bağlı `width` ve `height` (punto) [TK L337-353], [RES-M L45-53].
   - base64'te UDE 76 karakterde bir LF koyar (MIME); boşluklar silinmeli [RES-DOG L132-134], [RES-TD], [ORN], [NBP L166-168], [LEG L367].
-  - `data:` öneki yazıcılarda yok [RES-S L245-253]; legaluga varsa da tolere eder [LEG L366].
+  - `data:` ön eki yazıcılarda yok [RES-S L245-253], legaluga varsa da tolere eder [LEG L366].
   - **Biçim (çelişki):** UDE 5.4.20 JPEG'i kabul ediyor [RES-DOG L40-44]; MIA Editör'ün yalnız PNG desteklediğini söylüyor [MIA-R L55]. Sihirli baytla tür belirleyin (PNG, JPEG, GIF, BMP) [LEG L337-360].
   - **Boyut:** `width` ve `height` puntodur. Gerçek UYAP örneğinde ikisi de **yok** [ORN].
     - Yoksa UDE kuralı 1 piksel = 1 punto [RES-MOD L95-98], [RES-DOG L24].
@@ -232,6 +234,7 @@ Ortak öznitelikler: `startOffset`, `length`, karakter öznitelikleri ve `resolv
 - **`default` stiline çözülen yaprak** (gerçek örnekte 40 content'in 4'ü [ORN]):
   - legaluga zincirde `default`'u atlıyor [LEG L443].
   - UDE'nin bunu Dialog ve #333333 olarak mı çizdiği **bulunamadı**. Öneri: legaluga ve MIA gibi belge tabanını kullanın.
+  - Bu eklentinin motoru böyle yapar: `default`'a bağlı yaprak paragrafı değil belge tabanını alır. Tanımsız bir stil adına bağlı yaprakta ad yok sayılır, yaprak paragrafı devralır (Swing'de çözülemeyen resolver yok sayılır, öğe üst öğesine çözülür).
 
 ## 10. Listeler
 
@@ -307,7 +310,7 @@ Ortak öznitelikler: `startOffset`, `length`, karakter öznitelikleri ve `resolv
 - **Sayfa numarası (footer öznitelikleri):**
   - `pageNumber-spec="BSP32_<n>"` bir bit kümesidir: 8 = numara göster, 32 = ortala, 64 = sağa (ikisi de yoksa sola), 2048 = "sayfa/toplam" [MIA-D L1592], [MIA-U L889-911].
   - Örnekler: `BSP32_2120` = 8 + 64 + 2048, yani sağda "n/N" [ORN], [MIA-D L1865]. `BSP32_40` = 8 + 32 [TK L203]. `BSP32_0` = numara yok [MIA-D L1870].
-  - Diğer öznitelikler: `pageNumber-foreStr` (önek), `pageNumber-afterStr` (sonek), `pageNumber-seperator` ("seperator" yazımı özgün; varsayılan "/"), `pageNumber-fontFace`, `-fontSize`, `-fontBold`, `-fontItalic`, `-fontUnderline`, `-color`, `pageNumber-pageStartNumStr` (başlangıç numarası) [MIA-U L897-910, L997-998], [TK L215-222], [DIL L87].
+  - Diğer öznitelikler: `pageNumber-foreStr` (ön ek), `pageNumber-afterStr` (son ek), `pageNumber-seperator` ("seperator" yazımı özgün, varsayılan "/"), `pageNumber-fontFace`, `-fontSize`, `-fontBold`, `-fontItalic`, `-fontUnderline`, `-color`, `pageNumber-pageStartNumStr` (başlangıç numarası) [MIA-U L897-910, L997-998], [TK L215-222], [DIL L87].
   - Editör numara için alt bilginin sonuna boş bir paragraf ayırır [MIA-U L961].
 
 ## 13. documentproperties.xml ve sign.sgn
@@ -326,6 +329,7 @@ Ortak öznitelikler: `startOffset`, `length`, karakter öznitelikleri ve `resolv
   - İmzalı özniteliklerdeki messageDigest (OID 1.2.840.113549.1.9.4), **ham `content.xml` baytlarının SHA-256 özeti**dir.
   - Kaynaklar: [PAD cms.ts L1-6, L286-300]. İki gerçek örnekte burada hesaplanıp eşleştiği görüldü [ORN].
   - Tarayıcı WebCrypto ile özeti yeniden hesaplayıp "içerik imzayla tutarlı" diyebilir. Sertifika zinciri doğrulamasını hiçbir açık görüntüleyici yapmıyor; legaluga yalnız imzanın varlığını gösteriyor [LEG L800].
+  - Bu eklentinin motorunda durum üçtür: `tutarli` (özet içerikle tutuyor, rozet "E-imzalıdır"), `tutarsiz` (tutmuyor, uyarı "E-imza içerikle uyuşmuyor") ve `bilinmiyor` (imza dosyası var ama karşılaştırılamadı: Özet okunamıyor ya da uzunluğu tanınmıyor, dosya açılamadı, kökte tek değil). `bilinmiyor`da nötr "E-imza dosyası var, içerikle karşılaştırılamadı" rozeti çıkar. İmza ve sertifika doğrulanmaz.
 
 ## 14. format_id sürümleri
 
@@ -383,12 +387,12 @@ Ortak öznitelikler: `startOffset`, `length`, karakter öznitelikleri ve `resolv
 ## 17. Önerilen çözümleme sırası
 
 1. ZIP'i merkezî dizinden açın; boyut, girdi sayısı ve CRC sınırlarını uygulayın.
-2. `content.xml`'i kodlamasını tanıyarak metne çevirin. Önsözde DOCTYPE varsa reddedin, sonra DOMParser ile çözün.
+2. `content.xml`'i kodlamasını tanıyarak metne çevirin. Ön sözde DOCTYPE varsa reddedin, sonra DOMParser ile çözün.
 3. Havuzu `template`'in doğrudan çocuğu olan `<content>`'in `textContent`'inden alın.
 4. Stil tablosunu kurun; resolver zincirinde döngüye karşı koruma koyun.
 5. `elements`'ı belge sırasıyla gezin:
    - paragraf
-   - tablo (satır düzeyindeki columnSpans dahil)
+   - tablo (satır düzeyindeki columnSpans dâhil)
    - page-break
    - header ve footer (sonuncusu; startPage ve stopPage'e göre)
 6. Yaprakları havuzdan UTF-16 ile dilimleyin. Resim ve barkod aralığını metin olarak çizmeyin, U+200B'yi atın, paragrafın son `\n`'ini atın.
@@ -409,7 +413,7 @@ Ortak öznitelikler: `startOffset`, `length`, karakter öznitelikleri ve `resolv
 - Artıları: bağımlılıksız, zaten MV3'te çalışıyor, güvenlik sınırları var, sayfa yalnız createElement ve textContent ile kuruluyor.
 - **Uyarlama gerekenler:**
   - `globalThis.UHD` ad alanı [L7, L1134].
-  - CSS'teki `.viewer` öneki ve `var(--shell-warn-*)` değişkenleri [L1114-1132].
+  - CSS'teki `.viewer` ön eki ve `var(--shell-warn-*)` değişkenleri [L1114-1132].
 - **Bu şartnameye göre düzeltilmesi gerekenler:**
   - paperOrientation 0 = yatay [L546].
   - mediaSizeName eşlemesi [L544].
@@ -444,12 +448,12 @@ Ortak öznitelikler: `startOffset`, `length`, karakter öznitelikleri ve `resolv
 
 **Sonuç:** Eklentinin çekirdeği legaluga `udf.js` (MIT) olabilir; bu şartnamedeki düzeltmelerle uyarlanmalı. Biçim kurallarını doğrulamak için gerçek UYAP ve UDE çıktısına dayanan kaynaklar en güvenilir olanlar: [MIA], [DIL], [ORN], [RES-DOG], [RES-TD].
 
-İncelenen yerel dosyalar (salt okundu):
-- `C:\projeler\udf_resimcisi\src-tauri\src\udf\mod.rs`
-- `C:\projeler\udf_resimcisi\src-tauri\src\udf\model.rs`
-- `C:\projeler\udf_resimcisi\src-tauri\src\udf\serialize.rs`
-- `C:\projeler\udf_resimcisi\src-tauri\src\udf\zip.rs`
-- `C:\projeler\udf_resimcisi\tools\macospasterich\UdeXml.java`
-- `C:\projeler\udf_resimcisi\tools\macospasterich\UdeDoc.java`
-- `C:\projeler\udf_resimcisi\DOGRULAMA.md`
-- `C:\projeler\udf_resimcisi\testdata\turnusol.udf`, `pano-yapistir.udf`, `gizli-kopya-sonuc.udf`, `turnusol.orig.udf` (yalnız yapısı ölçüldü)
+İncelenen UDF Resimcisi dosyaları (salt okundu, yollar o projenin köküne göre):
+- `src-tauri/src/udf/mod.rs`
+- `src-tauri/src/udf/model.rs`
+- `src-tauri/src/udf/serialize.rs`
+- `src-tauri/src/udf/zip.rs`
+- `tools/macospasterich/UdeXml.java`
+- `tools/macospasterich/UdeDoc.java`
+- `DOGRULAMA.md`
+- `testdata/turnusol.udf`, `pano-yapistir.udf`, `gizli-kopya-sonuc.udf`, `turnusol.orig.udf` (yalnız yapısı ölçüldü)

@@ -6,7 +6,8 @@ import vm from 'node:vm';
 import { KOK } from './yardimci.mjs';
 
 // arkaplan.js'i sahte chrome nesnesiyle yükler. chrome.storage verilmez: Arka plan hiçbir depoya yazmaz, kullanırsa sınama
-// düşer. Zamanlayıcılar sahte saatle elle ilerletilir (kayıt 60 sn, bayt ve ön indirme 15 sn).
+// düşer. Zamanlayıcılar sahte saatle elle ilerletilir (kayıt 60 sn, bayt ve ön indirme 15 sn). Sahte udfIndir her indirmenin
+// kaydını ve kesme sinyalini (sinyaller) tutar.
 const DRIVE_ID = '1AaaBbbCccDddEeeFffGggHhhIiiJjjKk';
 const EK = { au: 1, ik: '1a2b3c4d5e', th: '18f0a1b2c3d4e5f6', attid: '0.1', permmsgid: 'msg-f:1797114040482588150', realattid: null };
 const GORUNTULEYICI = { id: 'ek', url: 'chrome-extension://ek/gomulu.html' };
@@ -24,18 +25,19 @@ function saatKur() {
   };
 }
 
-function kur({ udfIndir = async () => { throw new Error('indirilmemeli'); }, sekmeYaniti = () => null } = {}) {
+// sekmeAcilmaz: chrome.tabs.create hata verir.
+function kur({ udfIndir = async () => { throw new Error('indirilmemeli'); }, sekmeYaniti = () => null, sekmeAcilmaz = false } = {}) {
   let dinleyici = null;
   const saat = saatKur();
-  const sekmeler = [], gidenler = [], indirmeler = [];
+  const sekmeler = [], gidenler = [], indirmeler = [], sinyaller = [];
   const baglam = {
-    console, URL, URLSearchParams, Blob, TextEncoder, TextDecoder, atob, btoa, crypto: globalThis.crypto,
+    console, URL, URLSearchParams, Blob, TextEncoder, TextDecoder, atob, btoa, crypto: globalThis.crypto, AbortController, DOMException,
     setTimeout: saat.setTimeout, clearTimeout: saat.clearTimeout, importScripts: () => {},
-    DriveIndir: { udfIndir: async k => { indirmeler.push(JSON.parse(JSON.stringify(k))); return udfIndir(k); } },
+    DriveIndir: { udfIndir: async (k, secenek) => { indirmeler.push(JSON.parse(JSON.stringify(k))); sinyaller.push(secenek && secenek.signal); return udfIndir(k, secenek); } },
     chrome: {
       runtime: { id: 'ek', getURL: p => `chrome-extension://ek/${p}`, onMessage: { addListener: f => { dinleyici = f; } } },
       tabs: {
-        create: async o => { sekmeler.push(o); },
+        create: async o => { if (sekmeAcilmaz) throw new Error('No tab'); sekmeler.push(o); },
         sendMessage: async (sekme, ileti, secenek) => { gidenler.push({ sekme, ileti, secenek }); return sekmeYaniti(ileti); }
       }
     }
@@ -51,12 +53,15 @@ function kur({ udfIndir = async () => { throw new Error('indirilmemeli'); }, sek
   const al = async (anahtar, gonderen) => { const y = await gonder({ tur: 'kayit-al', anahtar }, gonderen); return y && y.kayit ? JSON.parse(JSON.stringify(y.kayit)) : null; };
   const driveSekmesi = { id: 'ek', url: 'https://drive.google.com/drive/u/0/folders/x', frameId: 0, tab: { id: 3, index: 0, windowId: 1 } };
   const gmailSekmesi = { id: 'ek', url: 'https://mail.google.com/mail/u/1/#inbox/abc', frameId: 0, tab: { id: 7, index: 2, windowId: 1 } };
-  // Service worker'ın tuttukları: Alınmamış kayıtlar, istenmemiş ön indirmeler ve bayt kayıtları (ekleniş sırasıyla).
-  const durum = () => JSON.parse(vm.runInContext('JSON.stringify({ kayit: [...kayitlar.keys()], on: [...onIndirmeler.keys()], yedek: [...yedekler.keys()] })', baglam));
-  return { gonder, al, saat, sekmeler, gidenler, indirmeler, driveSekmesi, gmailSekmesi, durum };
+  // Service worker'ın tuttukları: Alınmamış kayıtlar, istenmemiş ön indirmeler, süren indirmeler ve bayt kayıtları (ekleniş
+  // sırasıyla).
+  const durum = () => JSON.parse(vm.runInContext('JSON.stringify({ kayit: [...kayitlar.keys()], on: [...onIndirmeler.keys()], suren: [...surenler.keys()], yedek: [...yedekler.keys()] })', baglam));
+  return { gonder, al, saat, sekmeler, gidenler, indirmeler, sinyaller, driveSekmesi, gmailSekmesi, durum };
 }
 const sekmede = (a, id, url) => ({ ...a.driveSekmesi, ...(url ? { url } : {}), tab: { id, index: 0, windowId: 1 } });
 const anlik = () => new Promise(r => setImmediate(r));
+// Yanıtı hemen gelmesi gereken istek: Gelmezse sınama takılmaz, { hata: 'YANIT_YOK' } döner.
+const hemen = soz => Promise.race([soz, anlik().then(() => ({ hata: 'YANIT_YOK' }))]);
 const ANAHTAR = '0f8fad5b-d9cb-469f-a165-70867728950e', BASKA = '11111111-2222-3333-4444-555555555555';
 
 // ---------------------------------------------------------------- kayıt bir kez alınır, bellekte durur
@@ -218,7 +223,7 @@ test('Drive: Gömme kaydıyla indirme başlar, görüntüleyici onu bir kez alı
   // Yeniden dene: Arka planda kayıt yok (alındı), görüntüleyici kendi tuttuğu kaydı gönderir.
   assert.deepEqual(a.durum().kayit, []);
   assert.equal((await a.gonder({ tur: 'indir', anahtar, kayit })).uzunluk, 300);
-  assert.equal(a.indirmeler.length, 2, 'yeniden dene: yeni indirme');
+  assert.equal(a.indirmeler.length, 2, 'yeniden dene: Yeni indirme');
   assert.deepEqual(a.indirmeler[1], { id: DRIVE_ID, ad: 'a.udf', au: 0, rk: null });
   assert.equal((await a.gonder({ tur: 'indir', anahtar })).hata, 'KIMLIK', 'kayıtsız yeniden deneme olmaz');
   await a.gonder({ tur: 'udf-ac', id: DRIVE_ID, ad: 'a.udf' }, a.driveSekmesi);
@@ -293,6 +298,122 @@ test('Drive ön indirmesi: Aynı sekmeden yeni gömme kaydı gelince o sekmenin 
   assert.deepEqual({ on: a.durum().on, yedek: a.durum().yedek }, { on: [], yedek: [] });
 });
 
+// Sinyale uyan sahte indirme (tarayıcının fetch'i gibi): Kesilince AbortError'la düşer, coz() ile iner. Süren (ne inmiş ne
+// kesilmiş) indirmeleri sayar.
+function sinyalliIndirme() {
+  const bekleyenler = [];
+  const udfIndir = (k, { signal } = {}) => new Promise((coz, reddet) => {
+    const b = { ad: k.ad };
+    const bitir = f => { const i = bekleyenler.indexOf(b); if (i >= 0) { bekleyenler.splice(i, 1); f(); } };
+    b.coz = () => bitir(() => coz({ bayt: new Uint8Array([Number(k.ad[0])]), ad: null, hesap: null }));
+    bekleyenler.push(b);
+    signal.addEventListener('abort', () => bitir(() => reddet(new DOMException('İptal edildi', 'AbortError'))), { once: true });
+  });
+  return { udfIndir, bekleyenler, suren: () => bekleyenler.length };
+}
+// Drive sekmesine gömülü görüntüleyici (iletisi o sekmeden gelir).
+const cercevede = sekme => ({ ...GORUNTULEYICI, tab: { id: sekme, index: 0, windowId: 1 } });
+
+test('Drive ön indirmesi: Bırakılan ön indirme kesilir, aynı anda yalnız izlenen indirmeler sürer', async () => {
+  const s = sinyalliIndirme();
+  const a = kur({ udfIndir: s.udfIndir });
+  // Aynı sekmede oklarla hızlı gezinme: Sekiz kayıt, görüntüleyici hiçbirini istemedi.
+  const anahtarlar = [];
+  for (let i = 0; i < 8; i++) anahtarlar.push((await a.gonder({ tur: 'gomulu-kayit', id: DRIVE_ID, ad: `${i}.udf` }, sekmede(a, 3))).anahtar);
+  await anlik();
+  assert.equal(a.indirmeler.length, 8);
+  assert.ok(a.sinyaller.every(x => x instanceof AbortSignal), 'her indirmeye kesme sinyali verildi');
+  assert.deepEqual(a.sinyaller.map(x => x.aborted), [true, true, true, true, true, true, true, false], 'öncekiler kesildi');
+  assert.equal(s.suren(), 1, 'yalnız son kaydın indirmesi sürüyor');
+  assert.deepEqual({ on: a.durum().on, suren: a.durum().suren }, { on: [anahtarlar[7]], suren: [anahtarlar[7]] });
+  // Beş ayrı sekme: İstenmemiş ön indirme en çok üç, sınırı aşanınki kesilir.
+  for (let i = 0; i < 5; i++) anahtarlar.push((await a.gonder({ tur: 'gomulu-kayit', id: DRIVE_ID, ad: `${i}.udf` }, sekmede(a, 10 + i))).anahtar);
+  await anlik();
+  assert.equal(s.suren(), 3);
+  assert.deepEqual(a.durum().suren, anahtarlar.slice(10));
+  assert.deepEqual(a.durum().on, anahtarlar.slice(10));
+  assert.deepEqual(a.durum().yedek, [], 'kesilenlerin baytı tutulmadı');
+  // Kesilen ön indirmenin sonucu görüntüleyiciye verilmez: İsterse kendi kaydıyla yeniden indirilir.
+  const y = a.gonder({ tur: 'indir', anahtar: anahtarlar[0], kayit: { id: DRIVE_ID, ad: '0.udf' } });
+  await anlik();
+  assert.equal(a.indirmeler.length, 14);
+  s.bekleyenler.at(-1).coz();
+  assert.deepEqual({ ...(await y) }, { uzunluk: 1, dilim: MB, ad: null, hesap: null });
+  // 15 sn dolunca istenmemiş ön indirmeler bırakılır, indirmeleri de kesilir.
+  a.saat.ilerlet(15000);
+  await anlik();
+  assert.equal(s.suren(), 0);
+  assert.deepEqual({ on: a.durum().on, suren: a.durum().suren, yedek: a.durum().yedek }, { on: [], suren: [], yedek: [] });
+});
+
+test('Drive: Görüntüleyicinin istediği indirme, sekmeden yeni gömme kaydı gelince ya da yeniden denenince kesilir', async () => {
+  const s = sinyalliIndirme();
+  const a = kur({ udfIndir: s.udfIndir });
+  const k1 = (await a.gonder({ tur: 'gomulu-kayit', id: DRIVE_ID, ad: '1.udf' }, sekmede(a, 3))).anahtar;
+  const k2 = (await a.gonder({ tur: 'gomulu-kayit', id: DRIVE_ID, ad: '2.udf' }, sekmede(a, 4))).anahtar;
+  // İki çerçeve de kendi ön indirmesini istedi, ikisi de henüz inmedi.
+  const y1 = a.gonder({ tur: 'indir', anahtar: k1, kayit: await a.al(k1) }, cercevede(3));
+  const y2 = a.gonder({ tur: 'indir', anahtar: k2, kayit: await a.al(k2) }, cercevede(4));
+  await anlik();
+  assert.deepEqual({ on: a.durum().on, suren: a.durum().suren }, { on: [], suren: [k1, k2] }, 'istenenler ön indirme değil, ama izleniyor');
+  // 3. sekmede sonraki dosya: İçerik betiği k1'in çerçevesini kaldırdı, onun indirmesi kesilir.
+  const k3 = (await a.gonder({ tur: 'gomulu-kayit', id: DRIVE_ID, ad: '3.udf' }, sekmede(a, 3))).anahtar;
+  assert.deepEqual(a.sinyaller.map(x => x.aborted), [true, false, false], 'yalnız 3. sekmenin önceki indirmesi');
+  assert.equal((await hemen(y1)).hata, 'AG', 'çerçeve yine de varsa dosyayı kendisi indirir');
+  assert.deepEqual(a.durum().suren, [k2, k3]);
+  for (const b of [...s.bekleyenler]) b.coz();
+  assert.equal((await y2).uzunluk, 1, 'öbür sekmenin indirmesi sürdü');
+  await anlik();
+  assert.deepEqual(a.durum().yedek, [k2, k3], 'kesilenin baytı yok');
+  // "Yeniden dene": Aynı anahtarın yeni isteği öncekinin süren indirmesini keser, sonuç yenisinden.
+  const kayit = { id: DRIVE_ID, ad: '5.udf' };
+  const eski = a.gonder({ tur: 'indir', anahtar: BASKA, kayit }, cercevede(5));
+  const yeni = a.gonder({ tur: 'indir', anahtar: BASKA, kayit }, cercevede(5));
+  assert.deepEqual(a.sinyaller.slice(-2).map(x => x.aborted), [true, false], 'öncekinin indirmesi kesildi');
+  assert.equal((await hemen(eski)).hata, 'AG');
+  assert.equal(s.suren(), 1);
+  s.bekleyenler[0].coz();
+  assert.equal((await yeni).uzunluk, 1);
+  assert.deepEqual([...Buffer.from((await a.gonder({ tur: 'indir-dilim', anahtar: BASKA, i: 0 })).parca, 'base64')], [5]);
+  // Görüntüleyicinin sekme bilgisi olmayan isteği bir sekmenin yeni kaydıyla kesilmez.
+  const y6 = a.gonder({ tur: 'indir', anahtar: ANAHTAR, kayit: { id: DRIVE_ID, ad: '6.udf' } });
+  await a.gonder({ tur: 'gomulu-kayit', id: DRIVE_ID, ad: '7.udf' }, sekmede(a, 5));
+  assert.equal(a.sinyaller.at(-2).aborted, false);
+  for (const b of [...s.bekleyenler]) b.coz();
+  assert.equal((await y6).uzunluk, 1);
+});
+
+// Hesap biçimleri: Üç dosya (drive-kimlik.js, indir.js, arkaplan.js) aynısını kabul eder.
+const UZUN = 'a'.repeat(64) + '@' + ['b'.repeat(63), 'c'.repeat(63), 'd'.repeat(61)].join('.');   // 254 karakter
+const GECERLI_EPOSTA = ['ikinci@ornek.com', 'Ad.Soyad+dava@buro.com.tr', "o'brien@ornek.co.uk", 'a_b-c@alt-alan.ornek.org', UZUN];
+const GECERSIZ_EPOSTA = ['ikinci@ornek', 'a@b@ornek.com', 'a b@ornek.com', 'a\u0000@ornek.com', 'a\n@ornek.com', 'a\u007f@ornek.com',
+  'a/b@ornek.com', 'a?b@ornek.com', 'a#b@ornek.com', 'a&b@ornek.com', 'a=b@ornek.com', 'a@ornek..com', 'a@.ornek.com', '@ornek.com',
+  'a@ornek.com.', 'a@ornek.com/', '<b>@ornek.com', 'çağrı@ornek.com', 'a@örnek.com', `${UZUN}x`, `${'a'.repeat(65)}@ornek.com`, 'x', ''];
+
+test('kayıt: Hesap sıra (0-99) ya da sıkı biçimde e-posta adresi, olduğu gibi. Başka her biçim hesapsız', async () => {
+  const a = kur({ udfIndir: async () => ({ bayt: new Uint8Array([1]), ad: null, hesap: null }) });
+  const { anahtar } = await a.gonder({ tur: 'gomulu-kayit', id: DRIVE_ID, ad: 'a.udf', au: 'ikinci@ornek.com' }, a.driveSekmesi);
+  assert.deepEqual(a.indirmeler[0], { id: DRIVE_ID, ad: 'a.udf', au: 'ikinci@ornek.com', rk: null }, 'ön indirme o hesapla');
+  assert.deepEqual(await a.al(anahtar), { id: DRIVE_ID, ad: 'a.udf', au: 'ikinci@ornek.com', rk: null });
+  const hesap = async au => { await a.gonder({ tur: 'indir', anahtar: ANAHTAR, kayit: { id: DRIVE_ID, au } }); return a.indirmeler.at(-1).au; };
+  for (const au of GECERLI_EPOSTA) assert.equal(await hesap(au), au, au);
+  for (const au of [...GECERSIZ_EPOSTA, '2', 100, -1, 1.5, [], { a: 1 }]) assert.equal(await hesap(au), null, JSON.stringify(au));
+  for (const au of [0, 7, 99]) assert.equal(await hesap(au), au);
+
+  // Aynı biçim adresten (drive-kimlik.js) ve indirmede (indir.js) de.
+  const baglam = { URL, URLSearchParams, TextDecoder, DOMException };
+  baglam.globalThis = baglam;
+  vm.createContext(baglam);
+  for (const ad of ['drive-kimlik.js', 'indir.js']) vm.runInContext(fs.readFileSync(path.join(KOK, ad), 'utf8'), baglam, { filename: ad });
+  for (const au of [...GECERLI_EPOSTA, ...GECERSIZ_EPOSTA]) {
+    const beklenen = GECERLI_EPOSTA.includes(au) ? au : null;
+    const adres = `https://drive.google.com/file/d/${DRIVE_ID}/view?${new URLSearchParams({ authuser: au })}`;
+    assert.equal(baglam.DriveKimlik.urldenBilgi(adres).au, beklenen, `drive-kimlik ${JSON.stringify(au)}`);
+    assert.equal(baglam.DriveIndir.hesapTemizle(au), beklenen, `indir ${JSON.stringify(au)}`);
+    assert.equal(await hesap(au), beklenen, `arkaplan ${JSON.stringify(au)}`);
+  }
+});
+
 // ---------------------------------------------------------------- Gmail eki, içerik betiğinden aktarım
 test('Gmail eki: İndirme ve dilimler görüntüleyicinin kaydındaki sekmeden (içerik betiği) aktarılır', async () => {
   const a = kur({ sekmeYaniti: ileti => (ileti.tur === 'gmail-indir' ? { uzunluk: 5, dilim: MB } : { parca: 'AQIDBAU=' }) });
@@ -320,11 +441,36 @@ test('Gmail eki: Sekme yoksa GMAIL_SEKME, içerik betiğinin hatası ancak biçi
   assert.equal(await dene({ uzunluk: 0, dilim: 1 }), 'AG');
 });
 
-// ---------------------------------------------------------------- simge, uyandırma
+// ---------------------------------------------------------------- uyandırma, "Drive'da aç"
 
 test("'uyan' iletisine boş yanıt verilir (yalnız service worker'ı uyandırır)", async () => {
   const a = kur();
   assert.deepEqual({ ...(await a.gonder({ tur: 'uyan' }, { id: 'ek', url: 'https://mail.google.com/mail/u/1/', frameId: 0, tab: { id: 3 } })) }, {});
   assert.equal(a.indirmeler.length, 0);
-  assert.deepEqual(a.durum(), { kayit: [], on: [], yedek: [] });
+  assert.deepEqual(a.durum(), { kayit: [], on: [], suren: [], yedek: [] });
+});
+
+test('"Drive\'da aç" (drive-ac): Yalnız görüntüleyiciden, yalnız drive.google.com adresi, sekme görüntüleyicinin yanında', async () => {
+  const a = kur();
+  const ADRES = `https://drive.google.com/file/d/${DRIVE_ID}/view?authuser=1`;
+  for (const [ad, gonderen] of [
+    ['içerik betiği (Drive sekmesi)', a.driveSekmesi],
+    ['içerik betiği (Gmail sekmesi)', a.gmailSekmesi],
+    ['eklentinin başka bir sayfası', { id: 'ek', url: 'chrome-extension://ek/baska.html', tab: { id: 9, index: 1, windowId: 1 } }],
+    ['başka eklenti', { id: 'baska', url: 'chrome-extension://baska/goruntule.html', tab: { id: 9, index: 1, windowId: 1 } }],
+    ['web sayfası', { id: 'ek', url: 'https://ornek.com/goruntule.html', tab: { id: 9, index: 1, windowId: 1 } }]
+  ]) assert.equal(await a.gonder({ tur: 'drive-ac', url: ADRES }, gonderen), undefined, ad);
+  for (const url of ['https://evil.example/', 'javascript:alert(1)', `http://drive.google.com/file/d/${DRIVE_ID}/view`, 'https://drive.google.com',
+    'https://drive.google.com.evil.example/', 'https://drive.google.com@evil.example/', `data:text/html,https://drive.google.com/`, 'chrome://settings/',
+    undefined, null, 5, [ADRES]]) {
+    assert.equal(await a.gonder({ tur: 'drive-ac', url }, SEKMEDEKI), undefined, String(url));
+  }
+  assert.equal(a.sekmeler.length, 0, 'hiçbiri sekme açmadı');
+  // Sekmedeki görüntüleyici: Yeni sekme onun hemen sağında. Gömülü görüntüleyici (sekme bilgisi yok): Yalnız adres.
+  assert.deepEqual({ ...(await a.gonder({ tur: 'drive-ac', url: ADRES }, SEKMEDEKI)) }, { tamam: true });
+  assert.deepEqual({ ...(await a.gonder({ tur: 'drive-ac', url: ADRES })) }, { tamam: true });
+  assert.deepEqual(JSON.parse(JSON.stringify(a.sekmeler)), [{ url: ADRES, index: 2, openerTabId: 9, windowId: 1 }, { url: ADRES }]);
+  // Sekme açılamazsa tamam: false.
+  const b = kur({ sekmeAcilmaz: true });
+  assert.deepEqual({ ...(await b.gonder({ tur: 'drive-ac', url: ADRES }, SEKMEDEKI)) }, { tamam: false });
 });

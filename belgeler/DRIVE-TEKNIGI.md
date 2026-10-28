@@ -6,6 +6,9 @@ Rapordaki iddialar üç türdür. Her birinin yanında hangisi olduğu yazıyor:
 - **[KAYNAK]**: Altına URL'si yazılmış bir belgeye ya da açık kaynak koda dayanır.
 - **[ÇIKARIM]**: Sınanmadı. Kullanıcının kendi bağlantısıyla, oturum açıkken doğrulanmalı.
 
+§0-§5 eklenti yazılmadan önceki araştırmadır, içindeki kod örnekleri de. Eklentinin bugünkü tasarımı ve ölçümleri
+§6-§14'te.
+
 ## 0. Kısa sonuç ve öneri
 
 - **Kimlik:** Dosyanın en sağlam kaynağı Drive'ın kendi gizli öğesi `#drive-active-item-info`. Ön izleme katmanı açıkken DOM'da durur ve içinde `{"id","title","mimeType"}` JSON'u vardır [CANLI]. Adobe Acrobat'ın ve PandaDoc'un eklentileri de bu öğeyi okuyor [KAYNAK]. Dosya listesinde `[data-id]` özniteliği, seçim için `aria-selected="true"`, tekil dosya sayfasında da `/file/d/<id>/` yolu kullanılır.
@@ -14,11 +17,10 @@ Rapordaki iddialar üç türdür. Her birinin yanında hangisi olduğu yazıyor:
   - OAuth ve Drive API gerekmez.
 - **Kullanıcı deneyimi (v1):**
   - (a) Önizleme katmanı açıkken ve dosya adı `.udf` ile bitiyorsa, eklentiye ait sabit konumlu "UDF olarak aç" düğmesi.
-  - (e) `drive.google.com/file/d/<id>/view` sayfasında aynı düğme, istenirse otomatik yönlendirme.
-  - (c) Eklenti simgesi ya da kısayol tuşuyla seçili satırı açma.
+  - (d) `drive.google.com/file/d/<id>/view` sayfasında aynı düğme, istenirse otomatik yönlendirme.
   - (b) Chrome'un kendi sağ tık menüsü Drive satırlarında çıkmaz: Drive `contextmenu` olayını `preventDefault` ediyor [CANLI].
-  - (d) Marketplace ile "Birlikte aç" menüsü en doğal yol, ama Cloud projesi ve OAuth kurulumu ister. v1 için önerilmez.
-- **Görüntüleyici:** MV3'ün varsayılan CSP'si `script-src 'self'`. Yazı DOM API ile kurulur, `innerHTML` kullanılmaz. Zip açmak için kütüphane şart değil: merkezi dizini okuyup `DecompressionStream('deflate-raw')` kullanmak yeter (Chrome 103+). Yazdırma `window.print()` ve dinamik `@page` ile yapılır.
+  - (c) Marketplace ile "Birlikte aç" menüsü en doğal yol, ama Cloud projesi ve OAuth kurulumu ister. v1 için önerilmez.
+- **Görüntüleyici:** MV3'ün varsayılan CSP'si `script-src 'self'`. Yazı DOM API ile kurulur, `innerHTML` kullanılmaz. Zip açmak için kütüphane şart değil: Merkezî dizini okuyup `DecompressionStream('deflate-raw')` kullanmak yeter (Chrome 103+). Yazdırma `window.print()` ve dinamik `@page` ile yapılır.
 
 ## 1. Dosya kimliğini bulma
 
@@ -53,6 +55,9 @@ function hesapNo() {                 // authuser
 }
 const resourceKey = () => new URLSearchParams(location.search).get('resourcekey');
 ```
+
+Örnekteki `hesapNo` `authuser`'ı denetlemeden döndürür. Eklentinin `drive-kimlik.js` `hesapNo`'su yalnız sırayı (0-99) ya
+da sıkı biçimde bir e-posta adresini kabul eder (§13, "Hesap sırası").
 
 ### 1.2 Dosya listesinin DOM'u [CANLI, 2026-10-05, liste görünümü]
 
@@ -209,7 +214,8 @@ Kapsam sorunu [KAYNAK: Drive API "Choose scopes" belgesi]:
 - Drive bu öğeyi kaldırırsa çalışmaz. Öğe Adobe ve PandaDoc'ta da kullanıldığı için orta-düşük risk.
 - Katman dışına yapılan tıklama Drive katmanını kapatabilir. Zararsız, çünkü yeni sekme açılıyor.
 
-**İsteğe bağlı:** "UDF dosyasında otomatik aç" ayarı. Katman açılır açılmaz görüntüleyici açılır.
+**Düğmesiz yol:** Katman açılır açılmaz belge gösterilebilir. Eklenti bunu yapar: Belge Drive'ın görüntüleyicisine gömülür
+(§6), düğme yalnız görüntüleyicinin yapısı tanınmazsa ya da belge gömülemezse (§14) çıkar.
 
 ```js
 // icerik.js (ISOLATED dünya, drive.google.com)
@@ -262,14 +268,7 @@ denetle();
   - Kırılgan: öğe görünümü için karartılmış sınıflar (`.a-v-T`) ve "menü sağ tıktan sonraki 1,5 sn içinde mi açıldı" sezgisi gerekiyor.
   - v2 için düşünülebilir.
 
-### (c) Eklenti simgesi ya da kısayol tuşu
-
-`chrome.action.onClicked` tetiklenince içerik betiğine ileti gönderilir. Betik önce `aktifOge()`, yoksa `document.querySelectorAll('[aria-selected="true"][data-id]')` sonucunu döndürür. OpenLocalForGoogleDrive tam olarak bunu yapıyor ve `commands._execute_action` ile `Ctrl+Shift+9` kısayolu tanımlıyor [KAYNAK].
-
-- **Artısı:** DOM'a dokunmaz, keşfedilebilir, kısayolla hızlıdır.
-- **Eksisi:** Kullanıcı simgeyi bilmeli. Seçim `aria-selected` özniteliğine dayanıyor; bu öznitelik [CANLI] olarak görüldü.
-
-### (d) Drive'ın "Birlikte aç" menüsü (Workspace Marketplace ile Drive UI entegrasyonu)
+### (c) Drive'ın "Birlikte aç" menüsü (Workspace Marketplace ile Drive UI entegrasyonu)
 
 Gerekenler [KAYNAK: enable-sdk, integrate-open, publish, api-specific-auth belgeleri]:
 
@@ -288,39 +287,37 @@ Gerekenler [KAYNAK: enable-sdk, integrate-open, publish, api-specific-auth belge
 - Melez bir yol da mümkün: barındırılan sayfa yalnızca `state` içinden kimliği alır ve eklentiye devreder. Sınanmadı.
 - Maliyeti yüksek: Cloud projesi, OAuth, alan adı sahipliği ve gizlilik politikası, bakım. Kişisel ya da büro kullanımında v1 için önerilmez.
 
-### (e) `drive.google.com/file/d/<id>/view` sayfasında yönlendirme (ÖNERİLEN, (a) ile aynı kod)
+### (d) `drive.google.com/file/d/<id>/view` sayfasında yönlendirme (ÖNERİLEN, (a) ile aynı kod)
 
 E-posta ya da WhatsApp ile gelen paylaşım bağlantıları bu sayfayı açar.
 
 - **Tanıma:** Kimlik yoldan, `resourcekey` sorgudan alınır. `.udf` denetimi `#drive-active-item-info` (bu sayfada var [CANLI]) ya da `document.title` (`"<ad> - Google Drive"` [CANLI]) ile yapılır.
-- **Seçenekler:** düğme göstermek ya da ayar açıksa otomatik geçiş.
+- **Seçenekler:** Düğme göstermek ya da kendiliğinden geçiş. Eklenti belgeyi bu sayfanın içinde gösterir (§6), düğme yalnız sayfanın yapısı tanınmazsa ya da belge gömülemezse (§14) çıkar.
 - **Otomatik geçiş:** İçerik betiği `location.href = chrome-extension://…` yaparsa sayfanın `web_accessible_resources` listesinde olması gerekir; bu da sayfayı her siteye açar. Bunun yerine service worker'a ileti gönderilip `chrome.tabs.update(sender.tab.id, {url})` çağrılmalı [ÇIKARIM; Chrome'un WAR kuralına dayanır].
 - **Kırılganlık:** düşük. URL kalıbı yıllardır aynı.
 
-### (f) Ek seçenek: indirmeyi yakalamak (DOM'dan bağımsız, sınanmadı)
+### (e) Ek seçenek: İndirmeyi yakalamak (DOM'dan bağımsız, sınanmadı)
 
 `downloads` izniyle `chrome.downloads.onDeterminingFilename` kullanılır. `.udf` adlı ve `finalUrl` alanı `drive.usercontent.google.com` olan indirme `chrome.downloads.cancel` ile durdurulur, URL'deki `id` ile görüntüleyici açılır [KAYNAK: chrome.downloads API].
 
 - **Artısı:** Drive'ın "İndir" düğmesi nerede olursa olsun çalışır.
-- **Eksisi:** Kullanıcının olağan indirme akışını değiştirir ve "indirmelerinizi yönetme" izin uyarısı getirir. İsteğe bağlı bir ayar olmalı.
+- **Eksisi:** Kullanıcının olağan indirme akışını değiştirir ve "indirmelerinizi yönetme" izin uyarısı getirir.
 
-**Önerilen birleşim:** v1 = (a) + (e) + (c). v2 = (b)'deki kendi menüye ekleme ve/veya (f). (d) ancak "Birlikte aç" menüsü özellikle istenirse.
+**Önerilen birleşim:** v1 = (a) + (d). v2 = (b)'deki kendi menüye ekleme ve/veya (e). (c) ancak "Birlikte aç" menüsü özellikle istenirse.
 
 ## 4. Görüntüleyici sayfası
 
-**Manifest iskeleti:**
+**Manifest iskeleti** (eklentinin bugünkü manifest'i deponun kökünde, `manifest.json`):
 
 ```json
 {
   "manifest_version": 3,
-  "name": "UDF Görüntüleyici (Drive)",
+  "name": "UDF Ön İzleme",
   "version": "0.0.1",
   "minimum_chrome_version": "103",
   "host_permissions": ["https://drive.google.com/*", "https://drive.usercontent.google.com/*"],
   "background": { "service_worker": "sw.js" },
-  "content_scripts": [{ "matches": ["https://drive.google.com/*"], "js": ["icerik.js"], "run_at": "document_idle" }],
-  "action": { "default_title": "Seçili UDF dosyasını aç" },
-  "commands": { "_execute_action": { "suggested_key": { "default": "Alt+Shift+U" } } }
+  "content_scripts": [{ "matches": ["https://drive.google.com/*"], "js": ["icerik.js"], "run_at": "document_idle" }]
 }
 ```
 
@@ -357,7 +354,7 @@ chrome.runtime.onMessage.addListener((m, sender, yanit) => {
 - **JSZip:** 3.10.1 `jszip.min.js` dosyası 97.630 bayt [CANLI, jsDelivr]. cihadturhan/uyap-udf-viewer bunu kullanıyor [KAYNAK].
 - **fflate:** "8kB package", yalnızca açma için 3 kB [KAYNAK]. Eşzamansız API Blob URL'li Worker açar. `script-src 'self'` altında `worker-src` engeline takılabileceğinden `unzipSync` kullanılmalı [ÇIKARIM].
 - **Kütüphanesiz:** `DecompressionStream('deflate-raw')`, Chrome 103'ten beri var (`deflate` ve `gzip` 80'den beri) [KAYNAK: MDN browser-compat-data].
-  - Dosya **merkezi dizinden** okunmalı. Java'nın `ZipOutputStream` gibi akış yazıcıları yerel başlıkta boyutu 0 yazıp sonuna veri tanımlayıcısı (bit 3) koyar [ÇIKARIM; UDF yazıcısı Java tabanlı, bu yüzden olası].
+  - Dosya **merkezî dizinden** okunmalı. Java'nın `ZipOutputStream` gibi akış yazıcıları yerel başlıkta boyutu 0 yazıp sonuna veri tanımlayıcısı (bit 3) koyar [ÇIKARIM, UDF yazıcısı Java tabanlı, bu yüzden olası].
 
 ```js
 async function zipDosyasi(b, aranan = 'content.xml') {
@@ -396,6 +393,13 @@ if (xml.getElementsByTagName('parsererror').length) throw new Error('XML_BOZUK')
 
 ZIP64 desteklenmiyor; UDF boyutunda gerek yok. Dosya adı UTF-8 bayrağına bakılmadan çözülüyor; `content.xml` ASCII olduğu için sorun olmaz.
 
+Eklentinin motoru (`motor/udf-motoru.js` `zipGirdileri`, `yerelGirdileriDenetle`) paketi de merkezî dizinden okur ve yerel
+başlıkları ayrıca denetler: Girdiler 0. bayttan dizine dek art arda gelir, aralarında en çok 24 baytlık boşluk (veri
+tanımlayıcısının yeri) olabilir, motor bu boşluğun içeriğine bakmaz. 30 baytlık bir yerel başlık o boşluğa sığmaz.
+Yerel başlıktaki ad ve yöntem merkezî dizindekiyle aynıdır, veri tanımlayıcılı saklanmış girdinin verisinde yerel başlık
+imzası geçmez. Yerel başlıkları sırayla okuyan bir okuyucu (Java `ZipInputStream`) merkezî dizindekinden başka bir
+`content.xml` bulmasın. Ayrıntı `GELISTIRME.md` "Bilinen sınırların ayrıntısı".
+
 **Yazdırma ve PDF'e kaydetme:**
 - `window.print()` eklenti sayfasında çalışır. Chrome'un yazdırma penceresindeki "PDF olarak kaydet" hedefi PDF'i verir [ÇIKARIM].
 - `document.title`, belge adının `.udf` uzantısı atılmış hali yapılırsa önerilen PDF adı o olur [ÇIKARIM].
@@ -416,9 +420,8 @@ document.getElementById('yazdir').addEventListener('click', () => window.print()
    - Düğme görünüyor mu?
 2. Görüntüleyici sekmesinde `fetch` 200 dönüyor ve ilk baytlar `PK\x03\x04` mi? Dosya paylaşılmamış (özel) iken de denenmeli.
 3. Çoklu hesapta bak: `/u/1/` klasöründen açınca `authuser=1` ile doğru dosya geliyor mu?
-4. Ayarlarda "Üçüncü taraf çerezleri engelle" açıkken 2. adımı yinele.
+4. Chrome'un ayarlarında "Üçüncü taraf çerezleri engelle" açıkken 2. adımı yinele.
 5. Bağlantıyı `/file/d/<id>/view` olarak aç: düğme ya da yönlendirme çalışıyor mu, `resourcekey` taşınıyor mu?
-6. Satır seçilip kısayol tuşuna basılınca seçili dosya açılıyor mu?
 
 ## Kaynaklar
 
@@ -436,7 +439,7 @@ document.getElementById('yazdir').addEventListener('click', () => window.print()
   - background.js: https://github.com/pandadoc-integration/chrome-extension/blob/HEAD/background.js
   - pdf-detector.js: https://github.com/pandadoc-integration/chrome-extension/blob/HEAD/pdf-detector.js
 - Adobe Acrobat eklentisi içerik betiği (arşivlenmiş kopya): https://github.com/milesrichardson/testing-extmon/blob/HEAD/unpacked/efaidnbmnnnibpcajpcglclefindmkaj/content_scripts/gsuite-content-script.js
-- OpenLocalForGoogleDrive (seçili satır, action, kısayol): https://github.com/murasaqi/OpenLocalForGoogleDrive/tree/HEAD/extension
+- OpenLocalForGoogleDrive (seçili satırın seçicisi): https://github.com/murasaqi/OpenLocalForGoogleDrive/tree/HEAD/extension
 - MarkDrive (Drive'da .md açan eklenti, OAuth kurulumu, içerik betiği): https://github.com/chayprabs/drive-md-editor (src/content/drive-interceptor.ts, docs/oauth-setup.md)
 - Drive menüsüne öğe ekleyen userscript: https://github.com/insell824/tm-open-in-new-for-gdrive
 - gem-factory spesifikasyonu (`#drive-active-item-info`): https://github.com/shazbot996/gem-factory/blob/HEAD/docs/specs/chrome-extension-gem-extractor-SPEC.md
@@ -526,20 +529,20 @@ sayfa ancak o başaramazsa kendisi indirir (§12).
   kapatılan sekmeler) ve işletim sisteminin pencere başlığına da düşer. PDF'e orada "UDF Ön İzleme" önerilir.
 - Görünmez Chrome'da gerçek Drive'ın listesi `HeadlessChrome` kullanıcı kimliğiyle çift tıklamaya tepki vermiyor;
   `Emulation.setUserAgentOverride` gerekiyor (`araclar/gercek-drive.mjs`).
-## 7. Eklenti simgesi ve tek görünüm (2026-10-06)
+## 7. Eklentinin bilgileri ve tek görünüm (2026-10-06)
 
-Kullanıcı kararı: Ayarlar sayfası olmasın (chrome://extensions içindeki seçenekler penceresi titriyor), eklenti simgesi
-belgeyi yeni sekmede açmasın, belge hep Drive'ın içinde görüntülensin.
-- Manifest'te `options_ui` ve `commands` yok. İçerik betiği Drive listesindeki tıklamaları yakalamaz, satırları okumaz,
-  yalnız ön izlemedeki `#drive-active-item-info`'ya ve adrese bakar. Simge Drive sekmesine betik eklemediği için
-  `activeTab` ve `scripting` izinleri gerekmez.
-- Simgenin eylemi yok (manifest'te `action` yok: Açılır pencere ve tıklama işlevi yok). Geliştiricinin X sayfası
-  (`https://x.com/CgrShn`) `author` ve `homepage_url` alanlarında: Chrome onu eklentinin ayrıntılarında web sitesi olarak
-  gösterir, simgeye sağ tıklayınca en üstteki eklenti adı onu açar. Açıklamanın sonunda da "Geliştirici: x.com/CgrShn" yazar
-  (WA Sohbet Sil Buton Gizleyici'deki gibi). Eklentinin ayarı yok, bir şey saklamaz (§13). Kapatmak için `chrome://extensions`
-  kullanılır: Açık sekmedeki içerik betiğinin bağlamı kopar, betik bir sonraki DOM değişikliğinde gömülü belgeyi kaldırır ve
-  görünen `.udf` için "kapatıldı, kaldırıldı ya da güncellendi, sayfayı yenileyin (F5)" uyarısını bir kez gösterir.
-  `icerik.css` sayfa yenilenene dek kalır.
+Belge hep Google'ın kendi ön izleme penceresinin içinde görüntülenir. Yeni sekmedeki büyük görünüme yalnız "UDF olarak
+aç" düğmesi götürür (§9). Düğme görüntüleyicinin yapısı tanınmazsa ya da belge gömülemezse çıkar: Gömme kaydı alınamadı
+ya da aynı dosyanın 10 sn içindeki yeniden gömme sınırı (üç) aşıldı (`kayitHatasiId`, §14).
+- Manifest'te `action`, `options_ui` ve `commands` yok. İçerik betiği Drive listesindeki tıklamaları yakalamaz, satırları
+  okumaz, yalnız ön izlemedeki `#drive-active-item-info`'ya ve adrese bakar. Eklenti sekmeye sonradan betik eklemediği
+  için `activeTab` ve `scripting` izinleri gerekmez.
+- Geliştiricinin X sayfası (`https://x.com/CgrShn`) `author` ve `homepage_url` alanlarında: Chrome onu eklentinin
+  ayrıntılarında web sitesi olarak gösterir, simgeye sağ tıklayınca en üstteki eklenti adı onu açar. Açıklamanın sonunda
+  da "Geliştirici: x.com/CgrShn" yazar (WA Sohbet Sil Buton Gizleyici'deki gibi). Eklentinin ayarı yok, bir şey saklamaz
+  (§13). Kapatmak için `chrome://extensions` kullanılır: Açık sekmedeki içerik betiğinin bağlamı kopar, betik bir
+  sonraki DOM değişikliğinde gömülü belgeyi kaldırır ve görünen `.udf` için "kapatıldı, kaldırıldı ya da güncellendi,
+  sayfayı yenileyin (F5)" uyarısını bir kez gösterir. `icerik.css` sayfa yenilenene dek kalır.
 - Notlu belgede not bölmesi kendiliğinden açılır. Gömülü görünümde bölme geniş pencerede belgenin yanında yer kaplar
   (belge daralan alana yeniden sığar; alt çubuk kalan alana sığacak kadar daralır), dar pencerede (≤ 900 px) belgenin
   üstüne biner ve çubuğun üstünde biter. Drive'ın sağdaki "sonraki" oku (z-index 5) çerçevenin üstünde durduğu için
@@ -548,11 +551,15 @@ belgeyi yeni sekmede açmasın, belge hep Drive'ın içinde görüntülensin.
   gerçek Drive'da düğme 40 px, tıklama alanı 12 px dışına taşıyor, pay 16 px) ve `sag-bosluk` iletisiyle çerçeveye
   bildirir; bölme `--sag-bosluk` kadar içeride durur. Ölçü bir gömme boyunca küçülmez (ok solup gelince bölme kaymasın). Esc gömülü görünümde bölmeyi değil Drive'ın
   penceresini kapatır (bölme her notlu belgede açıldığı için her seferinde fazladan basış istemesin).
-- E-imza rozeti: kullanıcının isteğiyle yalnız "E-imzalıdır". İçerik özeti tutmuyorsa yine uyarı ("E-imza içerikle
-  uyuşmuyor"): değiştirilmiş belgeye "E-imzalıdır" denmez. İmza ve sertifika doğrulanmaz.
+- E-imza rozeti (`goruntule.js` `imzaRozeti`): "E-imzalıdır" yalnız imza dosyasındaki messageDigest içerikle tutunca
+  çıkar (motorda durum `tutarli`). Tutmuyorsa uyarı renginde "E-imza içerikle uyuşmuyor" (`tutarsiz`). İmza dosyası var
+  ama içerikle karşılaştırılamıyorsa (`bilinmiyor`: Özet okunamıyor ya da uzunluğu tanınmıyor, imza dosyası açılamadı,
+  iki tane ya da yalnız alt klasörde) nötr renkte "E-imza dosyası var, içerikle karşılaştırılamadı", tam açıklama
+  `title`'da. Dar gömülü çubukta bu rozetin kısa biçimi "E-imza karşılaştırılamadı" görünür (§9). İmza ve sertifika
+  doğrulanmaz: Değiştirilmiş içeriğin özetini taşıyan bir imza dosyası da "E-imzalıdır" alır.
 - Simge (kullanıcı on öneriden seçti, 2026-10-27): Köşesi kıvrık beyaz sayfada Google'ın renkleriyle (mavi `#4285F4`,
-  yeşil `#34A853`, sarı `#FBBC05`) üç satır, sol alttan taşan UYAP kırmızısı (`#c42127`, `C:\UYAP\Uyap Kelime
-  Islemci\uyapicon.ico`'dan ölçüldü) rozette beyaz "UDF". Google'ın logoları kopyalanmadı (marka), yalnız renkleri. 16 ve
+  yeşil `#34A853`, sarı `#FBBC05`) üç satır, sol alttan taşan UYAP kırmızısı (`#c42127`, UYAP Doküman Editörü'nün kendi
+  simgesinden, `uyapicon.ico`, ölçüldü) rozette beyaz "UDF". Google'ın logoları kopyalanmadı (marka), yalnız renkleri. 16 ve
   32 px'te rozet yazısız. Üretim `node araclar/simge-uret.mjs` (büyük çizimde 16 px saydam kenar, 48 px'te daraltılmış).
 
 ## 8. Notlar açıkken ortalama, Dark Reader, boşluğa tıklama (2026-10-07)
@@ -640,9 +647,9 @@ Reader açıkken gömülü görünüm PDF'lerdeki gibi arkadaki Drive'ı göster
 
 ## 9. Alttaki çubuk: yakınlaştırma ortada (2026-10-07)
 
-Kullanıcı istekleri: Çubukta doğrulama kodu ve "Yeni sekmede aç" düğmesi olmasın (⛶ tam ekran sanılıyor), yakınlaştırmanın
-iki çizgisi şeridin tam ortasında olsun, öbür düğmeler çok farklı görünmeden. İki seçenek görüntüsüne bakıp: Notlar
-düğmesi yazısız olsun (simge ve sayı), e-imzasız ve notsuz belgede solda "E-imzasız" yazsın.
+Gömülü çubukta yalnız rozetler, Notlar, yakınlaştırma (−, %, +) ve Yazdır / PDF var. Yakınlaştırmanın iki çizgisi şeridin
+tam ortasında durur, öbür düğmeler çok farklı görünmez. Notlar düğmesi yazısız (simge ve sayı), e-imzasız ve notsuz
+belgede solda "E-imzasız" yazar.
 - Düzen (`goruntule.html` ile `gomulu.html` aynı): `nav.cubuk-sag` üç parça: `.cubuk-yan.bas` (rozetler, Notlar),
   `#olcek-grup`, `.cubuk-yan.son` (Drive'da aç, İndir, Yazdır, Dosya aç). Rozetler bu parçada durur (sekmede de araç
   çubuğunda). Gömülü görünümde `.cubuk-sol` (simge, başlık) gizli; `.cubuk-sag` ızgara:
@@ -651,15 +658,21 @@ düğmesi yazısız olsun (simge ve sayı), e-imzasız ve notsuz belgede solda "
 - Notlar solda: Sağda yalnız Yazdır / PDF (≈ 125 px) kalınca yanlar yakın; Notlar sağda olsaydı imzalı notlu
   belgede solda ≈ 150 px boşluk kalırdı. Notlar düğmesi yazısız (≈ 64 px), `aria-label` "Notlar (n)".
 - Sol yan boş kalmasın: e-imzasız ve notsuz belgede "E-imzasız" rozeti (`rozetleriYaz`). Ofisteki Drive for desktop'ta
-  rastgele 12 gerçek UDF'nin 12'si e-imzasız ve notsuzdu; yani en sık görülen durum bu. Kullanıcıya dört seçenek
-  (boş kalsın, çubuk kısalsın, "E-imzasız", yalnız yazıcı simgesi) görüntüyle soruldu.
-- Doğal genişlik sığmazsa (`cubuguYerlestir`): `.sikisik` ile ızgara yerine düz sıra (yanlar eşitlenmez, önce
-  rozetler kısalır). Önce eşit düzen ölçülür, sığmazsa sıkışık düzen ölçülür.
-- Doğrulama kodu gösterilmez, motor onu yalnız okur (`ozellikler.dogrulamaKodu`). Ölçüm: Aynı 12 gerçek belgenin
-  6'sında kod vardı, hiçbirinin metninde (üst/alt bilgi dâhil) yazmıyordu. Kod hiçbir yerde görünmez (kullanıcıya
-  raporda söylendi).
-- Büyük görünüme yalnız "UDF olarak aç" (yapı tanınmazsa) götürür. Gömülü görünümde PDF'e belge adı önerilmez (§6.3),
-  ad elle yazılır.
+  rastgele 12 gerçek UDF'nin 12'si e-imzasız ve notsuzdu, yani en sık görülen durum bu.
+- Doğal genişlik sığmazsa (`cubuguYerlestir`): Önce eşit düzen ölçülür. Sığmazsa `.kisa` ile rozetlerin kısa biçimi
+  denenir (yanlar yine eşit, yalnız kısa biçimi olan rozet değişir: "E-imza karşılaştırılamadı", §7). O da sığmazsa
+  `.sikisik` ile ızgara yerine düz sıra (yanlar eşitlenmez). O da sığmazsa rozetler kırpılır. Kısa biçim sıkışık düzenden
+  önce gelir, çünkü sıkışık düzende yakınlaştırma ortadan kayar. Görünmez Chrome'da sahte Drive'da ölçüldü: Uzun rozet
+  ≈ 246 px. Notsuz belgede çubuk uzun yazıyla 672 px, 800 px'lik pencereye sığıyor, 640 px'te `.kisa` (466 px), 440 px'te
+  `.kisa` ve `.sikisik`. Notlu belgede çubuk 808 px, 1280 px'te sığıyor, 1000 ve 800 px'te `.kisa` (602 px). Yakınlaştırma
+  hep ortada. Sekmedeki araç çubuğunda rozetin hep uzun biçimi görünür.
+- Belge görüntüleyicinin sınırına takılırsa çubukta uyarı renginde "Belgenin bir kısmı gösterilemedi" rozeti çıkar,
+  sayfaların altındaki not neyin eksik olduğunu söyler (`udf-motoru.js` `kesilmeNotu`, ayrıntı `GELISTIRME.md` "Bilinen
+  sınırların ayrıntısı"). Notun ekran metni basılmaz, yerine son sayfanın içeriğinin altına ince çerçeveli küçük bir
+  "Eksik baskı: …" kutusu basılır (`.udf-not-baski`, 9 pt, ekran okuyucuya ulaşmaz). Tam belgede not yoktur, baskı değişmez.
+- Motor `documentproperties.xml`'deki doğrulama kodunu ve sicili okur (`ozellikler`), görüntüleyici bunları göstermez.
+- Büyük görünüme yalnız "UDF olarak aç" (yapı tanınmazsa ya da belge gömülemezse, §7) götürür. Gömülü görünümde PDF'e
+  belge adı önerilmez (§6.3), ad elle yazılır.
 - Yükleme yazısı (kullanıcı isteği): Drive'dan gelen belgede indirme ve hazırlama boyunca "UDF Ön İzleme
   eklentisiyle açılıyor…", altında dosya adı (`goruntule.js` `ACILIYOR`, arada yazı değişmez). Bilgisayardan açılan
   dosyada "Belge hazırlanıyor…" yazar. Sınama D1: sahte Drive ilk indirmeyi 2 sn geç yanıtlar (`sunucuKur` `gecikme`).
@@ -671,12 +684,13 @@ düğmesi yazısız olsun (simge ve sayı), e-imzasız ve notsuz belgede solda "
 - Çerçevede `allow="clipboard-write"` izni yok: Panoya yazan bir düğme yok (bağımsız gözden geçirmede denetlendi). Seçip
   Ctrl+C ile kopyalamak bu izni istemez.
 - Sınama: `chrome-sina.mjs drive` D1'de yakınlaştırmanın ortası çubuğun ortasıyla 1 px içinde (dört durum, düğmeler hapın
-  içinde, binme yok; `[ekran.png]` verilirse her durumun çubuk görüntüsü `-cubuk-<n>.png`), B2'de rozet kuralı (yeni
-  yapay örnek `notlu-imzasiz.udf`). D1 her durumda Drive sekmesini 1 px daraltıp genişletir: çubuğun yerleşimi
-  (`cubuguYerlestir`) yalnız belge alanının boyu değişince yeniden hesaplanır; `window` `resize` olayı gömülü sayfada
-  bir şey tetiklemez (gözden geçirmede bulundu: Daraltıp genişletmeden 2.–4. durum 1. durumun `.sikisik` değerini
-  okur). Bozuk kopyayla (4. durumda çok uzun rozet) D1 `SORUN` veriyor. "Drive'da aç" "UDF olarak aç"la açılan büyük
-  görünümde sınanır (Y1).
+  içinde, binme yok, `[ekran.png]` verilirse her durumun çubuk görüntüsü `-cubuk-<n>.png`), B2'de rozet kuralı (yapay
+  örnekler `notlu-imzasiz.udf`, `imza-bozuk.udf`, `imza-okunamayan.udf`), D11'de karşılaştırılamayan imzanın rozeti
+  geniş ve 640 px'lik pencerede. `npm test` (`gomulu.test.mjs`) rozetleri ve çubuğun kısa ve sıkışık düzenini jsdom'da
+  sınar. D1 her durumda Drive sekmesini 1 px daraltıp genişletir: Çubuğun yerleşimi (`cubuguYerlestir`) yalnız belge
+  alanının boyu değişince yeniden hesaplanır, `window` `resize` olayı gömülü sayfada bir şey tetiklemez (gözden geçirmede
+  bulundu: Daraltıp genişletmeden 2.–4. durum 1. durumun `.sikisik` değerini okur). Bozuk kopyayla (4. durumda çok uzun
+  rozet) D1 `SORUN` veriyor. "Drive'da aç" "UDF olarak aç"la açılan büyük görünümde sınanır (Y1).
 
 ## 10. Bellek (2026-10-07)
 
@@ -755,6 +769,27 @@ uydurma ekli iki deneme iletisiyle yapıldı. Gerçek belgeye dokunulmadı.
 - İçerik betiği ek kartı tıklamasını (ileti `th` ve zaman) tutar, tıklamaya karışmaz. Ön izleme açıldığı anda
   (`#drive-active-item-info` belirince) son 5 sn'deki tıklama o ön izlemenin tıklamasıdır. Ön izleme kapanınca
   unutulur (`icerik.js` `onizlemeyiIzle`). Eski bir tıklama sonraki bir ön izlemeye taşınmaz.
+- Kapanış gözlemcinin geri çağrısında, 150 ms'lik toplu denetimi beklemeden işlenir: Kapanıp hemen başka bir kartla açılan
+  ön izleme yeni kartın ekini gösterir (sahte Gmail G17, kapanıştan 13 ms sonra). Kapanıştan önce görülen tıklama sonraki
+  ön izlemeye geçmez (`tiklamaGecerli`). Açılış ise tıklama görüldüyse erken denetimde, görülmediyse toplu denetimde
+  işlenir (§12, 1. madde). Kapanıştan sonraki 150 ms içinde, kapanan ön izlemenin konumu sabit katmanında (aynı düğüm)
+  tıklamasız yeniden beliren ön izleme aynı ön izleme sayılır, tıklaması ve tahmin izni geri gelir. Bu bir önlem: Gerçek
+  Gmail'de oklarla gezinirken bilgi öğesinin bir an kalkıp kalkmadığı ölçülmedi. Gmail gezinirken katmanı korur (ana
+  alanları aynı pencereye ekler, §11.1). Yeni bir katmanda açılan ön izleme (kartsız açılış ya da tıklaması toplu
+  denetime dek görülmemiş açılış) önceki tıklamayı almaz (sahte Gmail G17b: Kapanıştan 150 ms dolmadan listedeki
+  düğmeyle açılınca belge gömülmez). Kalan sınır: Gmail kapanan ön izlemenin katmanını 150 ms içinde kartsız bir açılış
+  için yeniden kullanırsa (ölçülmedi) o ön izleme önceki tıklamayı alabilir.
+- Bilgi öğesine güven (`gmail-ek.js` `bilgiOgesi`): Gmail'de `#drive-active-item-info` yalnız belgede tekse ve konumu sabit
+  bir atası (görüntüleyicinin kök katmanı, `body` sayılmaz) varsa kabul edilir. Katman bir `role=main` içinde olmamalı
+  (Gmail'in posta alanının içindeki konumu sabit bir kap katman sayılmaz), öğeyle katman arasında en çok bir `role=main`
+  bulunmalı. Belge gömülmek için ana alanın da bu katmanın içinde ve bir `role=dialog` içinde olması gerekir, Gmail'in
+  kendi posta alanı hiçbir durumda gömme yeri olmaz. Katman tanınıp ana alan bulunmazsa "UDF olarak aç" yolu kalır.
+  Katman tanınmazsa "UDF olarak aç" düğmesi de çıkmaz, Gmail'in kartı kalır. Gerekçe: Gmail ileti gövdesindeki kimlikleri
+  (ve konumu) koruyorsa bir e-postaya konan aynı kimlikli öğe belgeyi tıklamasız gösterebilir ya da düğmeyi
+  çıkarabilirdi. §11.1'deki ölçüm öğenin tek olduğunu ve sabit katmanın içinde durduğunu gösterdi, Gmail'in kimlikleri
+  koruyup korumadığı ölçülmedi. Drive'da öğe yine `getElementById` ile alınır (sayfaya orada dışarıdan öğe konamaz, öğenin
+  Drive'da tek olduğu da ölçülmedi). Sınama: `gmail.test.mjs`, `icerik.test.mjs`, sahte Gmail G18 ve G18b (iletinin
+  gövdesinde konumu sabit kaptaki öğe, pencere ve ana alanla da: Ne gömülür ne düğme çıkar).
 - Gösterilen ek, o iletinin kartlarından etkin ana alanın sırasındaki karttır. Adı pencerenin adıyla tutmalı. Tutmazsa
   iletide o adda tek ek varsa o alınır. Aynı adlı iki ek (deneme iletisinde "Aynı ad.udf" iki kez) sırayla ayrılır.
   Tıklanan iletide eşleşme belirsizse başka iletiye bakılmaz.
@@ -765,7 +800,12 @@ uydurma ekli iki deneme iletisiyle yapıldı. Gerçek belgeye dokunulmadı.
   yapılmaz (bağımsız gözden geçirmede bulundu). Gmail bu düğmeleri yalnız ön izleyebildiği türler için gösterir, .udf
   için göstermez (2026-10-27 ölçümü).
 - Gmail iletideki Drive bağlantılarını da aynı görüntüleyicide gösterebilir. O zaman kimlik dolu olur ve Drive yolu
-  kullanılır (hesap sırası Gmail'in adresinden). Bu yol gerçek Gmail'de ölçülmedi.
+  kullanılır (hesap sırası Gmail'in adresinden). Kaynak anahtarı kullanıcının gerçek, değiştirici tuşsuz tıklamasıyla
+  basılan bağlantının adresinden alınır: Adres `drive.google.com` ya da `docs.google.com` dosya adresiyse ve
+  `resourcekey` taşıyorsa son basılanın kimliği ve anahtarı sekme yenilenene dek bellekte tutulur (§13). Anahtar yalnız
+  aynı kimlikli dosya gösterilince kullanılır (`icerik.js` `driveBaglantisi`, `hedefBul`), sayfanın ürettiği tıklama
+  sayılmaz. Gmail bağlantıyı `google.com/url` yönlendirmesiyle sararsa ya da bağlantısız bir kutucuk kullanırsa anahtar
+  bulunmaz. Bu yol gerçek Gmail'de ölçülmedi.
 
 ### 11.4 Diğer
 - Çerçeve Gmail'in içindeyse içerik betiği adrese `u=g` koyar. Görüntüleyici iletilerini `https://mail.google.com`
@@ -816,14 +856,21 @@ Değişiklikler:
    ("UDF olarak aç" düğmesi görüntüleyici yerleşirken çıkmaz). Gmail'de ön izlemeyi açan kart tıklaması henüz görülmediyse
    erken denetim yapılmaz (Gmail ön izlemeyi tıklama olayı içerik betiğine ulaşmadan açarsa §11.3'teki tıklama tutma
    bozulmasın). Öbür DOM değişikliklerinde 150 ms toplama sürer, gözlemcinin geri çağrısına yalnız bir `getElementById`
-   eklendi.
+   eklendi. Gmail'de ön izlemenin kapanışı da geri çağrıda, beklemeden işlenir (§11.3). Bilgi öğesinin doğrulanması
+   (`bilgiOgesi`) geri çağrıda değil, toplu denetimde yapılır.
 2. Gmail: .udf ek kartına basılınca (fare basışı, tıklama, Enter ya da boşluk, değiştirici tuşsuz, üstüne gelmek değil,
-   yalnız kullanıcının gerçek girişi: `isTrusted`, sayfanın betiğinin ürettiği olay ek indirtmez)
-   içerik betiği eki hemen indirmeye başlar ve service worker'ı uyandırır (`uyan` iletisi, gömme kaydı onun açılışını
-   beklemesin). Görüntüleyici baytları isteyince (`gmail-indir`) bu indirme kullanılır, bir kez (anahtarı doğrulanmış
-   değerlerden kurulan indirme adresi). Kullanılmayan indirme 15 sn sonra bırakılır (baytları sıfırlanır), aynı anda en
-   çok üç tutulur. Ad `download_url`'den okunur: Yalnız bağlantısı olan kartta ön indirme yok. Gerçek kullanımda fare
-   basışıyla bırakışı arasındaki süre (~100 ms) de kazanılır, CDP'nin tıklaması bunu ölçmez.
+   yalnız kullanıcının gerçek girişi: `isTrusted`, sayfanın betiğinin ürettiği olay ek indirtmez) içerik betiği eki
+   hemen indirmeye başlar ve service worker'ı uyandırır (`uyan` iletisi, gömme kaydı onun açılışını beklemesin).
+   Görüntüleyici baytları isteyince (`gmail-indir`) bu indirme kullanılır, bir kez (anahtarı doğrulanmış değerlerden
+   kurulan indirme adresi). Her ön indirme kendi `AbortController`'ıyla başlar. Kullanılmayan indirme 15 sn sonra
+   bırakılır, aynı anda en çok üç tutulur (dördüncüsü gelince en eskisi bırakılır). Bırakılan indirme sürüyorsa kesilir,
+   inmiş baytları sıfırlanır, kesilen indirme `cacheCounter` ile yeniden denenmez ve sonucu kimseye gitmez.
+   Görüntüleyicinin aldığı ön indirmenin denetleyicisi süren indirmelerin listesine (`gmailSurenler`) geçer. İçerik
+   betiğindeki Gmail bayt kayıtları da en çok üç (`BAYT_EN_COK`, en eskisi bırakılıp sıfırlanır). Görüntüleyicinin
+   istediği indirme kesilir: Aynı anahtarla yeni istek gelince ("Yeniden dene") ve çerçeve kaldırılınca (`gomuluKaldir`
+   çerçevenin anahtarını `gmailBirak` ile bırakır). Süren bu indirmenin süre sınırı yoktur: 15 sn'lik bekleme baytlar
+   indikten sonra başlar. Ad `download_url`'den okunur: Yalnız bağlantısı olan kartta ön indirme yok. Gerçek kullanımda
+   fare basışıyla bırakışı arasındaki süre (~100 ms) de kazanılır, CDP'nin tıklaması bunu ölçmez.
 3. Drive: Service worker gömme kaydını yazarken dosyayı indirmeye başlar (`arkaplan.js` `onIndir`). Gömülü görüntüleyici
    önce ona sorar (`indir`, 1 MB'lık dilimler, baytlar son dilime ya da en çok 15 sn), o başaramazsa (oturum, izin ya da ağ
    hatası) kendisi indirir. Service worker'ın isteği bütün çerezlerle gider: Üçüncü taraf çerezleri kapalıyken de tek istek
@@ -831,8 +878,16 @@ Değişiklikler:
    Aynı kodda yalnız sıra değiştirilerek ölçüldü (5 tekrar): Küçük ve 205 KB'lık belgede service worker yolu 24-33 ms
    hızlı, 5 MB'ta 31-40 ms yavaş. UYAP belgelerinin çoğu 1 MB'ın altında olduğu için bu yol seçildi. Drive'da oklarla
    hızlı gezinince her dosya için bir kayıt ve indirme gelir: Gmail'deki gibi istenmemiş ön indirme ve tutulan bayt kaydı
-   en çok üçer (sınır aşılınca en eskisi bırakılır). Aynı sekmeden yeni bir gömme kaydı gelince o sekmenin henüz
-   istenmemiş ön indirmesi bırakılır (içerik betiği önceki çerçevesini kaldırdı), sürüyorsa baytları inince tutulmaz.
+   en çok üçer (sınır aşılınca en eskisi bırakılır). Service worker'daki her Drive indirmesi kendi `AbortController`'ıyla
+   başlar (`DriveIndir.udfIndir(kayit, { signal })`) ve sürerken izlenir (`surenler`). Bırakılan ön indirme kesilir:
+   Üçlük sınır aşılınca, 15 sn dolunca ve aynı sekmeden yeni bir gömme kaydı gelince. Yeni gömme kaydı o sekmenin
+   görüntüleyicinin istediği ama bitmemiş indirmesini de keser: İçerik betiği yeni kaydı göndermeden önce eski çerçeveyi
+   her zaman kaldırır (`gom` içinde `gomuluKaldir`). Çerçeve yine de yaşıyorsa AG alır ve dosyayı kendisi indirir. Aynı
+   anahtarla yeni istek ("Yeniden dene") öncekinin süren indirmesini keser. Kesilen indirmenin sonucu tutulmaz, hiçbir
+   görüntüleyiciye verilmez, sonradan inen baytları sıfırlanır. Böylece bir sekmede yalnız son çerçevenin indirmesi
+   sürer. Gerekçe: Görüntüleyici ön indirmeyi 22-44 ms içinde ister, gerçek gezinmede ön indirmelerin neredeyse hepsi
+   kullanıcı sonraki dosyaya geçmeden istenmiş olur. Yalnız istenmemiş ön indirmeyi kesmek süren indirmeleri
+   sınırlamazdı.
 4. Base64: Tarayıcının kendi çeviricisi (`Uint8Array.prototype.toBase64`, `Uint8Array.fromBase64`, Chrome 140'tan beri)
    varsa o, yoksa eski yol (`indir.js` `base64`, `base64Coz`, `arkaplan.js`, motorda resim verisi). 5 MB'ta kodlama
    40 → 1,5, çözme 24 → 3,5 ms. Çıktı aynı (`npm test` iki yolu da sınar).
@@ -855,28 +910,29 @@ olur. Kalan süre ağın kendisi (Gmail ~505, Drive ~405 ms), ardından okuma ve
 indirmenin kazancı ölçülmedi: Sahte sayfa ön izlemeyi tıklamayla aynı anda açıyor. Gerçek Gmail'in açılışı sürdükçe
 kazanç büyür.
 
-Sınama: `npm test` (service worker'ın ön indirmesi, süresi ve sınırları, `uyan`, base64'ün iki yolu, resim baytları iki yolda aynı),
-`chrome-sina.mjs gmail` (G1'de ek çerçeve eklenmeden ve açılışta bir kez istenir, G16'da
-sayfanın ürettiği olaylar ön indirme başlatmaz),
+Sınama: `npm test` (service worker'ın ön indirmesi, süresi, sınırları ve kesilmesi, `uyan`, base64'ün iki yolu, resim
+baytları iki yolda aynı, `icerik.test.mjs`'te Gmail'in ön indirmesi, kesilmesi ve bayt kayıtları), `chrome-sina.mjs
+gmail` (G1'de ek çerçeve eklenmeden ve açılışta bir kez istenir, G16'da sayfanın ürettiği olaylar ön indirme başlatmaz),
 `chrome-sina.mjs drive` (D1'de tek istek, görüntüleyici hazır olmadan, D9'da service worker başaramazsa görüntüleyici
 kendisi indirir, üçüncü taraf çerezleri kapalıyken tek istek).
 
 ## 13. Gizlilik (2026-10-27)
 
-Kullanıcı kararları: Eklentinin ayarı olmasın, eklenti hiçbir şey saklamasın, geliştiricinin X sayfası WA Sohbet Sil Buton
-Gizleyici'deki gibi eklentinin bilgilerinde dursun (simgenin eylemi yok). Kararlardan önce kodun bütününe bağımsız bir gizlilik incelemesi yapıldı. Uygulananlar:
+Eklentinin ayarı yoktur, hiçbir şey saklamaz, geliştiricinin X sayfası WA Sohbet Sil Buton Gizleyici'deki gibi eklentinin
+bilgilerinde durur (§7). Kodun bütününe bağımsız bir gizlilik incelemesi yapıldı. Uygulananlar:
 
 - **İzinler:** Manifest'te `permissions` yok, `host_permissions` yalnız `https://drive.usercontent.google.com/*`. İçerik
   betiği yalnız `drive.google.com/drive/*`, `drive.google.com/file/*` ve `mail.google.com/mail/*` sayfalarında çalışır.
   Gömülü giriş sayfası (`web_accessible_resources`) ve `frame-ancestors` kökene göre iki siteye açık kalır. Sahte Drive'ın
   klasör (`/drive/u/0/folders/…`) ve dosya sayfası (`/file/d/<id>/view`), sahte Gmail'in posta sayfası (`/mail/u/1/`)
   bu eşleşmelerle sınandı.
-- **Kayıt bir kez alınır:** Açılacak belgenin kaydı (Drive: Kimlik, ad, hesap sırası, kaynak anahtarı. Gmail eki: Ad, ek
+- **Kayıt bir kez alınır:** Açılacak belgenin kaydı (Drive: Kimlik, ad, hesap, kaynak anahtarı. Gmail eki: Ad, ek
   bilgisi, ekin açıldığı sekme) service worker'ın belleğinde (`arkaplan.js` `kayitlar`) rastgele anahtarla durur. Görüntüleyici
   açılınca `kayit-al` iletisiyle onu bir kez alır, kayıt o anda silinir. İleti yalnız eklentinin görüntüleyici sayfalarından
   kabul edilir (`goruntuleyiciden`). Alınmayan kayıt 60 sn sonra silinir, aynı anda en çok beşi durur. Görüntüleyici kaydı
   kendi belleğinde tutar, indirme ve "Yeniden dene" için geri gönderir. Service worker onu yeniden doğrular
-  (`kayitTemizle`: Drive kimliği, hesap sırası 0-99, kaynak anahtarının biçimi, `GmailEk.ekTemizle`, tam sayı sekme).
+  (`kayitTemizle`: Drive kimliği, hesap (sıra 0-99 ya da sıkı biçimde e-posta adresi), kaynak anahtarının biçimi,
+  `GmailEk.ekTemizle`, tam sayı sekme).
   Sonuç: Sekme yenilenince (F5) ya da oturum geri yüklenince belge yeniden açılmaz ("Belge bilgisi bulunamadı"). Sayfa ya
   da başka bir eklenti eski bir anahtarla belgeyi yeniden açtıramaz. Service worker kayıtla alınması arasında (onlarca ms)
   kapanırsa kayıt kaybolur. Bu durumda gömülü görünüm "Sayfayı yenileyin" der.
@@ -887,9 +943,34 @@ Gizleyici'deki gibi eklentinin bilgilerinde dursun (simgenin eylemi yok). Kararl
   yalnız o hesapla indirilir (`indir.js` `udfIndir`). Bilinmiyorsa yalnız hesapsız istek gider (Drive sayfasının kendi
   kullandığı varsayılan hesap). Dosyanın kimliği hiçbir durumda tarayıcıdaki öbür Google hesaplarının oturumuyla gönderilmez.
   Erişemeyen hesapta "Dosyayı ona erişebilen hesapla açın" denir. Sahte Drive D9: İki istek, ikisi de `authuser=0`.
-- **Baytların ömrü:** Service worker'daki bayt kayıtları ve istenmemiş Drive ön indirmesi, içerik betiğindeki Gmail
-  baytları ve ön indirmesi son dilime ya da en çok 15 sn tutulur ve bırakılırken sıfırlanır (`fill(0)`). Görüntüleyici
-  baytları ön izlemeden yüzlerce ms sonra istediği için ön indirmenin kazancı sürer (aşağıdaki ölçüm).
+  Adresteki `authuser` e-posta adresi de olabilir (`?authuser=ad@ornek.com`). Sıkı biçimdeyse olduğu gibi alınır ve
+  `URLSearchParams` ile kodlanarak (`authuser=ad%40ornek.com`) hem indirme adresine (virüs tarama onayındaki ikinci istek
+  dâhil) hem "Drive'da aç" bağlantısına konur. Biçim: En çok 254 karakter, tek `@`, boşluk, denetim karakteri ve
+  `/ ? # & =` yok, alan adı noktalı, ASCII. Denetim `drive-kimlik.js` (`hesapNo`), `indir.js` (`hesapTemizle`) ve
+  `arkaplan.js`'te (`hesapSirasi`) aynıdır, `npm test` üçünü sınar. Yoldaki `/u/<n>/` önce gelir, başka her biçim
+  hesapsız istek olur. Gerçek Drive'ın bu adresi açınca ne yaptığı ve `drive.usercontent.google.com`'un e-postalı
+  `authuser`'ı kabul ettiği ölçülmedi.
+- **Ağ hatası (AG):** İstek yanıt almadı. Bağlantı yoksa ya da engelliyse de, oturum yokken Drive giriş sayfasına
+  yönlendirince de (CSP `connect-src` yönlendirmeyi keser) böyle görünür, iki neden ayırt edilemez. Bu yüzden ileti
+  ikisini birlikte söyler (`indir.js` `hataAciklamasi`). Drive'da başlık "Dosya Drive’dan alınamadı", metin "İnternet
+  bağlantınızı ve Drive’da, dosyaya erişebilen hesapla oturumunuzun açık olduğunu denetleyip “Yeniden dene”ye basın".
+  Gmail'de başlık "Ek Gmail’den alınamadı", metin "İnternet bağlantınızı ve Gmail’de oturumunuzun açık olduğunu
+  denetleyip “Yeniden dene”ye basın". Giriş sayfasının HTML'i geldiyse (`OTURUM_YOK`) ileti yalnız oturumu söyler.
+- **Baytların ömrü:** Service worker'daki bayt kayıtları ve içerik betiğindeki Gmail baytları son dilime ya da en çok
+  15 sn tutulur ve bırakılırken sıfırlanır (`fill(0)`), ikisinde de aynı anda en çok üç kayıt durur. Kullanılmayan ön
+  indirme (Drive'da service worker'ın, Gmail'de içerik betiğinin) bırakılınca sürmez, kesilir (§12, 2. ve 3. madde).
+  İndirme kesilince ya da yarıda kalınca (iptal, 40 MB sınırı, kopan bağlantı) o ana dek inen parçalar sıfırlanır,
+  başarılı indirmede de birleştirilen ara parçalar (`indir.js` `govdeOku`). Görüntüleyici baytları ön izlemeden
+  yüzlerce ms sonra istediği için ön indirmenin kazancı sürer (aşağıdaki ölçüm).
+- **İçerik betiğinin belleği:** Ön izleme kapanınca gömmenin durumu (`gomulu`, `yenidenGomme`, `kayitHatasiId`)
+  sıfırlanır. Sekme yenilenene ya da kapanana dek, sonrakiyle değişerek, yalnız şunlar kalır: "UDF olarak aç"ın son
+  açtığı dosyanın kimliği (`sonAcilan`, çift tıklama süzgeci), Gmail'de son basılan ek kartının ileti kimliği
+  (`sonTiklanan`, `kapanan`, ön izlemeyi açan tıklamayı tanımak için) ve son basılan, kaynak anahtarlı Drive
+  bağlantısının kimliğiyle kaynak anahtarı (`sonDriveBaglantisi`). Anahtar ön izleme kapanınca ya da bir süre sonra
+  silinmez: Google bilgi öğesini bir an kaldırıp ön izlemeyi yeniden kurunca (§11.3) ya da ön izleme açıkken ana alanı
+  yeniden çizince belge aynı anahtarla yeniden gömülür. Kullanıcının her yalın, gerçek tıklamasında tıklanan bağlantının
+  adresi `urldenBilgi` ile okunur, yalnız Drive dosyası bağlantısı tutulur. README ve gizlilik politikası (`MAGAZA.md`)
+  bunu söyler, `testler/belgeler.test.mjs` metni koda bağlar.
 - **CSP:** `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src
   https://drive.usercontent.google.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors
   https://drive.google.com https://mail.google.com`. Görüntüleyici stilleri `goruntule.css`'ten ve CSSOM'dan
@@ -900,7 +981,10 @@ Gizleyici'deki gibi eklentinin bilgilerinde dursun (simgenin eylemi yok). Kararl
   `chrome-sina.mjs drive`, `gmail`, `gorsel` (bütün `testler/ornekler`) ve `paket` sıfır ihlal verdi. İhlaller
   `cdp.mjs` `cspIzle` (eklentinin sekmeleri, gömülü çerçeveleri ve service worker'ı, Log ve Audits) ve
   `chrome-sina.mjs` `hataToplayici` ile sayılır.
-- **Diğer:** "UDF olarak aç"ın çift tıklama süzgeci yalnız son açılan belgeyi tutar (`icerik.js` `sonAcilan`). Eklenti
+- **Diğer:** "UDF olarak aç"ın çift tıklama süzgeci yalnız son açılan belgeyi tutar (`icerik.js` `sonAcilan`). Düğme
+  `udf-ac` iletisinin yanıtını bekler: Google'ın ön izlemesi yalnız arka plan sekmeyi açtığını bildirince (`{ tamam: true }`)
+  Esc ile kapanır. Sekme açılamazsa ön izleme açık kalır, "Belge yeni sekmede açılamadı. Yeniden deneyin." uyarısı çıkar,
+  süzgeç sıfırlanır ve düğme hemen yeniden denenebilir. Çift tıklamanın ikinci tıklaması ikinci bir Esc göndermez. Eklenti
   kapatılınca, kaldırılınca ya da güncellenince içerik betiğinin uyarısı "kapatıldı, kaldırıldı ya da güncellendi,
   sayfayı yenileyin (F5)" der.
 
@@ -909,10 +993,14 @@ Gmail ağır 551 / 545, Drive küçük 432 / 427, Drive ağır 454 / 439. §12'd
 alınması bir ileti daha ekler (1-2 ms).
 
 Sınama: `npm test` (`arkaplan.test.mjs`: Kayıt bir kez alınır, 60 sn ve beş kayıt sınırı, yabancı gönderen, geri gönderilen
-kaydın doğrulanması, 15 sn ve sıfırlama. `indir.test.mjs`: Hesap sırası. `gomulu.test.mjs`: CSP, izin
-yok, kodda depo kullanımı yok. `paketle.test.mjs`: İzin ve simge), `chrome-sina.mjs drive` (D9, D10 ve Y1'de "Yeniden
-dene", Y3'te sekmede yazdırma ve başlık, Y4'te yenilenen sekme, E1'de simge, izin ve depo, C1'de CSP), `chrome-sina.mjs
-gmail` (G7'de ve sekmede "Yeniden dene", yenilenen sekme, CSP).
+kaydın doğrulanması, 15 sn ve sıfırlama, hesap biçimi, indirmelerin kesilmesi. `indir.test.mjs`: Hesap sırası ve e-posta
+adresi, kesilen ve yarıda kalan indirmenin sıfırlanması. `gomulu.test.mjs`: CSP, izin yok, kodda depo kullanımı yok.
+`icerik.test.mjs`: İletilerin süzgeçleri, Gmail'in bilgi öğesi, Gmail bayt kayıtları ve kesilen indirmeler.
+`paketle.test.mjs`: Manifest'in alanları, izin ve simgeler. `belgeler.test.mjs`: README'deki, sürüm notundaki ve gizlilik
+politikasındaki süreler ve içerik betiğinin belleği koda uyar), `chrome-sina.mjs drive` (D9, D10 ve Y1'de "Yeniden dene",
+Y3'te sekmede yazdırma ve başlık, Y4'te yenilenen sekme, E1'de eklentinin bilgileri, izin ve depo, C1'de CSP),
+`chrome-sina.mjs gmail` (G7'de ve sekmede "Yeniden dene", yenilenen sekme, G17b'de kapanan ön izlemenin tıklaması, G18
+ve G18b'de iletinin gövdesindeki bilgi öğesi, CSP).
 
 ## 14. Gerçek Drive ve Gmail'de ikinci ölçüm, Yorum düğmesi, gölge kökü (2026-10-27)
 
@@ -936,12 +1024,18 @@ kalkınca okundu.
   yok, Google'ın içeriği gizli. Kökteki `<slot>` Google'ın kendi içeriğini gösterir. Belge gömülüyken o içerik kökün stiliyle
   (`::slotted(*)`, `!important`) gizlenir: Farklı ağaçlardaki `!important` bildirimlerde iç bağlam (gölge ağacı) kazanır (CSS
   Cascade 4), sayfanın `!important`'ı da yenilir. Gizleme stili gömme kalkınca kalkar (Gmail ana alanları başka ekler için
-  yeniden gösterir). Kök eklenemezse (ana alanın kendi kökü varsa) çerçeve eskisi gibi ana alanın çocuğu olur, içeriği
+  yeniden gösterir). Kök eklenemezse (ana alanın kendi kökü varsa) çerçeve doğrudan ana alanın çocuğu olur, içeriği
   `icerik.css` gizler. Ana alanın işareti (`data-udf-okuyucu-gomulu`) iki yolda da konur.
   - Gölge kökündeki çerçeve odaktayken sayfanın `document.activeElement`'i ana alandır. Esc ve oklar çerçeveden `composed`
     olay olarak iletilir, Google onları ana alanda görür.
-  - Sınama: Sahte Drive ve Gmail'de `window.__yenidenCiz()` ana alanın çocuklarını yeniden kurar. Eski yolla (çerçeve ana
-    alanın çocuğu, bozuk kopyayla denendi) belge yeniden yüklendi ve bir indirme isteği daha gitti, gölge kökünde yerinde
+  - Yeniden gömme sınırı (`icerik.js` `gom`, `yenidenGomme`): Aynı dosya kendi gömmemizin yerine yeniden gömülecekse
+    (çerçeve silindi ya da Google ana alanı yeniden kurdu) bu 10 sn içinde en çok üç kez olur. Sonra o dosya için "UDF
+    olarak aç" düğmesi çıkar (`kayitHatasiId`). Öbür dosyaya geçip dönmek sayılmaz, sayaç ön izleme kapanınca ya da `.udf`
+    olmayan dosya gösterilince sıfırlanır. Gölge kökündeki çerçeve yerinde kaldığı için meşru yeniden çizimler buna
+    takılmaz (D1c, G1c). Sınama: `icerik.test.mjs` (çerçeve her eklenişte silinirse en çok dört gömme kaydı, sonra "UDF
+    olarak aç").
+  - Sınama: Sahte Drive ve Gmail'de `window.__yenidenCiz()` ana alanın çocuklarını yeniden kurar. Çerçeve ana alanın
+    çocuğuyken (bozuk kopyayla denendi) belge yeniden yüklendi ve bir indirme isteği daha gitti, gölge kökünde yerinde
     kalıyor (D1c, G1c). Drive'ın Yorum düğmesini işaretli öğeden kopyalaması da sınanır (D1c, D4). D8b kökü eklenemeyen ana alanı sınar. Sınama araçları çerçeveyi `cdp.mjs`'teki `CERCEVE`
     ifadesiyle bulur, hız ölçümü işaretlenen ana alanın gölge kökünü de gözler.
 - **Drive'ın UDF ön izlemesi:** Üst çubukta Dosya, Görünüm, Ekle, Araçlar ve Yardım menüleri, ikinci satırda İndir ve

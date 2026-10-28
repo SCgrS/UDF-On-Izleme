@@ -1,5 +1,9 @@
 # Drive'da UDF açan Chrome eklentisi: birleşik rapor ve uygulama tasarımı
 
+Bu belge eklenti yazılmadan önceki araştırmaların sentezidir. Dosya yapısı (2.2) eklentinin bugünkü hâlini gösterir.
+Eklentinin manifest'i deponun kökündedir (`manifest.json`), tasarımın ayrıntısı `DRIVE-TEKNIGI.md` §6-§14'te ve
+`GELISTIRME.md`'de.
+
 **Kaynak etiketleri**
 - **[A] [B] [C] [D]:** Dört araştırma raporu (UDF kütüphaneleri, hazır araçlar, biçim şartnamesi, Drive tekniği).
 - **[DOĞRULANDI]:** Bu birleştirme sırasında 2026-10-05'te `gh api` ile bakıldı. Kaynak: https://github.com/hasanimer/legaluga-uyap-ui/blob/1a659c4233/src/extension/udf.js
@@ -36,11 +40,11 @@
 Drive sekmesi (drive.google.com)              Eklenti
 ─────────────────────────────────            ─────────────────────────────────────────────
 icerik.js: #drive-active-item-info'yu  ──►    arkaplan.js (service worker)
-izler; ad .udf ise "UDF olarak aç"            · {id, ad, au, rk} → chrome.storage.session[rastgele]
+izler, ad .udf ise "UDF olarak aç"            · {id, ad, au, rk} → kendi belleği[rastgele anahtar]
 düğmesi (kapalı shadow root)                  · tabs.create(goruntule.html#t=<anahtar>)
                                                             │
                                               goruntule.html (chrome-extension://, üst düzey sekme)
-                                              · storage.session'dan kimliği okur
+                                              · kaydı service worker'dan bir kez alır
                                               · fetch(usercontent/download?id&authuser&resourcekey,
                                                       {credentials:'include'})
                                               · udf.js: oku() → model, ciz() → DOM
@@ -49,41 +53,40 @@ düğmesi (kapalı shadow root)                  · tabs.create(goruntule.html#t
 
 ### 2.2 Dosya yapısı
 
-Bu yapı kullanıcının Chrome eklentisi düzenine uyuyor (`ortak/notlar/chrome-eklentileri.md`): kullanıcıya verilen zip yalnız `eklenti/` içeriğidir, kökünde `manifest.json` durur, içine test ve `_` ile başlayan dosya girmez.
+Bu yapı geliştiricinin öbür Chrome eklentilerindeki düzene uyuyor: Kullanıcıya verilen zip'in kökünde `manifest.json` durur, içine test ve `_` ile başlayan dosya girmez. Eklentinin dosyaları deponun kökündedir, zip'e yalnız onlar girer (`araclar/paketle.mjs` `EKLENTI_OGELERI`).
 
 ```
-C:\projeler\drive-udf-goruntuleyici\        (depo önerisi: SCgrS/Drive-UDF-Goruntuleyici, gizli)
-├─ eklenti/
-│  ├─ manifest.json
-│  ├─ arkaplan.js            service worker: ileti → storage.session → sekme aç; eklenti simgesi ve kısayol
-│  ├─ drive-kimlik.js        saf işlevler: urldenKimlik, hesapNo, resourceKey, aktifOge, seciliSatirlar, udfAdiMi
-│  ├─ icerik.js              Drive içerik betiği: gözlemci, düğme, ayarlar
-│  ├─ goruntule.html/.css/.js  görüntüleyici: araç çubuğu, hata ekranı, yazdırma
-│  ├─ indir.js               udfIndir(): Drive indirmesi, virüs tarama sayfası, hata kodları
-│  ├─ kutuphane/
-│  │  ├─ uhd-kabuk.js        globalThis.UHD = {} (udf.js bunu bekliyor, aşağıya bakın)
-│  │  ├─ udf.js              legaluga'dan alınmış ve yamalanmış kopya; başında köken commit'i ve MIT bildirimi
-│  │  └─ belge-ozellik.js    documentproperties.xml → doğrulama kodu, sicil
-│  ├─ simgeler/16.png 32.png 48.png 128.png
-│  └─ LISANSLAR.txt          legaluga'nın MIT metni ve projenin kendi lisansı
-├─ araclar/ornek-uret.mjs, paketle.mjs, chrome-sina.mjs
-├─ testler/ornekler/*.udf (yapay), testler/drive-dom/*.html (yapay), testler/*.test.mjs
-├─ .github/workflows/yayim.yml
-└─ package.json              yalnız geliştirme bağımlılıkları (ör. jsdom); eklentiye hiçbir bağımlılık girmez
+UDF-On-Izleme/
+├─ manifest.json
+├─ arkaplan.js            service worker: Belge kayıtları, sekme açma, Drive için ön indirme ve yedek indirme
+├─ drive-kimlik.js        saf işlevler: urldenBilgi, hesapNo, sayfaHesabi, aktifOge, udfAdiMi
+├─ gmail-ek.js            Gmail: Ek kartları, gösterilen ek, bilgi öğesinin doğrulanması
+├─ icerik.js, icerik.css  Drive ve Gmail içerik betiği: Gözlemci, gömme, "UDF olarak aç" düğmesi
+├─ goruntule.html/.css/.js, gomulu.html  görüntüleyici: Araç çubuğu, hata ekranı, yazdırma
+├─ indir.js               udfIndir(): Drive indirmesi, virüs tarama sayfası, hata kodları, Gmail eki
+├─ motor/udf-motoru.js    legaluga'nın udf.js'inden türetilmiş okuma motoru, başında köken commit'i
+├─ simgeler/16.png 32.png 48.png 128.png
+├─ LISANSLAR.txt          legaluga'nın MIT bildirimi
+├─ araclar/ornek-uret.mjs, paketle.mjs, chrome-sina.mjs, sahte-drive.mjs, sahte-gmail.mjs …
+├─ testler/ornekler/*.udf (yapay), testler/*.test.mjs
+├─ .github/workflows/sinama.yml, yayim.yml
+└─ package.json           yalnız geliştirme bağımlılıkları (ör. jsdom), eklentiye hiçbir bağımlılık girmez
 ```
 
-**Kabuk dosyası neden gerekli** [DOĞRULANDI]: `udf.js` 7. satırda `if (!globalThis.UHD || globalThis.UHD.udf) return;` ile başlıyor ve 1134. satırda kendini `globalThis.UHD.udf = { oku, ciz, UdfHatasi, SINIR, CSS, ILETI }` olarak dışa veriyor. `UHD` önceden tanımlı değilse dosya hiçbir şey yapmadan döner. MV3'te satır içi `<script>` çalışmadığı için kabuk ayrı bir dosya olmalı [D: Manifest CSP].
+**legaluga'nın `udf.js`'i bir kabuk bekler** [DOĞRULANDI]: `udf.js` 7. satırda `if (!globalThis.UHD || globalThis.UHD.udf) return;` ile başlıyor ve 1134. satırda kendini `globalThis.UHD.udf = { oku, ciz, UdfHatasi, SINIR, CSS, ILETI }` olarak dışa veriyor. `UHD` önceden tanımlı değilse dosya hiçbir şey yapmadan döner. MV3'te satır içi `<script>` çalışmadığı için kabuk ayrı bir dosya olmalı [D: Manifest CSP]. Eklentinin motoru kabuk istemez, kendini `globalThis.UDFMotoru` olarak dışa verir.
 
 ### 2.3 Manifest (en dar izinler)
+
+Araştırmadaki öneri. Bugünkü manifest deponun kökünde (`manifest.json`): `permissions` alanı yok, içerik betiği Gmail'de de
+çalışır, gömülü görünüm için `web_accessible_resources` var, CSP `default-src 'none'` ile başlar (`DRIVE-TEKNIGI.md` §13).
 
 ```json
 {
   "manifest_version": 3,
-  "name": "Drive UDF Görüntüleyici",
+  "name": "UDF Ön İzleme",
   "version": "0.0.1",
   "description": "Google Drive'daki UYAP .udf belgelerini tarayıcıda açar; dosya hiçbir sunucuya gönderilmez.",
   "minimum_chrome_version": "103",
-  "permissions": ["storage"],
   "host_permissions": ["https://drive.usercontent.google.com/*"],
   "background": { "service_worker": "arkaplan.js" },
   "content_scripts": [{
@@ -91,8 +94,6 @@ C:\projeler\drive-udf-goruntuleyici\        (depo önerisi: SCgrS/Drive-UDF-Goru
     "js": ["drive-kimlik.js", "icerik.js"],
     "run_at": "document_idle"
   }],
-  "action": { "default_title": "Seçili UDF dosyasını aç" },
-  "commands": { "_execute_action": { "suggested_key": { "default": "Alt+Shift+U" } } },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; connect-src https://drive.usercontent.google.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'"
   },
@@ -102,10 +103,10 @@ C:\projeler\drive-udf-goruntuleyici\        (depo önerisi: SCgrS/Drive-UDF-Goru
 
 | Alan | Gerekçe |
 |---|---|
-| `storage` | `chrome.storage.session` ile kimliği görüntüleyiciye taşımak ve ayarları ("otomatik aç") tutmak için. |
+| `permissions` yok | Belgenin kaydı service worker'ın kendi belleğinde durur, görüntüleyici onu bir iletiyle bir kez alır (2.5). Depo izni gerekmez. |
 | `host_permissions` yalnız usercontent | Görüntüleyici, kimlik bilgisi gönderen ve CORS'a takılmayan isteği yalnız buraya atar [D 2.3]. drive.google.com için içerik betiğinin `matches` alanı yeter. Sekme açmak ve yönlendirmek için `tabs` izni gerekmez [ÇIKARIM]. |
-| `web_accessible_resources` yok | Görüntüleyici sayfasını başka sitelere açmamak için. Drive sekmesini görüntüleyiciye çevirmek gerekirse bunu `chrome.tabs.update` yapar [D 3(e)]. |
-| Yok: `cookies`, `downloads`, `declarativeNetRequest`, `identity`, `<all_urls>` | v1'de gereksiz. Hepsi daha ağır izin uyarısı getirir [D 2.3, 2.5, 3(f)]. |
+| `web_accessible_resources` yok | Görüntüleyici sayfasını başka sitelere açmamak için. Drive sekmesini görüntüleyiciye çevirmek gerekirse bunu `chrome.tabs.update` yapar [D 3(d)]. |
+| Yok: `cookies`, `downloads`, `declarativeNetRequest`, `identity`, `<all_urls>` | v1'de gereksiz. Hepsi daha ağır izin uyarısı getirir [D 2.3, 2.5, 3(e)]. |
 | `minimum_chrome_version: 103` | `DecompressionStream('deflate-raw')` Chrome 103'te geldi [D] (https://github.com/mdn/browser-compat-data/blob/main/api/DecompressionStream.json). |
 | CSP `connect-src` | Görüntüleyici yalnız Drive'ın indirme adresiyle konuşabilir; belge başka bir yere gönderilemez [ÇIKARIM]. Yan etkisi: oturum yoksa usercontent'in `accounts.google.com` adresine yönlendirmesi ağ hatası olarak görünür. Hata metni bunu kapsamalı (2.6). |
 | `require-trusted-types-for 'script'` | Yanlışlıkla yazılan bir `innerHTML`'i engeller [D 4, ÇIKARIM]. legaluga'nın çizimi yalnız `createElement`, `textContent` ve `style.setProperty` kullanıyor [A][DOĞRULANDI, dosya başlığı]. Bu yönerge MV3 eklenti sayfasında kabul ediliyor mu, doğrulanmalı. |
@@ -119,12 +120,11 @@ Kurulumda görünecek uyarı yaklaşık "drive.google.com ve drive.usercontent.g
 
 | Sıra | Yol | Dayanak | Kırılganlık |
 |---|---|---|---|
-| **Birincil (a)** | Listede çift tıkla açılan önizleme katmanında, adı `.udf` ise sabit konumlu "UDF olarak aç" düğmesi. İsteğe bağlı ayarla otomatik açılır. | `#drive-active-item-info` içindeki `{"id","title","mimeType"}` JSON'u. Katman kapanınca öğe DOM'dan kalkıyor [D 1.3, canlı ölçüm]. Adobe ve PandaDoc da bu öğeyi okuyor [D]: https://github.com/pandadoc-integration/chrome-extension/blob/HEAD/pdf-detector.js | Orta-düşük |
-| **Birincil (e)** | Paylaşım bağlantısıyla açılan `/file/d/<id>/view` sayfasında aynı düğme; ayar açıksa otomatik geçiş. | Kimlik ve `resourcekey` URL'den gelir; ad `#drive-active-item-info`'dan ya da `"<ad> - Google Drive"` başlığından [D 1.1, 3(e)] | Düşük |
-| **Yedek (c)** | Eklenti simgesi ya da `Alt+Shift+U`. Önce açık katmandaki dosyayı, yoksa seçili satırları açar. | `#drive-active-item-info`, sonra `[aria-selected="true"][data-id]` [D 3(c)]. Örnek: https://github.com/murasaqi/OpenLocalForGoogleDrive | Düşük-orta |
+| **Birincil (a)** | Listede çift tıkla açılan ön izleme katmanında, adı `.udf` ise sabit konumlu "UDF olarak aç" düğmesi ya da belgenin katmanın içinde kendiliğinden gösterilmesi. | `#drive-active-item-info` içindeki `{"id","title","mimeType"}` JSON'u. Katman kapanınca öğe DOM'dan kalkıyor [D 1.3, canlı ölçüm]. Adobe ve PandaDoc da bu öğeyi okuyor [D]: https://github.com/pandadoc-integration/chrome-extension/blob/HEAD/pdf-detector.js | Orta-düşük |
+| **Birincil (d)** | Paylaşım bağlantısıyla açılan `/file/d/<id>/view` sayfasında aynı yol (düğme ya da belgenin sayfanın içinde gösterilmesi). | Kimlik ve `resourcekey` URL'den gelir, ad `#drive-active-item-info`'dan ya da `"<ad> - Google Drive"` başlığından [D 1.1, 3(d)] | Düşük |
 | v2 (b) | Drive'ın kendi sağ tık menüsüne öğe eklemek. | `contextmenu` + `closest('[data-id]')` + `div[role=menu]` [D 3(b)]. Örnek: https://github.com/insell824/tm-open-in-new-for-gdrive | Yüksek (karartılmış sınıflar) |
-| v2 (f) | İndirmeyi yakalamak (`downloads` izni, isteğe bağlı ayar). | `chrome.downloads.onDeterminingFilename` [D 3(f)] | DOM'dan bağımsız, ama olağan indirmeyi değiştirir |
-| Önerilmez (d) | Marketplace'te "Birlikte aç" uygulaması. | Cloud projesi, OAuth, barındırılan Open URL; `chrome-extension://` olamaz [D 3(d)] | Bakımı ağır |
+| v2 (e) | İndirmeyi yakalamak (`downloads` izni). | `chrome.downloads.onDeterminingFilename` [D 3(e)] | DOM'dan bağımsız, ama olağan indirmeyi değiştirir |
+| Önerilmez (c) | Marketplace'te "Birlikte aç" uygulaması. | Cloud projesi, OAuth, barındırılan Open URL, `chrome-extension://` olamaz [D 3(c)] | Bakımı ağır |
 
 Chrome'un kendi sağ tık menüsü (`chrome.contextMenus`) Drive satırlarında çıkmıyor. Drive `contextmenu` olayını `preventDefault` ediyor [D 3(b), canlı ölçüm].
 
@@ -133,18 +133,17 @@ Chrome'un kendi sağ tık menüsü (`chrome.contextMenus`) Drive satırlarında 
   - Karar `mimeType`'a göre verilmemeli: zip tabanlı bir dosya `application/x-zip` diye raporlandı [D 1.3].
   - Karar `title` alanına göre verilir: `/\.udf$/i`. WhatsApp'ın adını bozduğu `.udf.zip` dosyaları için `/\.udf(\.zip)?$/i` da kabul edilmeli. AwuCat'in fikri: asıl karar içeriğe bakılarak verilir, yani zip mi ve içinde `content.xml` var mı [B].
   - Görüntüleyici adı ne olursa olsun içeriği yeniden denetler.
-- **Seçili satırın adı** dile bağlı `aria-label`'dan (`"<ad> <tür> [Paylaşıldı]"`) yalnız `/^(.+?\.udf)(?=\s|$)/i` ile çıkarılır. `textContent` kullanılmaz (tarih ve "Download" bitişik geliyor) [D 1.2].
+- **Liste satırının adı** (satırdan okunursa) dile bağlı `aria-label`'dan (`"<ad> <tür> [Paylaşıldı]"`) yalnız `/^(.+?\.udf)(?=\s|$)/i` ile çıkarılır. `textContent` kullanılmaz (tarih ve "Download" bitişik geliyor) [D 1.2].
 - **Gözlemci.** `MutationObserver` 150 ms'lik geciktirmeyle çalışır; `characterData: true` açıktır, çünkü önceki ve sonraki okla dosya değişince JSON da değişir. `requestAnimationFrame` kullanılmaz [D 3(a)].
 - **Düğme.** `document.documentElement`'e eklenen bir kapsayıcıdaki kapalı shadow root içinde durur; `position:fixed`, en yüksek `z-index`. `pointerdown` ve `mousedown` olayları Drive'a geçmez [D 3(a)].
-- **Otomatik geçiş döngüsü** [ÇIKARIM]. (e) yolunda geçiş açıksa, kullanıcı görüntüleyicide "geri"ye basınca Drive sayfası yeniden açılır ve yeniden yönlendirir. Çözüm: `performance.getEntriesByType('navigation')[0].type === 'back_forward'` ise yönlendirmemek ve aynı sekmede kimlik başına bir kez yönlendirmek.
+- **Otomatik geçiş döngüsü** [ÇIKARIM]. (d) yolunda sekme görüntüleyiciye kendiliğinden geçirilirse, kullanıcı görüntüleyicide "geri"ye basınca Drive sayfası yeniden açılır ve yeniden yönlendirir. Çözüm: `performance.getEntriesByType('navigation')[0].type === 'back_forward'` ise yönlendirmemek ve aynı sekmede kimlik başına bir kez yönlendirmek.
 - **Çoklu hesap.** `/u/<n>/` yolundan `authuser=<n>` alınır; `resourcekey` sorgudan alınıp indirmeye aynen eklenir [D 1.1]. Kullanıcının test bağlantısı da `/drive/u/0/folders/...` biçiminde.
 
 ### 2.5 Görüntüleyiciye devir
 
-- Dosya adı URL'ye konmaz. Ad müvekkil adı ya da esas numarası taşıyabilir. Service worker `{id, ad, au, rk}` bilgisini `chrome.storage.session` alanına `crypto.randomUUID()` anahtarıyla yazar ve `goruntule.html#t=<anahtar>` sekmesini Drive sekmesinin yanında açar [D 4]. Örnek kod raporda.
-- `storage.session` varsayılan olarak içerik betiğine kapalıdır, tarayıcı kapanınca silinir [D 4, ÇIKARIM].
-- Kayıt görüntüleyici açılınca silinmez; yoksa sayfa yenilenince belge kaybolur. Kayıtlar çok küçük.
-- `document.title` adın `.udf` uzantısız hali olur, böylece "PDF olarak kaydet"te önerilen dosya adı doğru gelir [D 4]. Bu başlık tarayıcı geçmişine düşer. Drive da aynı adı `"<ad> - Google Drive"` başlığıyla geçmişe zaten yazıyor; yeni bir açık getirmez [ÇIKARIM].
+- Dosya adı URL'ye konmaz. Ad müvekkil adı ya da esas numarası taşıyabilir. Service worker `{id, ad, au, rk}` bilgisini kendi belleğinde `crypto.randomUUID()` anahtarıyla tutar ve `goruntule.html#t=<anahtar>` sekmesini Drive sekmesinin yanında açar [D 4]. Örnek kod raporda.
+- Görüntüleyici kaydı bir iletiyle bir kez alır, kayıt o anda silinir. Alınmayan kayıt 60 sn sonra silinir. Kayıt hiçbir depoya yazılmaz, bu yüzden izin gerekmez. Sekme yenilenince belge yeniden açılmaz (`DRIVE-TEKNIGI.md` §13).
+- Sekmenin başlığına belge adı konmaz: Başlık tarayıcı geçmişine, Chrome'un oturum kaydına ve pencere başlığına düşer. "PDF olarak kaydet" sekmede "UDF Ön İzleme" adını önerir (`DRIVE-TEKNIGI.md` §6.3, §13).
 
 ### 2.6 İndirme yolu
 
@@ -154,7 +153,7 @@ Chrome'un kendi sağ tık menüsü (`chrome.contextMenus`) Drive satırlarında 
   - Baytları service worker'dan sayfaya taşımak base64 gerektirirdi [D 2.3].
 - **Adres:** `https://drive.usercontent.google.com/download?id=<id>&export=download[&authuser=<n>][&resourcekey=<rk>]` ile `{credentials:'include', cache:'no-store'}`. `drive.google.com/uc` zaten buraya 303 ile yönlendiriyor [D 2.1, canlı ölçüm]. `resourcekey` parametresinin usercontent'te bu adla işlediği doğrulanmalı.
 - **Kod:** [D 2.4]'teki `udfIndir()` temel alınır. Eklenecekler:
-  - **Boyut sınırı:** `Content-Length` 40 MiB'ı (legaluga'nın `SINIR.paket` değeri [DOĞRULANDI]) aşarsa gövde okunmadan `AbortController` ile kesilir. Seçili satır yanlışlıkla bir video ise boşuna indirilmez.
+  - **Boyut sınırı:** `Content-Length` 40 MiB'ı (legaluga'nın `SINIR.paket` değeri [DOĞRULANDI]) aşarsa gövde okunmadan `AbortController` ile kesilir. Dosya yanlışlıkla bir video ise boşuna indirilmez.
   - **Virüs tarama sayfası:** `form#download-form` alanlarıyla yeniden denenir. Yalnız `drive.usercontent.google.com` adresine gidilir [D 2.1, 2.4]. gdown aynı yolu izliyor: https://github.com/wkentaro/gdown/blob/HEAD/gdown/download.py
   - **Zip imzası:** İlk 4 bayt `PK\x03\x04` değilse "UDF değil" denir.
   - **Bellek:** Baytlar yalnız bellekte tutulur. İndirilenler klasörüne, IndexedDB'ye ya da önbelleğe yazılmaz.
@@ -185,7 +184,7 @@ Chrome'un kendi sağ tık menüsü (`chrome.contextMenus`) Drive satırlarında 
 - **Desteklenen yöntemler:** 0 ve 8. ZIP64 ve şifreli girdi reddedilir [C 1].
 - **Alternatifler:**
   - JSZip 3.10.1: 97.630 bayt, gereksiz [D 4].
-  - fflate: küçük, ama eşzamansız API'si Blob URL'li Worker açtığı için CSP'ye takılabilir [D 4].
+  - fflate: Küçük, ama eş zamansız API'si Blob URL'li Worker açtığı için CSP'ye takılabilir [D 4].
 
 ### 2.8 UDF'den HTML'e işleyici
 
@@ -199,7 +198,7 @@ Chrome'un kendi sağ tık menüsü (`chrome.contextMenus`) Drive satırlarında 
 - DTD reddi, uzun belgeyi 200 bloklık dilimlerle ekleme
 
 **Uyarlama:**
-- Kök öğe `<main class="viewer">` içine konur, çünkü CSS `.viewer` önekli.
+- Kök öğe `<main class="viewer">` içine konur, çünkü CSS `.viewer` ön ekli.
 - `--shell-warn-bg` ve `--shell-warn-text` değişkenleri `goruntule.css`'te tanımlanır [DOĞRULANDI].
 
 **Şartnameye göre yapılacak düzeltmeler** ([C §18] listesi; öncelik, gerçek UYAP çıktısında görülüp görülmediğine göre [C, ORN]):
@@ -216,8 +215,8 @@ Chrome'un kendi sağ tık menüsü (`chrome.contextMenus`) Drive satırlarında 
 | P2 | `mediaSizeName` eşlemesi: MIA tablosu (1 A4, 2 A5, 3 Letter, 4 B5, 5 Legal, 6 Executive) | [C §4] |
 | P3 | `bgImage`: veri varsa çiz; `bgImageWatermark` true ise soluk, değilse tam opak | [C §4] |
 | P3 | Tablo `border` türleri: `borderCell`, `borderTable`, `borderRow`, `borderNone`; satır düzeyinde `columnSpans` | [C §11]. legaluga'nın satır düzeyini işleyip işlemediği doğrulanmalı. |
-| Ek | `documentproperties.xml` → araç çubuğunda "UYAP doğrulama kodu" ve "sicil" | Java Properties XML; DOCTYPE taşıdığı için DTD reddi bu dosyaya uygulanmaz [C §13]. udfly'ın okuyucusu (MIT, `src/parser.js` L21-36) başvuru. |
-| Ek | `sign.sgn` varsa "e-imzalı (imza doğrulanmadı)" rozeti | legaluga `model.imza` değerini veriyor [DOĞRULANDI]. v2: WebCrypto ile `content.xml`'in SHA-256 özetini CMS'teki messageDigest ile karşılaştırma [C §13]. |
+| Ek | `documentproperties.xml` okuması (doğrulama kodu ve sicil, görüntüleyici göstermez) | Java Properties XML. DOCTYPE taşıdığı için DTD reddi bu dosyaya uygulanmaz [C §13]. udfly'ın okuyucusu (MIT, `src/parser.js` L21-36) başvuru. |
+| Ek | `sign.sgn` varsa e-imza rozeti | legaluga `model.imza` değerini veriyor [DOĞRULANDI]. WebCrypto ile `content.xml`'in SHA-256 özeti CMS'teki messageDigest ile karşılaştırılır [C §13]. Eklentide: Özet tutarsa "E-imzalıdır", tutmazsa uyarı, karşılaştırılamazsa nötr "E-imza dosyası var, içerikle karşılaştırılamadı" (`DRIVE-TEKNIGI.md` §7). İmza ve sertifika doğrulanmaz. |
 
 **Ofset birimi:** UTF-16, yani JS dizesindeki doğrudan dizin. legaluga böyle yapıyor; şartnamenin önerisi de bu [C §3].
 
@@ -231,7 +230,7 @@ Chrome'un kendi sağ tık menüsü (`chrome.contextMenus`) Drive satırlarında 
 - **Yazdır düğmesi** önce bekleyen bütün resim tuvallerini çizer, sonra `window.print()` çağırır. Chrome'un "PDF olarak kaydet" hedefi PDF'i verir [D 4].
   - Gerekçe [DOĞRULANDI]: legaluga resimleri `IntersectionObserver` ile yalnız ekranda göründükçe çiziyor (L1068). Doğrudan yazdırılırsa ekran dışındaki resimler boş çıkabilir.
   - `udf.js`'e bütün tuvalleri çizen bir `tumunuCiz()` işlevi eklenir.
-  - Ctrl+P de aynı yola yönlendirilir (`keydown` yakalanır), çünkü `beforeprint` olayı eşzamansız çizimi bekleyemez [ÇIKARIM].
+  - Ctrl+P de aynı yola yönlendirilir (`keydown` yakalanır), çünkü `beforeprint` olayı eş zamansız çizimi bekleyemez [ÇIKARIM].
 - **Dinamik `@page`:** `size: <en>pt <boy>pt; margin: <üst> <sağ> <alt> <sol>` değerleri `pageFormat`'tan gelir [D 4][C §4].
 - **`@media print` kuralları:**
   - `.udf-sayfa{padding:0;width:auto;min-height:0;box-shadow:none;break-after:page}`
@@ -252,14 +251,14 @@ Chrome'un kendi sağ tık menüsü (`chrome.contextMenus`) Drive satırlarında 
 Her aşama tek başına çalışır durumda biter ve ayrı commit olur.
 
 1. **İskelet ve yerel görüntüleyici.**
-   - `eklenti/` klasörü, `udf.js` sabit commit'ten (`1a659c4233`) lisans bildirimiyle alınır, kabuk dosyası eklenir.
+   - Eklentinin dosyaları deponun kökünde durur. `udf.js` sabit commit'ten (`1a659c4233`) lisans bildirimiyle alınır (`motor/udf-motoru.js`).
    - `goruntule.html#yerel`: dosya seç ya da sürükle-bırak ile yerel `.udf` açılır. Bu Drive'sız sınamayı sağlar, WhatsApp'tan gelen dosyalar için de işe yarar.
    - Örnek üretici ve Node testleri.
-2. **Drive entegrasyonu.** (a), (e) ve (c) yolları, `storage.session` devri, `udfIndir()` ve hata ekranı.
+2. **Drive entegrasyonu.** (a) ve (d) yolları, service worker'ın belleğinden görüntüleyiciye devir (2.5), `udfIndir()` ve hata ekranı.
 3. **İşleyici düzeltmeleri.** P1, sonra P2 ve P3.
-4. **Yazdırma ve PDF.** `tumunuCiz()`, doğrulama kodu ve imza rozeti.
+4. **Yazdırma ve PDF.** `tumunuCiz()` ve imza rozeti.
 5. **Paketleme ve dağıtım.**
-   - `araclar/paketle.mjs` ve testi, `yayim.yml` (`v*` etiketi = manifest sürümü), README başında `releases/latest/download/<ad>.zip` bağlantısı [chrome-eklentileri.md].
+   - `araclar/paketle.mjs` ve testi, `yayim.yml` (`v*` etiketi = manifest sürümü), README başında `releases/latest/download/<ad>.zip` bağlantısı (geliştiricinin öbür eklentilerindeki düzen).
    - Push ve yayım ayrı onay ister.
 
 ---
@@ -268,7 +267,7 @@ Her aşama tek başına çalışır durumda biter ve ayrı commit olur.
 
 | Kaynak | Lisans | Kullanım | Yükümlülük |
 |---|---|---|---|
-| hasanimer/legaluga-uyap-ui `src/extension/udf.js` (https://github.com/hasanimer/legaluga-uyap-ui) | MIT [DOĞRULANDI] | **Kopyalanır ve yamalanır** (motor) | Telif ve izin metni dağıtılan kopyada kalır: `udf.js` başına köken (depo, commit `1a659c4233`) ve değişiklik notu; `eklenti/LISANSLAR.txt` içinde tam MIT metni ("Copyright (c) 2026 Hasan İmer Akın"). LISANSLAR.txt zip'e de girer. |
+| hasanimer/legaluga-uyap-ui `src/extension/udf.js` (https://github.com/hasanimer/legaluga-uyap-ui) | MIT [DOĞRULANDI] | **Kopyalanır ve yamalanır** (motor) | Telif ve izin metni dağıtılan kopyada kalır: `udf.js` başına köken (depo, commit `1a659c4233`) ve değişiklik notu, `LISANSLAR.txt` içinde tam MIT metni ("Copyright (c) 2026 Hasan İmer Akın"). LISANSLAR.txt zip'e de girer. |
 | mfozmen/udfly `src/parser.js`, `src/render.js`, `test/render.security` (https://github.com/mfozmen/udfly) | MIT [A] | `documentproperties.xml` okuması ve güvenlik testleri için başvuru; kod alınırsa küçük parça | Alınırsa aynı biçimde MIT bildirimi |
 | burakayax/NB_PDF_PLATFORM (https://github.com/burakayax/NB_PDF_PLATFORM) | MIT [A] | Gerek yok (PDF yazdırmayla alınıyor) | – |
 | symbuzzer/Evrak `UdfHtmlConverter.kt` (https://github.com/symbuzzer/Evrak) | Apache-2.0 [A] | Liste ve kenarlık kuralları için başvuru | Kod çevrilirse Apache-2.0 bildirimi ve "değiştirildi" notu |
@@ -279,7 +278,7 @@ Her aşama tek başına çalışır durumda biter ve ayrı commit olur.
 | UDF-Toolkit `Docs.md`, UDFpad, can-yesilyurt, iseeeva, ugarchance, isikdogan.com kopyası | Lisans yok ya da kopyalama yasak [A][C] | Yalnız okunur, kod alınmaz | – |
 | murataskin/udf-cli | LICENSE yok, npm sürümü obfuscate edilmiş [A] | Kullanılmaz | – |
 
-**Projenin kendi lisansı:** MIT önerilir; legaluga ile uyumlu. Depo gizli kalır; herkese açmak kullanıcının üç ayrı onayıyla olur.
+**Projenin kendi lisansı:** AGPL-3.0 (`LICENSE`), legaluga'nın MIT lisansıyla uyumlu. Motorun türetildiği kodun MIT bildirimi `LISANSLAR.txt`'de.
 
 **Upstream:** Düzeltmelerin legaluga'ya PR olarak önerilmesi mümkün, ama dışarıya yapılan bir adım; ancak kullanıcı isterse.
 
@@ -289,7 +288,7 @@ Her aşama tek başına çalışır durumda biter ve ayrı commit olur.
 
 | Risk | Olasılık | Azaltma |
 |---|---|---|
-| Drive `#drive-active-item-info` öğesini kaldırır ya da biçimini değiştirir | Orta-düşük (Adobe ve PandaDoc da kullanıyor [D]) | Katmanlı tanıma: JSON → `/file/d/<id>/` → `[aria-selected][data-id]` → eklenti simgesi ve kısayol [D 1.4]. Karartılmış sınıflar (`.a-b-Sh-ng`, `.O5x1db`) hiç kullanılmaz. Hiçbiri çalışmazsa simgeye basınca "Dosyayı Drive'da açın ya da seçin" iletisi çıkar. |
+| Drive `#drive-active-item-info` öğesini kaldırır ya da biçimini değiştirir | Orta-düşük (Adobe ve PandaDoc da kullanıyor [D]) | Katmanlı tanıma: JSON → `/file/d/<id>/` → `[aria-selected][data-id]` [D 1.4]. Karartılmış sınıflar (`.a-b-Sh-ng`, `.O5x1db`) hiç kullanılmaz. Görüntüleyicinin yapısı tanınmazsa "UDF olarak aç" düğmesi belgeyi yeni sekmede açar. |
 | Ölçüm oturumsuz görünümde yapıldı; oturum açıkken DOM farklı olabilir | Bilinmiyor | Kullanıcının oturumuyla ilk sınama (5.5) zorunlu. Izgara görünümü ve "Benimle paylaşılanlar" ayrıca denenir; `role="gridcell"` 0 çıkmıştı, ızgara sınanmadı [D 1.2]. |
 | Dile bağlı metinler (aria-label "Shared/Paylaşıldı") | Yüksek, ama etkisi küçük | Yalnız `.udf` uzantı eşleşmesi kullanılır; dil sözcüklerine bağlanılmaz [D 1.2]. |
 | Usercontent indirme adresi ya da yanıtı değişir | Düşük | Hata ekranında "Dosyayı indir" ve "Drive'da aç" yedekleri; zip imzası denetimi. `drive.google.com/uc` yönlendirmesi ikinci yol olarak eklenebilir (`connect-src` ve izin genişler). |
@@ -321,7 +320,7 @@ Her aşama tek başına çalışır durumda biter ve ayrı commit olur.
     - Merkezî dizin sonrası yorum.
     - Hata durumları: zip değil, iki `content.xml`, şifreli bayrak, ZIP64, beyan edilen boyutu aşan açılım (zip bombası), 1001 girdi.
   - **XML:**
-    - UTF-8 BOM'lu ve BOM'suz, `format_id` 1.7 ve 1.8, önsözden sonra boş satır.
+    - UTF-8 BOM'lu ve BOM'suz, `format_id` 1.7 ve 1.8, ön sözden sonra boş satır.
     - `<!DOCTYPE>` ve `<!ENTITY>` reddi.
     - Havuzda çok parçalı CDATA.
     - Sınır dışı ofset.
@@ -359,7 +358,7 @@ Her aşama tek başına çalışır durumda biter ve ayrı commit olur.
   - **Üst ve alt bilgi:** iki header (sonuncusu seçilmeli), `startPage="2"`, `stopPage="1"`, `pageNumber-spec` değerleri BSP32_2120, BSP32_40 ve BSP32_0.
   - **Şablon:** kökte `<data>` ve `dataRow`.
 - **Gerçek biçim karşılaştırması:**
-  - UDE 5.4.20'nin kaydettiği `C:\projeler\udf_resimcisi\testdata\turnusol.udf` ve `pano-yapistir.udf` [C, RES-TD]. Depoya kopyalanmadan önce içeriğinde kişisel veri olmadığı denetlenmeli.
+  - UDE 5.4.20'nin kaydettiği `turnusol.udf` ve `pano-yapistir.udf` (UDF Resimcisi projesinin test örnekleri) [C, RES-TD]. Depoya kopyalanmadan önce içeriğinde kişisel veri olmadığı denetlenmeli.
   - Herkese açık gerçek UYAP çıktıları (https://github.com/AvHakanOrhan/eypport/tree/HEAD/scratch/udf_evrak_13360401060) yalnız yerelde, yapı karşılaştırması için kullanılır. Gerçek dava içeriği taşıyabileceği için depoya girmez.
 
 ### 5.2 Birim testleri (Node, `node --test`)
@@ -376,7 +375,7 @@ Her aşama tek başına çalışır durumda biter ve ayrı commit olur.
   - `aria-label`'dan ad çıkarma (Türkçe ve İngilizce).
   - Girdiler: [D 1.2–1.3]'te ölçülen yapıyı taklit eden **yapay** HTML parçaları (`testler/drive-dom/`). Gerçek Drive sayfası kaydedilmez, çünkü ad ve e-posta taşır.
 - **İndirme.** `udfIndir()` sahte `fetch` ile sınanır: 200 zip; virüs tarama sayfası (form ve `confirm=t`); başka alan adına giden form (reddedilmeli); giriş sayfası HTML'i; 403; 404; zip olmayan yanıt; 40 MiB'ı aşan `Content-Length` (gövde okunmamalı); ağ hatası.
-- **Paketleme** [chrome-eklentileri.md kural 6]:
+- **Paketleme** (geliştiricinin Chrome eklentisi düzeni):
   - Zip açılır; kökte `manifest.json` olmalı.
   - Manifest'in, HTML'lerin ve betiklerin adını verdiği bütün dosyalar zip'te olmalı.
   - Test dosyası, `_` ile başlayan ad ve ters bölülü yol olmamalı.
@@ -384,7 +383,7 @@ Her aşama tek başına çalışır durumda biter ve ayrı commit olur.
 
 ### 5.3 Geçici Chrome profilinde yükleme
 
-- Yöntem kullanıcının mevcut düzenidir: görünmez geçici profil ve CDP `Extensions.loadUnpacked` (`ortak/notlar/chrome-eklentileri.md` "Sınama", `uyap-haciz-yardimcisi.md`). Ekranı devralan denetim kullanılmaz.
+- Yöntem geliştiricinin öbür eklentilerinde de kullandığı düzendir: Görünmez geçici profil ve CDP `Extensions.loadUnpacked`. Ekranı devralan denetim kullanılmaz.
 - Adımlar:
   1. Paket zip'i `Expand-Archive` ile zip adlı bir klasöre açılır ve eklenti yüklenir. Eklentinin hatasız yüklendiği ve service worker'ın çalıştığı denetlenir.
   2. `goruntule.html#yerel` açılır; her örnek `DOM.setFileInputFiles` ile verilir. Denetimler:
@@ -408,8 +407,7 @@ Claude in Chrome kullanıcının Drive sekmesinde sayfayı okuyarak yardımcı o
 3. `/u/1/` ile ikinci hesap: doğru dosya geliyor mu?
 4. "Üçüncü taraf çerezleri engelle" açıkken 2. adım yinelenir.
 5. Dosya `/file/d/<id>/view` bağlantısıyla açılır: düğme ya da otomatik geçiş çalışıyor mu, `resourcekey` taşınıyor mu, geri tuşu döngüye giriyor mu?
-6. Satır seçilip `Alt+Shift+U`'ya basılınca dosya açılıyor mu? Izgara görünümünde de denenir.
-7. Ek: Drive'ın arayüz dili Türkçe ve İngilizce; Ortak Drive; gizli pencere; yazdırma ve PDF'in önerilen dosya adı.
+6. Ek: Drive'ın arayüz dili Türkçe ve İngilizce, ızgara görünümü, Ortak Drive, gizli pencere, yazdırma ve PDF'in önerilen dosya adı.
 
 Gerçek belgeler yalnız açılıp bakılır. İçerikleri rapora, teste ya da depoya girmez.
 
@@ -417,12 +415,12 @@ Gerçek belgeler yalnız açılıp bakılır. İçerikleri rapora, teste ya da d
 
 ## 6. Kullanıcı kararı gerektirenler
 
-1. **Ad.** Öneri: "Drive UDF Görüntüleyici"; depo `SCgrS/Drive-UDF-Goruntuleyici` (gizli); klasör `C:\projeler\drive-udf-goruntuleyici`. İtiraz yoksa bu kullanılır.
+1. **Ad.** Eklentinin adı: UDF Ön İzleme.
 2. **Test bağlantısı.** Verilen klasör "bağlantıya sahip herkes" ile mi paylaşıldı, içindeki dosyalar gerçek dosya evrakı mı?
    - Herkese açıksa otomatik sınama sizin oturumunuz olmadan yapılabilir.
    - Gerçek evraksa yalnız açılıp bakılır, depoya girmez.
    - Yayım öncesi Drive denetimi için içeriği yapay, herkese açık tek bir `.udf` dosyası koyabilir misiniz?
-3. **Çift tıkta davranış.** Öneri: önizleme ekranında "UDF olarak aç" düğmesi; ayarlardan "doğrudan aç" seçilebilir. Yoksa her `.udf` çift tıkta kendiliğinden mi açılsın?
+3. **Çift tıkta davranış.** Öneri: Ön izleme ekranında "UDF olarak aç" düğmesi. Yoksa her `.udf` çift tıkta kendiliğinden mi açılsın? (Eklenti belgeyi Drive'ın ön izleme penceresinin içinde kendiliğinden gösterir, düğme yalnız pencerenin yapısı tanınmazsa ya da belge gömülemezse çıkar, `DRIVE-TEKNIGI.md` §7.)
 4. **Dağıtım.** Öneri: önce öteki eklentileriniz gibi GitHub sürüm zip'i ve "Paketlenmemiş öğe yükle". Chrome Web Store sonra düşünülür; geliştirici hesabı, gizlilik beyanı ve mağaza incelemesi ister.
 5. **Hesap ve kurum.** Drive'ı birden çok Google hesabıyla mı kullanıyorsunuz? Büro hesabı Google Workspace mı? Workspace yöneticisi eklentileri ya da indirmeyi kısıtlayabilir. Ofis bilgisayarında da kurulacak mı?
 6. **Sayfa görünümü.** v1'de ekranda sayfalar yalnız elle konmuş sayfa sonlarında bölünür; yazdırırken A4'e kendiliğinden bölünür. Editör'deki gibi ekranda da otomatik sayfa bölme istenirse ek iş çıkar.
@@ -468,7 +466,6 @@ Gerçek belgeler yalnız açılıp bakılır. İçerikleri rapora, teste ya da d
   - https://developers.google.com/identity/protocols/oauth2
   - https://developers.google.com/workspace/drive/api/guides/api-specific-auth
 - **DecompressionStream uyumluluğu:** https://github.com/mdn/browser-compat-data/blob/main/api/DecompressionStream.json
-- **Kullanıcının kendi düzeni (yerel):**
-  - `C:\projeler\esitle\claude-ayarlari\ortak\notlar\chrome-eklentileri.md`
-  - `C:\projeler\esitle\claude-ayarlari\ortak\notlar\uyap-haciz-yardimcisi.md`
-  - `C:\projeler\udf_resimcisi\testdata\`
+- **Geliştiricinin kendi düzeni (yerel):**
+  - Geliştiricinin yerel notları: Chrome eklentisi düzeni ve UYAP Haciz Yardımcısı'nın sınama yöntemi
+  - UDF Resimcisi projesinin test örnekleri (`testdata/`)

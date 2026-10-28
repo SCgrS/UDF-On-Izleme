@@ -10,7 +10,7 @@
   // Gömülü görünümde çerçeveyi koyan sayfanın kökeni: Gmail'deyse içerik betiği adrese "u=g" koyar (icerik.js, gom).
   // İletiler hemen (belge kaydı okunmadan) gönderildiği için köken eş zamanlı bilinmeli.
   const UST_KOKEN = new URLSearchParams(location.hash.slice(1)).get('u') === 'g' ? 'https://mail.google.com' : 'https://drive.google.com';
-  // Google'daki belge açılırken görünen yazı: Google'ın değil eklentinin açtığı belli olsun (kullanıcının isteği, 2026-10-07).
+  // Google'daki belge açılırken görünen yazı: Google'ın değil eklentinin açtığı belli olsun.
   const ACILIYOR = 'UDF Ön İzleme eklentisiyle açılıyor…';
   const AD = 'UDF Ön İzleme';
   const SIMGE = {
@@ -114,7 +114,8 @@
     try {
       model = await M.oku(bayt, { signal });
     } catch (e) {
-      if (e && e.name === 'AbortError') return;
+      // Bu sırada başka bir belge açıldıysa bu belgenin hatası onun yerine geçmez.
+      if ((e && e.name === 'AbortError') || signal.aborted) return;
       const dugmeler = [];
       if (bayt) dugmeler.push(eleman('button', { type: 'button', sinif: 'dugme', metin: 'Dosyayı indir', onclick: () => kaydet(bayt, ad) }));
       if (kayit && !gomulu && kayit.kaynak !== 'gmail') dugmeler.push(eleman('button', { type: 'button', sinif: 'dugme', metin: 'Drive’da aç', onclick: () => driveAc(kayit) }));
@@ -142,22 +143,28 @@
     alan.focus({ preventScroll: true });
   }
 
+  // E-imza rozeti. İmza ve sertifika burada doğrulanmaz, motor yalnız imza dosyasındaki özeti belge içeriğiyle karşılaştırır
+  // (udf-motoru.js, imzaDenetle). "E-imzalıdır" yalnız özet içerikle tutunca yazar, renk nötr kalır. Özet tutmuyorsa
+  // (içerik imzadan sonra değiştirilmiş olabilir) uyarı çıkar. Özet okunamadıysa ya da imza dosyası tek değilse (durum
+  // 'bilinmiyor') belge içerikle karşılaştırılamamıştır: Rozet nötr kalır ve bunu söyler. Gömülü çubukta yer dar kalınca
+  // bu rozetin kısa biçimi görünür (cubuguYerlestir: .kisa). Tam açıklama rozetin title'ındadır.
+  function imzaRozeti(imza) {
+    if (imza.durum === 'tutarli') return eleman('span', { sinif: 'rozet', metin: 'E-imzalıdır' });
+    if (imza.durum === 'tutarsiz') return eleman('span', { sinif: 'rozet uyari', metin: 'E-imza içerikle uyuşmuyor', title: 'Belge içeriği imzalanan içerikle aynı değil: İmzadan sonra değiştirilmiş olabilir.' });
+    return eleman('span', { sinif: 'rozet', title: 'Belgede e-imza dosyası var, ama belge içeriğiyle karşılaştırılamadı (örneğin içindeki özet okunamadı ya da imza dosyası tek değil). İmza ve sertifika doğrulanmaz.' },
+      eleman('span', { sinif: 'rozet-uzun', metin: 'E-imza dosyası var, içerikle karşılaştırılamadı' }),
+      eleman('span', { sinif: 'rozet-kisa', metin: 'E-imza karşılaştırılamadı' }));
+  }
+
   function rozetleriYaz(model) {
     const r = $('rozetler');
     r.replaceChildren();
-    if (model.imza) {
-      // E-imza dosyası olan belgede yalnız "E-imzalıdır" yazar (kullanıcının isteği, 2026-10-06). İmza ve sertifika burada
-      // doğrulanmaz; renk nötr kalır. İçerik imza dosyasındaki özetle tutmuyorsa (imzadan sonra değiştirilmiş olabilir)
-      // bu rozet yerine uyarı çıkar: değiştirilmiş belgeye "E-imzalıdır" denmez.
-      r.append(eleman('span', model.imza.durum === 'tutarsiz'
-        ? { sinif: 'rozet uyari', metin: 'E-imza içerikle uyuşmuyor', title: 'Belge içeriği imzalanan içerikle aynı değil: İmzadan sonra değiştirilmiş olabilir.' }
-        : { sinif: 'rozet', metin: 'E-imzalıdır' }));
-    } else if (!model.notlar.length) {
-      // E-imzasız ve notsuz belgede çubuğun sol yanı boş kalmasın diye imza durumu yazar (kullanıcının isteği, 2026-10-07).
+    if (model.imza) r.append(imzaRozeti(model.imza));
+    else if (!model.notlar.length) {
+      // E-imzasız ve notsuz belgede çubuğun sol yanı boş kalmasın diye imza durumu yazar.
       // Notlu belgede solda Notlar düğmesi durduğu için yazmaz.
       r.append(eleman('span', { sinif: 'rozet', metin: 'E-imzasız', title: 'Belgede e-imza dosyası yok.' }));
     }
-    // UYAP doğrulama kodu çubukta gösterilmez (kullanıcının isteği, 2026-10-07: "gereksiz").
     if (model.sablon) r.append(eleman('span', { sinif: 'rozet', title: 'Bu belge bir UYAP şablonundan üretilmiş. Alanlar belgedeki veriden dolduruldu.', metin: 'Şablon' }));
     if (model.kesildi) r.append(eleman('span', { sinif: 'rozet uyari', metin: 'Belgenin bir kısmı gösterilemedi' }));
   }
@@ -247,11 +254,11 @@
     $('olcek').setAttribute('aria-label', `Yakınlaştırma %${Math.round(z * 100)}. Pencereye sığdırmak için basın`);
     ortala(z);
   }
-  // Not bölmesi belgenin yanında yer kaplarken sayfa, bölme kapalıykenki yerinde (pencerenin ortasında) kalır
-  // (kullanıcının isteği, 2026-10-07): belge alanının soluna bölmenin kapladığı genişlik kadar boşluk verilir. Yer
-  // yetmezse boşluk, sayfayla bölme arasında pay kalacak kadar daralır (sayfa sola kayar); hiç yer yoksa sayfa daralan
-  // alanın ortasında durur, gerekirse ona sığdırılır. Dar pencerede bölme belgenin üstüne bindiği için alan daralmaz,
-  // boşluk da olmaz. Boşluk yalnız ekranda (CSS'te @media screen).
+  // Not bölmesi belgenin yanında yer kaplarken sayfa, bölme kapalıykenki yerinde (pencerenin ortasında) kalır: Belge
+  // alanının soluna bölmenin kapladığı genişlik kadar boşluk verilir. Yer yetmezse boşluk, sayfayla bölme arasında pay
+  // kalacak kadar daralır (sayfa sola kayar). Hiç yer yoksa sayfa daralan alanın ortasında durur, gerekirse ona
+  // sığdırılır. Dar pencerede bölme belgenin üstüne bindiği için alan daralmaz, boşluk da olmaz. Boşluk yalnız ekranda
+  // (CSS'te @media screen).
   function ortala(z) {
     const a = alan.getBoundingClientRect();
     const genislik = document.documentElement.clientWidth;
@@ -261,20 +268,22 @@
     if (gomulu) cubuguYerlestir(a.left + (bosluk + alan.clientWidth) / 2, kaplanan ? a.right : genislik);
   }
   // Gömülü görünümde alttaki çubuk (ve ipucu) sayfanın ortasında durur. Sayfa küçültülüp bölme açıkken ortası bölmeye
-  // yaklaşınca çubuk daralmaz, sola kayar: sağ sınırla (bölmenin sol kenarı ya da pencerenin sağı) arasında 12 px kalır;
-  // yoksa düğmeler hapın dışına, bölmenin üstüne taşıyordu. Çubuğun içinde yakınlaştırma ortadadır (iki yan eşit, CSS).
-  // Bu düzenin doğal genişliği [12 px, sağ sınır − 12 px] şeridine sığmazsa yanlar eşitlenmez (.sikisik: düğmeler yan
-  // yana, aralarında boşluk kalmaz); o da sığmazsa çubuk şeride sığacak kadar daralır (rozetler kısalır). CSS:
-  // --cubuk-ortasi, --cubuk-en-cok.
+  // yaklaşınca çubuk daralmaz, sola kayar: Sağ sınırla (bölmenin sol kenarı ya da pencerenin sağı) arasında 12 px kalır,
+  // düğmeler hapın dışına, bölmenin üstüne taşmaz. Çubuğun içinde yakınlaştırma ortadadır (iki yan eşit, CSS). Bu düzenin
+  // doğal genişliği [12 px, sağ sınır − 12 px] şeridine sığmazsa önce rozetlerin kısa biçimi görünür (.kisa, yanlar yine
+  // eşit). O da sığmazsa yanlar eşitlenmez (.sikisik: Düğmeler yan yana, aralarında boşluk kalmaz). O da sığmazsa çubuk
+  // şeride sığacak kadar daralır (rozetler kırpılır). CSS: --cubuk-ortasi, --cubuk-en-cok.
   function cubuguYerlestir(orta, sagSinir) {
     const cubuk = document.querySelector('.cubuk');
     const sol = 12, sag = sagSinir - 12, yer = Math.max(0, sag - sol);
+    const olc = () => Math.ceil(cubuk.getBoundingClientRect().width);   // width: max-content, gizliyken 0
     cubuk.style.setProperty('max-width', 'none');
-    cubuk.classList.remove('sikisik');
-    let gereken = Math.ceil(cubuk.getBoundingClientRect().width);   // width: max-content; gizliyken 0
-    if (gereken > yer) {
-      cubuk.classList.add('sikisik');
-      gereken = Math.ceil(cubuk.getBoundingClientRect().width);
+    cubuk.classList.remove('kisa', 'sikisik');
+    let gereken = olc();
+    for (const sinif of ['kisa', 'sikisik']) {
+      if (gereken <= yer) break;
+      cubuk.classList.add(sinif);
+      gereken = olc();
     }
     cubuk.style.removeProperty('max-width');
     const en = Math.min(gereken, yer);
@@ -365,7 +374,10 @@
 
   async function yerelDosya(dosya) {
     if (!dosya || gomulu) return;
-    if (denetleyici) denetleyici.abort();   // süren Drive indirmesi sonradan ekrana gelmesin
+    // Süren Drive indirmesi ya da okunan öbür dosya sonradan ekrana gelmesin.
+    if (denetleyici) denetleyici.abort();
+    denetleyici = new AbortController();
+    const signal = denetleyici.signal;
     belgeyiBirak();
     baslikYaz(dosya.name);
     durumGoster('yukleniyor', 'Belge hazırlanıyor…');
@@ -377,7 +389,8 @@
     if (dosya.size > M.SINIR.paket) { durumGoster('hata', 'Dosya çok büyük', 'Görüntüleyici 40 MB’tan büyük dosyaları açmaz.'); return; }
     let bayt;
     try { bayt = new Uint8Array(await dosya.arrayBuffer()); }
-    catch { durumGoster('hata', 'Dosya okunamadı', 'Seçilen öğe bir dosya değil ya da okunamıyor.'); return; }
+    catch { if (!signal.aborted) durumGoster('hata', 'Dosya okunamadı', 'Seçilen öğe bir dosya değil ya da okunamıyor.'); return; }
+    if (signal.aborted) return;
     await goster(bayt, dosya.name, null);
   }
 

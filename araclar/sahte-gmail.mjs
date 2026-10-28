@@ -878,6 +878,108 @@ export async function gmailSina(udfYolu, ekranYolu) {
       await c.gonder('Target.closeTarget', { targetId: y.targetId });
     }
 
+    // G17. Ön izleme Esc ile kapanır, kapanıştan hemen sonra (içerik betiğinin 150 ms'lik toplu denetiminden önce) B
+    // iletisinin aynı adlı ekine basılır: Kapanış beklemeden işlendiği için B'nin belgesi gömülür, A'nınki değil. Kapanışın ve
+    // tıklamanın anı sayfada kaydedilir.
+    {
+      const y = await gmailAc();
+      await y.g('Page.bringToFront');
+      await ekAc(y.g, 'A', 0);
+      let f = await cerceveBul(y.g);
+      const ilk = f ? await belgeDurumu(f.g) : 'çerçeve yok';
+      await ifadeBekle(y.g, CERCEVE_ODAKTA, 3000).catch(() => {});
+      await deger(y.g, `(() => { window.__sonTik = 0; document.addEventListener('click', () => { window.__sonTik = Date.now(); }, true);
+        window.__kapandi = new Promise(coz => { const o = new MutationObserver(() => { if (!document.getElementById('drive-active-item-info')) { o.disconnect(); coz(Date.now()); } });
+          o.observe(document.body, { childList: true, subtree: true }); }); return 1; })()`);
+      await tus(y.g, 'Escape');
+      const kapanis = await deger(y.g, 'window.__kapandi');
+      await ekAc(y.g, 'B', 1);
+      const ara = (await deger(y.g, 'window.__sonTik')) - kapanis;
+      f = await cerceveBul(y.g, { haric: f && f.anahtar });
+      const durum = f ? await belgeDurumu(f.g) : 'çerçeve yok';
+      const gom = await gommeDurumu(y.g);
+      sonuc('ön izleme kapanıp hemen başka iletinin aynı adlı ekiyle açılınca o ekin belgesi', ilk === `BELGE: ${ISARET.dilekce}` && durum === `BELGE: ${ISARET.b}` &&
+        gom.var && gom.sira === 1 && gom.sayi === 1, `${ilk} → ${durum} · kapanıştan ${ara} ms sonra tıklandı · ${JSON.stringify({ ad: gom.ad, sira: gom.sira, sayi: gom.sayi })}`);
+      await onizlemeyiKapat(y.g);
+      // G17b. A'nın kartıyla açılan ön izleme Esc ile kapanır, kapanıştan hemen sonra (150 ms dolmadan) listedeki düğmeyle
+      // B'nin Dilekce.udf'si yeni bir katmanda kartsız açılır: Kapanan ön izlemenin tıklaması kullanılmaz, A'nın aynı adlı
+      // eki gömülmez, Gmail'in kartı kalır.
+      await ekAc(y.g, 'A', 0);
+      f = await cerceveBul(y.g);
+      const ilkA = f ? await belgeDurumu(f.g) : 'çerçeve yok';
+      await ifadeBekle(y.g, CERCEVE_ODAKTA, 3000).catch(() => {});
+      await deger(y.g, `(() => { window.__kapandi = new Promise(coz => { const o = new MutationObserver(() => { if (!document.getElementById('drive-active-item-info')) { o.disconnect(); coz(Date.now()); } });
+        o.observe(document.body, { childList: true, subtree: true }); });
+        window.__ilkTik = new Promise(coz => document.addEventListener('click', () => coz(Date.now()), { capture: true, once: true })); return 1; })()`);
+      await tus(y.g, 'Escape');
+      const kapanisA = await deger(y.g, 'window.__kapandi');
+      const d = await kartsizAc(y.g, 'B', 1);
+      const araB = (await deger(y.g, 'window.__ilkTik')) - kapanisA;
+      sonuc('ön izleme kapanıp 150 ms dolmadan listedeki düğmeyle açılınca önceki tıklama kullanılmaz, belge gömülmez',
+        ilkA === `BELGE: ${ISARET.dilekce}` && araB < 150 && d.tamam, `${ilkA} · kapanıştan ${araB} ms sonra düğmeye basıldı · ${d.ayrinti}`);
+      await c.gonder('Target.closeTarget', { targetId: y.targetId });
+    }
+
+    // G18. İletinin gövdesinde #drive-active-item-info taşıyan öğe (Gmail iletideki kimliği korusaydı): Önce bir Drive dosyası
+    // kimliğiyle, kendi ana alanında. Gösterilen dosya sayılmaz, belge gömülmez. Sonra A'nın kartıyla gerçek ön izleme açılır:
+    // Belgede iki bilgi öğesi olur, ikisine de güvenilmez, Gmail'in kartı kalır. Öğe kalkınca gerçek ön izlemedeki ek gömülür.
+    {
+      const y = await gmailAc();
+      await y.g('Page.bringToFront');
+      await deger(y.g, `(() => { const a = document.createElement('div'); a.setAttribute('role', 'main'); a.id = 'sahte-ana';
+        a.style.cssText = 'width:600px;height:400px';
+        const b = document.createElement('div'); b.id = 'drive-active-item-info'; b.style.display = 'none';
+        b.textContent = JSON.stringify({ id: '1SssAaaHhhTttEeeDddRrrIiiVvvEee', title: 'Sahte.udf', mimeType: 'application/x-zip' });
+        a.append(b); document.querySelector('[data-message-id] p').append(a); return 1; })()`);
+      await bekle(1200);
+      const durumu = () => deger(y.g, `(() => { const k = document.querySelector('#katman [role=main]:not([style*="none"]) .onizleme-yok');
+        return { sayi: ${CERCEVELER}.length, isaretli: document.querySelectorAll('[data-udf-okuyucu-gomulu]').length,
+          kart: !!k && !!k.offsetParent && getComputedStyle(k).visibility === 'visible' }; })()`);
+      const tek = await durumu();
+      await ekAc(y.g, 'A', 0);
+      await bekle(1200);
+      const ikisi = await durumu();
+      await deger(y.g, "document.getElementById('sahte-ana').remove(), 1");
+      const f = await cerceveBul(y.g);
+      const durum = f ? await belgeDurumu(f.g) : 'çerçeve yok';
+      const gom = await gommeDurumu(y.g);
+      sonuc('iletinin gövdesindeki #drive-active-item-info gösterilen dosya sayılmaz, gerçek ön izlemeyle birlikteyse ikisine de güvenilmez',
+        tek.sayi === 0 && tek.isaretli === 0 && ikisi.sayi === 0 && ikisi.isaretli === 0 && ikisi.kart && durum === `BELGE: ${ISARET.dilekce}` && gom.var && gom.sira === 0,
+        `yalnız gövdede: ${JSON.stringify(tek)} · ön izlemeyle: ${JSON.stringify(ikisi)} · öğe kalkınca: ${durum}`);
+      await onizlemeyiKapat(y.g);
+      // G18b. Öğe iletinin gövdesinde konumu sabit bir kabın içinde (Gmail iletideki position'ı da koruyorsa), görüntüleyicinin
+      // penceresi ve ana alanı gibi bir yapıyla ya da yalnız: Ne gömülür ne "UDF olarak aç" düğmesi çıkar.
+      await y.g('DOM.enable');
+      const dugmeGorunur = async () => {
+        const { root } = await y.g('DOM.getDocument', { depth: -1, pierce: true });
+        let gorunur = false;
+        const gez = d => {
+          const oz = d.attributes || [], i = oz.indexOf('class');
+          if (d.nodeName === 'BUTTON' && i >= 0 && i % 2 === 0 && /(^|\s)gorunur(\s|$)/.test(oz[i + 1]) &&
+            (d.children || []).some(k => k.nodeName === 'SPAN' && (k.children || []).some(t => t.nodeValue === 'UDF olarak aç'))) gorunur = true;
+          for (const k of [...(d.children || []), ...(d.shadowRoots || [])]) gez(k);
+        };
+        gez(root);
+        return gorunur;
+      };
+      const sabit = [];
+      for (const yapi of [['dialog', 'main'], []]) {
+        await deger(y.g, `(() => { const kap = document.createElement('div'); kap.id = 'sahte-kap'; kap.style.cssText = 'position:fixed;left:0;top:0;width:800px;height:600px';
+          let yer = kap; for (const rol of ${JSON.stringify(yapi)}) { const e = document.createElement('div'); e.setAttribute('role', rol); e.style.cssText = 'width:600px;height:400px'; yer.append(e); yer = e; }
+          const b = document.createElement('div'); b.id = 'drive-active-item-info'; b.style.display = 'none';
+          b.textContent = JSON.stringify({ id: '1SssAaaHhhTttEeeDddRrrIiiVvvEee', title: 'Sahte.udf', mimeType: 'application/x-zip' });
+          yer.append(b); document.querySelector('[data-message-id] p').append(kap); return 1; })()`);
+        await bekle(1200);
+        const { sayi, isaretli } = await durumu();
+        sabit.push({ yapi: yapi.join(' > ') || 'yalnız öğe', sayi, isaretli, dugme: await dugmeGorunur() });
+        await deger(y.g, "document.getElementById('sahte-kap').remove(), 1");
+        await bekle(300);
+      }
+      sonuc('iletinin gövdesinde konumu sabit kaptaki #drive-active-item-info (pencere ve ana alanla da): Ne gömülür ne "UDF olarak aç" düğmesi çıkar',
+        sabit.every(s => s.sayi === 0 && s.isaretli === 0 && !s.dugme), JSON.stringify(sabit));
+      await c.gonder('Target.closeTarget', { targetId: y.targetId });
+    }
+
     // Bütün ek istekleri: Hiçbiri eklentinin kökeninden ya da çerçeveden değil (Gmail adımı hep aynı kökenli, çerezli).
     const gmailAdimlari = istekler.filter(i => i.host === GMAIL && i.sorgu.includes('view=att'));
     sonuc('ek isteklerinin hepsi Gmail sayfasından (aynı köken), eklentiden ya da çerçeveden değil', gmailAdimlari.length > 0 &&

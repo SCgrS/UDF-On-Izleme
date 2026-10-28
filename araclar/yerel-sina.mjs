@@ -1,15 +1,32 @@
-// Bir klasördeki gerçek .udf dosyalarını motordan geçirir ve yalnız yapısal özet yazar (belge metni yazılmaz).
+// Bir klasördeki .udf dosyalarını (gerçek belgeler de olabilir) motordan geçirir ve her dosya için tek satır yazar: Sıra
+// numarası, dosya adının SHA-256 özetinin ilk 8 hanesi ve yapısal özet (sayılar, imza durumu, biçim sürümü, süre). Dosya
+// adı ve belge metni yazılmaz (UYAP dosya adları taraf adı ve esas numarası taşıyabilir). Hata satırında motorun hata
+// kodu ve teknik ayrıntısı, okunamayan dosyada yalnız okuma hatasının kodu yazılır. Bir satırın hangi dosyaya ait olduğu
+// adın özeti yeniden hesaplanarak bulunur.
 // Kullanım: node araclar/yerel-sina.mjs <klasör>
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { motorYukle } from '../testler/yardimci.mjs';
+
+const adOzeti = ad => crypto.createHash('sha256').update(ad, 'utf8').digest('hex').slice(0, 8);
 
 const klasor = process.argv[2];
 if (!klasor) { console.error('Kullanım: node araclar/yerel-sina.mjs <klasör>'); process.exit(2); }
 const { motor } = motorYukle();
-let hatali = 0;
+let hatali = 0, sira = 0;
 for (const ad of fs.readdirSync(klasor).filter(f => /\.udf$/i.test(f)).sort()) {
-  const bayt = fs.readFileSync(path.join(klasor, ad));
+  const bas = `${++sira} ${adOzeti(ad)}`;
+  let bayt;
+  try {
+    bayt = fs.readFileSync(path.join(klasor, ad));
+  } catch (e) {
+    // Okunamayan dosyada (ör. başka bir programın kilitlediği) Node'un iletisi dosyanın tam yolunu taşır: Yalnız hata kodu yazılır,
+    // öbür dosyalara bakılmaya devam edilir.
+    hatali++;
+    console.log(bas, 'HATA okuma', e.code || e.name);
+    continue;
+  }
   try {
     const model = await motor.oku(new Uint8Array(bayt));
     const g = motor.ciz(model);
@@ -23,11 +40,11 @@ for (const ad of fs.readdirSync(klasor).filter(f => /\.udf$/i.test(f)).sort()) {
       ham: model.ham ? 'xml' : 'zip', surum: model.bicimSurumu, kesildi: model.kesildi || '-', ms: model.sure,
       metin: k.textContent.length
     };
-    console.log(ad, JSON.stringify(ozet));
+    console.log(bas, JSON.stringify(ozet));
     g.birak();
   } catch (e) {
     hatali++;
-    console.log(ad, 'HATA', e.kod || e.name, e.ayrinti || e.message);
+    console.log(bas, 'HATA', e.kod || e.name, e.ayrinti || e.message);
   }
 }
 process.exit(hatali ? 1 : 0);

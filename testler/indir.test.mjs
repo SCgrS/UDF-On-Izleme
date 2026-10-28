@@ -5,22 +5,36 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { KOK } from './yardimci.mjs';
 
-// indir.js'i sahte fetch'le ayrı bir bağlamda çalıştırır; istenen adresleri kaydeder.
+// indir.js'i sahte fetch'le ayrı bir bağlamda çalıştırır, istenen adresleri kaydeder. Gövde tek parça (govde, tarayıcıdaki
+// gibi her okumada yeni bir kopya) ya da parça parça gelir (parcalar: Uint8Array ya da okurken fırlatılacak hata). okurken(i)
+// i. okumadan hemen önce çağrılır. Kesilen isteğin (signal) isteği ve okuması tarayıcıdaki gibi AbortError'la düşer.
 function yukle(yanitlar) {
   const istekler = [];
+  const kesildi = () => new DOMException('İptal edildi', 'AbortError');
   const baglam = {
     URL, TextDecoder, Uint8Array, DOMException, Number, Object, String, Error, Promise, console,
     fetch: async (u, secenek) => {
       const url = new URL(u);
       istekler.push({ url, secenek });
+      const sinyal = secenek && secenek.signal;
+      if (sinyal && sinyal.aborted) throw kesildi();
       const r = yanitlar(url, istekler.length);
       if (r instanceof Error) throw r;
       const govde = typeof r.govde === 'string' ? new TextEncoder().encode(r.govde) : (r.govde || new Uint8Array(0));
-      let okundu = false;
+      const parcalar = r.parcalar || [govde.slice()];
+      let i = 0;
+      const oku = async () => {
+        if (r.okurken) r.okurken(i);
+        if (sinyal && sinyal.aborted) throw kesildi();
+        if (i >= parcalar.length) return { done: true };
+        const p = parcalar[i++];
+        if (p instanceof Error) throw p;
+        return { done: false, value: p };
+      };
       return {
         ok: r.durum >= 200 && r.durum < 300, status: r.durum, url: r.url || url.href,
         headers: new Map(Object.entries({ 'content-type': r.tur || 'application/octet-stream', ...(r.baslik || {}) })),
-        body: { getReader: () => ({ read: async () => { if (okundu) return { done: true }; okundu = true; return { done: false, value: govde }; }, cancel: async () => {} }) }
+        body: { getReader: () => ({ read: oku, cancel: async () => {} }) }
       };
     }
   };
@@ -32,7 +46,7 @@ function yukle(yanitlar) {
 const ID = '1AaaBbbCccDddEeeFffGggHhhIiiJjjKk';
 const PK = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3]);
 
-test('doğrudan indirme: adres, çerez ve dosya adı', async () => {
+test('doğrudan indirme: Adres, çerez ve dosya adı', async () => {
   const { D, istekler } = yukle(() => ({ durum: 200, govde: PK, baslik: { 'content-disposition': "attachment; filename=\"x.udf\"; filename*=UTF-8''Dava%20Dilek%C3%A7esi.udf" } }));
   const r = await D.udfIndir({ id: ID, au: 1, rk: '0-abc' });
   assert.deepEqual([...r.bayt], [...PK]);
@@ -46,7 +60,7 @@ test('doğrudan indirme: adres, çerez ve dosya adı', async () => {
   assert.equal(istekler[0].secenek.credentials, 'include');
 });
 
-test('virüs tarama sayfası: onayla yeniden istenir', async () => {
+test('virüs tarama sayfası: Onayla yeniden istenir', async () => {
   const { D, istekler } = yukle((u, n) => n === 1
     ? { durum: 200, tur: 'text/html; charset=utf-8', govde: '<form id="download-form" action="https://drive.usercontent.google.com/download"><input type="hidden" name="uuid" value="1b4fa745-aaaa"></form>' }
     : { durum: 200, govde: PK });
@@ -111,7 +125,7 @@ test('hata kodları ve açıklamaları', async () => {
 
 const GMAIL_ADRESI = 'https://mail.google.com/mail/u/1?ui=2&ik=1a2b3c4d5e&attid=0.1&permmsgid=msg-f:1797114040482588150&th=18f0a1b2c3d4e5f6&view=att&disp=safe&zw';
 
-test('Gmail eki: adres olduğu gibi, çerezle; yönlendirme sonrası baytlar', async () => {
+test('Gmail eki: Adres olduğu gibi, çerezle. Yönlendirme sonrası baytlar', async () => {
   const { D, istekler } = yukle(() => ({ durum: 200, govde: PK, url: 'https://mail-attachment.googleusercontent.com/attachment/u/1/?x=1' }));
   const r = await D.gmailEkIndir(GMAIL_ADRESI);
   assert.deepEqual([...r.bayt], [...PK]);
@@ -121,7 +135,7 @@ test('Gmail eki: adres olduğu gibi, çerezle; yönlendirme sonrası baytlar', a
   assert.equal(istekler[0].secenek.cache, 'no-store');
 });
 
-test('Gmail eki: ağ hatasında bir kez benzersiz ekle yeniden; HTML ve geçersiz adres hata', async () => {
+test('Gmail eki: Ağ hatasında bir kez benzersiz ekle yeniden. HTML ve geçersiz adres hata', async () => {
   const { D, istekler } = yukle((u, n) => (n === 1 ? new TypeError('Failed to fetch') : { durum: 200, govde: PK }));
   await D.gmailEkIndir(GMAIL_ADRESI);
   assert.equal(istekler.length, 2);
@@ -146,7 +160,93 @@ test('Gmail hata açıklamaları', () => {
   assert.match(D.hataAciklamasi({ kod: 'AG' }).baslik, /Drive/, 'varsayılan Drive');
 });
 
-test('base64: tarayıcının kendi çeviricisiyle (toBase64, fromBase64) ve onsuz aynı metin ve bayt', () => {
+test('hesap e-posta adresiyse (authuser=ad@ornek.com) olduğu gibi, kodlanarak gönderilir, Drive bağlantısına da konur', async () => {
+  for (const au of ['ikinci@ornek.com', 'Ad.Soyad+dava@buro.com.tr', "o'brien@ornek.co.uk"]) {
+    const { D, istekler } = yukle((u, n) => n === 1
+      ? { durum: 200, tur: 'text/html', govde: '<form id="download-form"><input type="hidden" name="uuid" value="1b4fa745-aaaa"></form>' }
+      : { durum: 200, govde: PK });
+    const r = await D.udfIndir({ id: ID, au });
+    assert.equal(r.hesap, au);
+    assert.deepEqual(istekler.map(i => i.url.searchParams.get('authuser')), [au, au], 'virüs tarama onayında da aynı hesap');
+    assert.ok(istekler[0].url.href.includes(`&${new URLSearchParams({ authuser: au })}`), istekler[0].url.href);
+    assert.equal(D.driveBaglantisi({ id: ID, au }), `https://drive.google.com/file/d/${ID}/view?${new URLSearchParams({ authuser: au })}`);
+  }
+  assert.match(yukle(() => ({})).D.driveBaglantisi({ id: ID, au: 'ikinci@ornek.com' }), /\?authuser=ikinci%40ornek\.com$/);
+  // Biçimsiz adres hesapsız istek (varsayılan hesap), bağlantıda da hesap yok.
+  for (const au of ['ikinci@ornek', 'a b@ornek.com', 'a&x=1@ornek.com', 'a@b@ornek.com', 'a\n@ornek.com', `${'a'.repeat(65)}@ornek.com`]) {
+    const { D, istekler } = yukle(() => ({ durum: 200, govde: PK }));
+    assert.equal((await D.udfIndir({ id: ID, au })).hesap, null, JSON.stringify(au));
+    assert.equal(istekler[0].url.searchParams.has('authuser'), false, JSON.stringify(au));
+    assert.equal(D.driveBaglantisi({ id: ID, au }), `https://drive.google.com/file/d/${ID}/view`, JSON.stringify(au));
+  }
+});
+
+// ---------------------------------------------------------------- kesilen indirme
+const parcalar = (...dolgular) => dolgular.map(d => new Uint8Array(1000).fill(d));
+const sifir = p => p.every(b => b === 0);
+
+test('kesilen indirme: İnen yarım baytlar sıfırlanır, hata AbortError, öbür hesap ya da adres denenmez', async () => {
+  // Drive: İkinci parça okunurken kesilir.
+  let p = parcalar(7, 8, 9);
+  let kes = new AbortController();
+  let y = yukle(() => ({ durum: 200, parcalar: p, okurken: i => { if (i === 1) kes.abort(); } }));
+  await assert.rejects(y.D.udfIndir({ id: ID, au: 0 }, { signal: kes.signal }), e => e.name === 'AbortError');
+  assert.equal(y.istekler.length, 1);
+  assert.ok(sifir(p[0]), 'inen ilk parça sıfırlandı');
+  assert.ok(!sifir(p[2]), 'okunmayan parça hiç alınmadı');
+  // Önceden kesilmiş sinyal: İstek düşer, okuma yok.
+  kes = new AbortController();
+  kes.abort();
+  y = yukle(() => ({ durum: 200, govde: PK }));
+  await assert.rejects(y.D.udfIndir({ id: ID }, { signal: kes.signal }), e => e.name === 'AbortError');
+  assert.equal(y.istekler.length, 1);
+  // Gmail eki: Kesilen indirme benzersiz ekle yeniden denenmez, yarım baytlar sıfırlanır.
+  p = parcalar(1, 2);
+  kes = new AbortController();
+  y = yukle(() => ({ durum: 200, parcalar: p, okurken: i => { if (i === 1) kes.abort(); } }));
+  await assert.rejects(y.D.gmailEkIndir(GMAIL_ADRESI, { signal: kes.signal }), e => e.name === 'AbortError');
+  assert.equal(y.istekler.length, 1);
+  assert.ok(sifir(p[0]));
+  kes = new AbortController();
+  kes.abort();
+  y = yukle(() => ({ durum: 200, govde: PK }));
+  await assert.rejects(y.D.gmailEkIndir(GMAIL_ADRESI, { signal: kes.signal }), e => e.name === 'AbortError');
+  assert.equal(y.istekler.length, 1, 'kesilen istek ağ hatası sayılmaz');
+});
+
+test('yarıda kalan indirme: Kopan bağlantıda ve 40 MB sınırında inen parçalar sıfırlanır, başarıda da ara parçalar', async () => {
+  let p = [...parcalar(3), new TypeError('network error')];
+  let y = yukle(() => ({ durum: 200, parcalar: p }));
+  await assert.rejects(y.D.udfIndir({ id: ID }), e => e instanceof TypeError && !e.kod);
+  assert.ok(sifir(p[0]), 'kopan bağlantı');
+  p = [new Uint8Array(21 * 1024 * 1024).fill(4), new Uint8Array(21 * 1024 * 1024).fill(5)];
+  y = yukle(() => ({ durum: 200, parcalar: p }));
+  await assert.rejects(y.D.udfIndir({ id: ID }), e => e.kod === 'BUYUK');
+  assert.ok(sifir(p[0]) && sifir(p[1]), 'boyu bildirilmeyen büyük dosya');
+  p = parcalar(6, 7);
+  y = yukle(() => ({ durum: 200, parcalar: p }));
+  const r = await y.D.udfIndir({ id: ID });
+  assert.deepEqual([r.bayt.length, r.bayt[0], r.bayt[1999]], [2000, 6, 7], 'baytlar birleşik');
+  assert.ok(sifir(p[0]) && sifir(p[1]), 'ara parçalar birleştirilince sıfırlandı');
+});
+
+test('ağ hatası (AG) bağlantıyı ve oturumu birlikte söyler, giriş sayfası (OTURUM_YOK) yalnız oturumu', async () => {
+  const { D } = yukle(() => new TypeError('Failed to fetch'));
+  const e = await D.udfIndir({ id: ID, au: 0 }).catch(h => h);
+  assert.equal(e.kod, 'AG');
+  const ag = D.hataAciklamasi(e);
+  assert.equal(ag.baslik, 'Dosya Drive’dan alınamadı');
+  assert.match(ag.metin, /İnternet bağlantınızı/);
+  assert.match(ag.metin, /oturumunuzun açık olduğunu/);
+  const oturum = D.hataAciklamasi({ kod: 'OTURUM_YOK' });
+  assert.equal(oturum.baslik, 'Drive oturumu bulunamadı');
+  assert.doesNotMatch(oturum.metin, /bağlantı/i);
+  const gmailAg = D.hataAciklamasi({ kod: 'AG' }, 'gmail');
+  assert.match(gmailAg.metin, /İnternet bağlantınızı ve Gmail’de oturumunuzun/);
+  assert.doesNotMatch(D.hataAciklamasi({ kod: 'OTURUM_YOK' }, 'gmail').metin, /bağlantı/i);
+});
+
+test('base64: Tarayıcının kendi çeviricisiyle (toBase64, fromBase64) ve onsuz aynı metin ve bayt', () => {
   // Node'da yerli çevirici yok: Biri Buffer'la taklit edilir, öbüründe btoa/atob yolu çalışır.
   class Yerli extends Uint8Array {
     toBase64() { return Buffer.from(this).toString('base64'); }

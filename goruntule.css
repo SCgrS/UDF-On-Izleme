@@ -60,6 +60,8 @@ body { display: flex; flex-direction: column; background: var(--zemin); color: v
 }
 .rozet.iyi { background: var(--iyi-zemin); color: var(--iyi); }
 .rozet.uyari { background: var(--uyari-zemin); color: var(--uyari); }
+/* Rozetin kısa biçimi yalnız gömülü çubukta, yer dar kalınca görünür (goruntule.js, cubuguYerlestir: .kisa). */
+.rozet-kisa { display: none; }
 /* Sağ bölüm üç parça: rozetler ve Notlar | yakınlaştırma | öbür düğmeler. Gömülü görünümde yakınlaştırma çubuğun tam
    ortasında durur (aşağıda). */
 .cubuk-sag { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -100,8 +102,8 @@ body { display: flex; flex-direction: column; background: var(--zemin); color: v
 @keyframes don { to { transform: rotate(360deg); } }
 .ayrinti { font-size: 12px; color: var(--soluk); font-family: Consolas, monospace; }
 
-/* Bölme dar pencerede daralır (kullanıcının isteği, 2026-10-27: "sıkışınca notlar kısmından da biraz sıkışsın"): 1280 px'te
-   ve üstünde 320 px, 960 px'te ve altında 240 px, arada pencerenin dörtte biri. Belge alanı tek başına daralmaz. */
+/* Bölme dar pencerede daralır: 1280 px'te ve üstünde 320 px, 960 px'te ve altında 240 px, arada pencerenin dörtte biri.
+   Belge alanı tek başına daralmaz. */
 .notlar-paneli { width: clamp(240px, 25vw, 320px); flex: none; overflow: auto; background: var(--panel); border-left: 1px solid var(--cubuk-kenar); }
 .panel-baslik { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 6px 16px; position: sticky; top: 0; background: var(--panel); }
 .panel-baslik h2 { font-size: 14px; margin: 0; }
@@ -159,13 +161,15 @@ body { display: flex; flex-direction: column; background: var(--zemin); color: v
 .gomulu .cubuk-sol, .gomulu #dugme-ac, .gomulu #dugme-drive, .gomulu #dugme-indir { display: none !important; }
 .gomulu .rozetler { margin: 0 2px 0 6px; flex-wrap: nowrap; overflow: hidden; min-width: 0; }
 .gomulu .rozet { line-height: 22px; }
-/* Yakınlaştırma (iki çizginin arası) çubuğun tam ortasında (kullanıcının isteği, 2026-10-07): iki yan eşit genişlikte,
-   genişi kadar; dardaki düğmeler kendi yanının ortasında durur, boyları değişmez. Notlar bu yüzden solda, rozetlerin
-   yanında ve yazısız (simge ve sayı): sağda yalnız Yazdır / PDF kalınca iki yan birbirine yakın olur. Solda hiçbir şey
-   kalmayacaksa "E-imzasız" yazar (goruntule.js, rozetleriYaz). Bu düzen sığmazsa (goruntule.js, cubuguYerlestir:
-   .sikisik) yanlar eşitlenmez, önce rozetler kısalır. */
+/* Yakınlaştırma (iki çizginin arası) çubuğun tam ortasında: İki yan eşit genişlikte, genişi kadar. Dardaki düğmeler
+   kendi yanının ortasında durur, boyları değişmez. Notlar bu yüzden solda, rozetlerin yanında ve yazısız (simge ve
+   sayı): Sağda yalnız Yazdır / PDF kalınca iki yan birbirine yakın olur. Solda hiçbir şey kalmayacaksa "E-imzasız" yazar
+   (goruntule.js, rozetleriYaz). Bu düzen sığmazsa önce rozetlerin kısa biçimi görünür (.kisa), o da sığmazsa yanlar
+   eşitlenmez (.sikisik), o da sığmazsa rozetler kırpılır (goruntule.js, cubuguYerlestir). */
 .gomulu .cubuk-sag { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2px; min-width: 0; }
 .gomulu .cubuk-yan { justify-content: center; gap: 2px; min-width: 0; }
+.gomulu .cubuk.kisa .rozet-uzun { display: none; }
+.gomulu .cubuk.kisa .rozet-kisa { display: inline; }
 .gomulu .cubuk.sikisik .cubuk-sag { display: flex; flex-wrap: nowrap; }
 .gomulu .cubuk.sikisik .cubuk-yan.bas { flex: 0 1 auto; }
 .gomulu .cubuk.sikisik .olcek-grup, .gomulu .cubuk.sikisik .cubuk-yan.son, .gomulu .cubuk-yan .dugme { flex: none; }
