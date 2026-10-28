@@ -50,7 +50,7 @@ istemez.
 
 Belgeleriniz hiçbir yere gönderilmez. Eklenti belgeyi yalnız Google'dan, tarayıcınızda açık olan kendi oturumunuzla alır
 ve yalnız tarayıcınızda gösterir. Geliştiriciye ya da Google dışında bir yere hiçbir bilgi gitmez. Eklentinin bir
-sunucusu yoktur. Eklenti internete bağlanmaz.
+sunucusu yoktur. Eklenti Google dışında internete bağlanmaz.
 
 **Okuduğu bilgiler.** Eklenti belgenin içeriği dışında yalnız şunları okur:
 
@@ -65,7 +65,7 @@ sunucusu yoktur. Eklenti internete bağlanmaz.
   bakmaz.
 
 **İndirme.** Drive'daki `.udf` dosyası, ön izleme penceresinde açıldığı anda Drive'ın indirme adresinden
-(`drive.usercontent.google.com`), Drive'da açık olan hesabınızla. Gmail'de bir `.udf` ekinin kartına bastığınız
+(`drive.usercontent.google.com`), Drive'da açık olan hesabınızla indirilir. Gmail'de bir `.udf` ekinin kartına bastığınız
 anda ek, belge daha çabuk açılsın diye Gmail sayfasının içinden kendi oturumunuzla indirilmeye başlar. Ön izleme
 açılmazsa ek en geç 15 saniye sonra bellekten silinir, indirme sürüyorsa kesilir.
 
