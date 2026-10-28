@@ -835,27 +835,26 @@ export async function gmailSina(udfYolu, ekranYolu) {
     }
 
     // G15. Ön izleme açıkken yenilenen sayfa: Adreste "?projector=1&messagePartId=0.1", Gmail ön izlemeyi tıklamasız açar
-    // (konunun son iletisi C, Sıra 1.udf). Bu ad sayfada yalnız C'de olduğu için belge gömülür. Kapatıldıktan sonra listedeki
-    // düğmeyle açılan ön izlemede tahmin yapılmaz (tahmin yalnız ilk ön izleme için): Adı sayfada tek olan İkinci.udf de gömülmez.
+    // (konunun son iletisi C, Sıra 1.udf). Eklenti hangi ekin gösterildiğini sayfadaki öbür iletilere bakarak tahmin etmez:
+    // Belge gömülmez, ek istenmez, Gmail'in kendi kartı kalır. Kapatıp ek kartına basınca belge gömülür.
     {
       const onceki = istekler.length;
       const y = await gmailAc('', '?projector=1&messagePartId=0.1');
       await y.g('Page.bringToFront');
-      const f = await cerceveBul(y.g);
-      const durum = f ? await belgeDurumu(f.g) : 'çerçeve yok';
+      await ifadeBekle(y.g, "!!document.getElementById('drive-active-item-info')", 3000).catch(() => {});
+      await bekle(1500);
       const gom = await gommeDurumu(y.g);
       const acilislar = await deger(y.g, 'window.__acilislar');
-      const r = ekIstekleri(istekler.slice(onceki), C.ekler[0].anahtar);
-      sonuc('ön izleme açıkken yenilenen sayfa: Tıklamasız açılan ön izlemede adı sayfada tek olan ek gömülür',
-        durum === `BELGE: ${ISARET.c1}` && gom.var && gom.ad === C.ekler[0].ad && gom.sira === 0 && JSON.stringify(acilislar) === '["C 0.1"]' &&
-        r.gmail.length === 1 && birinciTarafMi(r), `${durum} · açılışlar: ${JSON.stringify(acilislar)} · ${JSON.stringify({ ad: gom.ad, sira: gom.sira, adres: gom.adres })}`);
-      await ifadeBekle(y.g, `${CERCEVE_ODAKTA}`, 3000).catch(() => {});
+      const yeni = istekler.length - onceki;
+      sonuc('ön izleme açıkken yenilenen sayfa: Tıklamasız açılan ön izlemede tahmin yapılmaz, belge gömülmez, ek istenmez',
+        !gom.var && gom.sayi === 0 && gom.isaretli === 0 && gom.kartGorunur && gom.ad === C.ekler[0].ad && JSON.stringify(acilislar) === '["C 0.1"]' &&
+        ekIstekleri(istekler.slice(onceki), C.ekler[0].anahtar).gmail.length === 0,
+        `açılışlar: ${JSON.stringify(acilislar)} · ${JSON.stringify({ var: gom.var, ad: gom.ad, sira: gom.sira, kartGorunur: gom.kartGorunur, adres: gom.adres })} · ${yeni} istek`);
       await onizlemeyiKapat(y.g);
       const hash = await deger(y.g, 'location.hash');
       const d1 = await kartsizAc(y.g, 'B', 0);
-      const d2 = await kartsizAc(y.g, 'B', 1);
-      sonuc('yenilemeden sonra düğmeyle açılan ön izlemede tahmin yapılmaz: Belge gömülmez', !hash.includes('?') && d1.tamam && d2.tamam,
-        `${hash} · ${d1.ayrinti} | ${d2.ayrinti}`);
+      sonuc('yenilemeden sonra düğmeyle açılan ön izlemede de tahmin yapılmaz: Belge gömülmez', !hash.includes('?') && d1.tamam,
+        `${hash} · ${d1.ayrinti}`);
       await c.gonder('Target.closeTarget', { targetId: y.targetId });
     }
 

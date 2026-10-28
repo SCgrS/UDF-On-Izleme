@@ -68,12 +68,15 @@
     return ek ? { ...ek, ad: null } : null;
   }
 
-  // Sayfadaki ekler, sayfadaki sırayla. Aynı ek (ileti + attid) bir kez. Adı bilinen kart (download_url) bağlantıdan önce gelir.
-  function ekListesi(belge) {
+  // Bir iletinin ekleri (th: İletinin kimliği), sayfadaki sırayla. Yalnız adresinde bu iletinin kimliği geçen kartlar okunur,
+  // sayfadaki öbür iletilerin kartlarına bakılmaz. Aynı ek (attid) bir kez. Adı bilinen kart (download_url) bağlantıdan önce
+  // gelir.
+  function ekListesi(belge, th) {
+    if (!metinMi(th, TH)) return [];
     const ekler = new Map();
-    for (const oge of belge.querySelectorAll('[download_url], a[href*="view=att"]')) {
+    for (const oge of belge.querySelectorAll(`[download_url*="th=${th}"], a[href*="view=att"][href*="th=${th}"]`)) {
       const e = kartBilgisi(oge);
-      if (!e) continue;
+      if (!e || e.th !== th) continue;
       const k = e.th + '|' + e.attid;
       const onceki = ekler.get(k);
       if (!onceki) ekler.set(k, e);
@@ -125,32 +128,20 @@
 
   // Gmail'in ön izlemesinde gösterilen .udf eki: { ...ek, ad } ya da null (Gmail eki değil, .udf değil ya da hangi ek
   // olduğu kesin değil: Gmail'in kendi kartı kalır, başka bir belge gösterilmez). son: Bu ön izlemeyi açan ek kartının
-  // iletisi ({ th }) ya da null. tiklamasizOlur: Tıklama bilinmiyorsa sayfadaki iletilerden tahmin edilebilir mi (yalnız
-  // ön izleme açıkken sayfa yenilendiyse. Gelen kutusu listesindeki ek düğmesi gibi kartsız açılışta tahmin, sayfada
-  // duran başka bir iletinin aynı adlı ekini gösterebilirdi).
-  function gosterilenEk(belge, son, { tiklamasizOlur = false } = {}) {
+  // iletisi ({ th }) ya da null. Yalnız bu iletinin ekleri okunur. Tıklama bilinmiyorsa (gelen kutusu listesindeki ek
+  // düğmesi gibi kartsız açılış, ön izleme açıkken yenilenen sayfa) tahmin yapılmaz, sayfadaki öbür iletilere bakılmaz.
+  function gosterilenEk(belge, son) {
+    if (!son) return null;
     const o = gorunenOge(belge);
     if (!o || o.id || !udfAdiMi(o.ad)) return null;
     const sira = etkinSira(o.bilgi);
-    const iletiler = new Map();
-    for (const e of ekListesi(belge)) {
-      if (!iletiler.has(e.th)) iletiler.set(e.th, []);
-      iletiler.get(e.th).push(e);
-    }
-    // Önce sıradaki ek (adı pencereninkiyle aynıysa), tutmazsa iletide o adda tek ek varsa o. Adı bilinmeyen kart (yalnız
-    // bağlantı) yalnız tıklanan iletide ve sırasıyla kabul edilir.
-    const sec = (liste, adsizOlur) => {
-      const e = sira >= 0 ? liste[sira] : null;
-      if (e && (e.ad === o.ad || (adsizOlur && e.ad == null))) return e;
+    const liste = ekListesi(belge, son.th);
+    // Önce sıradaki ek (adı pencereninkiyle aynıysa ya da kartın adı bilinmiyorsa, yalnız bağlantısı olan kart), tutmazsa
+    // iletide o adda tek ek varsa o.
+    let bulunan = sira >= 0 ? liste[sira] : null;
+    if (!bulunan || (bulunan.ad !== o.ad && bulunan.ad != null)) {
       const ayni = liste.filter(x => x.ad === o.ad);
-      return ayni.length === 1 ? ayni[0] : null;
-    };
-    // Tıklanan iletide eşleşme belirsizse başka iletiye bakılmaz.
-    let bulunan = son ? sec(iletiler.get(son.th) || [], true) : null;
-    if (!son && tiklamasizOlur) {
-      // Tıklama bilinmiyor (sayfa ön izleme açıkken yenilendi): Yalnız tek bir ileti tutuyorsa.
-      const adaylar = [...iletiler.values()].map(l => sec(l, false)).filter(Boolean);
-      bulunan = adaylar.length === 1 ? adaylar[0] : null;
+      bulunan = ayni.length === 1 ? ayni[0] : null;
     }
     const ek = bulunan && ekTemizle(bulunan);
     return ek ? { ...ek, ad: o.ad } : null;

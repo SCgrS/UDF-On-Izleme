@@ -46,7 +46,7 @@ function sabit(dosya, ad) {
   return Number(m[1]);
 }
 
-test('e-imza rozetleri: README, sürüm notu ve mağaza açıklaması görüntüleyicinin yazılarını birebir kullanır', () => {
+test('e-imza rozetleri: Sürüm notu ve mağaza açıklaması görüntüleyicinin yazılarını birebir kullanır, README yalnız ilkini', () => {
   const kod = oku('goruntule.js');
   const bas = kod.indexOf('function imzaRozeti(');
   const imza = [...kod.slice(bas, kod.indexOf('\n  }\n', bas)).matchAll(/metin: '([^']+)'/g)].map(m => m[1]);
@@ -56,10 +56,9 @@ test('e-imza rozetleri: README, sürüm notu ve mağaza açıklaması görüntü
   assert.equal(imza.length, 4, imza.join(' | '));
   assert.ok(hepsi.has('E-imzasız'));
   const readme = duz(oku('README.md')), surum = duz(oku('DEGISIKLIKLER.md'));
-  for (const y of imza) {
-    assert.ok(readme.includes(`**${y}**`), `README: ${y}`);
-    assert.ok(surum.includes(`**${y}**`), `DEGISIKLIKLER: ${y}`);
-  }
+  // README kısa: Yalnız özetin tuttuğu rozeti anlatır.
+  assert.ok(readme.includes(`**${imza[0]}**`), `README: ${imza[0]}`);
+  for (const y of imza) assert.ok(surum.includes(`**${y}**`), `DEGISIKLIKLER: ${y}`);
   assert.ok(surum.includes('**E-imzasız**'));
   const aciklama = magazaBlogu('**Açıklama**');
   for (const y of imza.filter(y => y !== kisa)) assert.ok(aciklama.includes(`"${y}"`), `mağaza açıklaması: ${y}`);

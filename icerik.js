@@ -402,24 +402,23 @@
   // Gmail'in ön izlemesinde hangi ekin gösterildiği adresten anlaşılmaz (GmailEk.gosterilenEk): Ön izlemeyi açan ek
   // kartının iletisi gerekir. Kart tıklaması zamanıyla tutulur (tıklamaya karışılmaz). Ön izleme açıldığı anda son 5 sn'deki
   // tıklama o ön izlemenin tıklamasıdır, ön izleme kapanınca unutulur. Kartsız açılan ön izlemede (gelen kutusu
-  // listesindeki ek düğmesi) eski bir tıklama ya da sayfadaki başka bir ileti kullanılmaz: Gmail'in kendi kartı kalır.
-  // Tıklamasız tahmin yalnız sayfa ön izlemenin adresiyle açıldıysa (ön izleme açıkken yenilendi), ilk ön izlemede.
+  // listesindeki ek düğmesi, ön izleme açıkken yenilenen sayfa) eski bir tıklama ya da sayfadaki başka bir ileti
+  // kullanılmaz: Gmail'in kendi kartı kalır.
   // Kapanış gözlemcinin geri çağrısında hemen işlenir: Ön izleme kapanıp hemen başka bir kartla açılınca yeni tıklama yeni
   // ön izlemenindir, kapanıştan önceki bir tıklama sonrakine geçmez. Açılış, tıklama görüldüyse hemen (erken denetim),
   // görülmediyse bekleyen denetimde işlenir: Gmail ön izlemeyi tıklama olayı bize ulaşmadan açarsa tıklama kaçmasın.
   // Kapanıştan sonra 150 ms içinde, kapanan ön izlemenin konumu sabit katmanında tıklamasız yeniden beliren ön izleme aynı
-  // ön izlemedir (Google bilgi öğesini bir an kaldırdı): Tıklaması ve tahmin izni geri gelir. Gmail gezinirken katmanı
+  // ön izlemedir (Google bilgi öğesini bir an kaldırdı): Tıklaması geri gelir. Gmail gezinirken katmanı
   // korur (ana alanları aynı pencereye gerektikçe ekler, DRIVE-TEKNIGI.md §11.1). Yeni bir katmanda açılan ön izleme
   // (kartsız açılış ya da tıklaması toplu denetime dek görülmemiş açılış) önceki tıklamayı almaz.
   const YENIDEN_KURMA = 150;
   let sonTiklanan = null;          // { th, zaman }
   let onizlemeTiklamasi = null;    // açık ön izlemeyi açan tıklama
-  let onizlemeAcik = false, tiklamasizOlur = false;
+  let onizlemeAcik = false;
   let onizlemeKatmani = null;      // açık ön izlemenin konumu sabit katmanı (GmailEk.sabitKatman)
-  let kapanan = null;              // son kapanan ön izleme: { tiklama, tiklamasizOlur, zaman, katman }
+  let kapanan = null;              // son kapanan ön izleme: { tiklama, zaman, katman }
   let belirdi = 0;                 // bilgi öğesinin sayfada en son belirdiği an (gözlemci)
   let sonDriveBaglantisi = null;   // { id, rk }: Gmail'de basılan son Drive bağlantısı (hedefBul)
-  let yenilemeOnizlemesi = GMAIL && /[?&]projector=/.test(location.hash);
   if (GMAIL) {
     // Ön indirme yalnız kullanıcının gerçek girişiyle (isTrusted) başlar: Sayfanın betiğinin ürettiği olay ek indirtmez.
     // Tıklamanın tutulması (hangi iletinin kartı) olduğu gibi kalır: O, Gmail'in açtığı ön izlemeyi tanımak içindir.
@@ -457,13 +456,10 @@
       const katman = G.sabitKatman(bilgi);
       if (tiklamaGecerli()) {
         onizlemeTiklamasi = { th: sonTiklanan.th };
-        tiklamasizOlur = yenilemeOnizlemesi;
       } else if (kapanan && kapanan.katman && kapanan.katman === katman && belirdi >= kapanan.zaman && belirdi - kapanan.zaman < YENIDEN_KURMA) {
         onizlemeTiklamasi = kapanan.tiklama;
-        tiklamasizOlur = kapanan.tiklamasizOlur;
       } else {
         onizlemeTiklamasi = null;
-        tiklamasizOlur = yenilemeOnizlemesi;
       }
       // Tıklama yalnız açtığı ön izlemenindir: Bu ön izleme kapanıp 5 sn dolmadan kartsız açılan bir sonrakine (listedeki ek
       // düğmesi) geçmez. Yoksa orada aynı adlı başka bir ekin belgesi gösterilirdi (sahte Gmail sınaması, G14).
@@ -472,13 +468,10 @@
       onizlemeKatmani = katman;
     }
     if (!acik && onizlemeAcik) {
-      kapanan = { tiklama: onizlemeTiklamasi, tiklamasizOlur, zaman: Date.now(), katman: onizlemeKatmani };
+      kapanan = { tiklama: onizlemeTiklamasi, zaman: Date.now(), katman: onizlemeKatmani };
       onizlemeKatmani = null;
       onizlemeTiklamasi = null;
-      tiklamasizOlur = false;
-      yenilemeOnizlemesi = false;
     }
-    if (!acik && !/[?&]projector=/.test(location.hash)) yenilemeOnizlemesi = false;
     onizlemeAcik = acik;
   }
 
@@ -580,7 +573,7 @@
       return { id: oge.id, ad: oge.ad, rk: ayni ? sayfa.rk : baglanti ? baglanti.rk : null, au: ayni ? sayfa.au : null };
     }
     if (GMAIL) {
-      const ek = G.gosterilenEk(document, onizlemeTiklamasi, { tiklamasizOlur });
+      const ek = G.gosterilenEk(document, onizlemeTiklamasi);
       return ek ? { kaynak: 'gmail', id: `gmail:${ek.th}:${ek.attid}`, ad: ek.ad, ek } : null;
     }
     if (sayfa && sayfa.id && /\/file\//.test(location.pathname)) {
@@ -602,7 +595,7 @@
   function denetle(erken = false) {
     if (erken) {
       if (!baglamVar()) return;
-      if (GMAIL && !yenilemeOnizlemesi && !tiklamaGecerli()) return;
+      if (GMAIL && !tiklamaGecerli()) return;
       if (GMAIL) onizlemeyiIzle(bilgiOgesi());
       const h = hedefBul();
       const ana = h && kayitHatasiId !== h.id ? gomulecekAlan(h) : null;

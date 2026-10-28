@@ -56,8 +56,8 @@ verir. Bu yüzden `npm test`'in paket testleri Code → Download ZIP'ten çıkar
   ana alanları çerçeve gösterilirken ekleyince sağ okla geçilen yedi ekin her biri kendi içeriğini gösterir ve belge
   yeniden yüklenmez. Büyük ek içerik betiğinden arka plana 1 MB'lık üç dilimle aktarılır ve bir kez istenir. Gelen
   kutusu listesindeki ek düğmesi gibi kartsız açılan ön izlemede (bir kart tıklamasından hemen sonra da) belge gömülmez,
-  ek istenmez. Ön izleme açıkken yenilenen sayfada (adreste `?projector=`) tıklamasız açılan ilk ön izlemede adı sayfada
-  tek olan ek gömülür, sonrakilerde tahmin yapılmaz. Ön izleme kapanır kapanmaz başka iletinin aynı adlı ekine basılınca
+  ek istenmez. Ön izleme açıkken yenilenen sayfada (adreste `?projector=`) tıklamasız açılan ön izlemede de belge gömülmez,
+  ek istenmez. Ön izleme kapanır kapanmaz başka iletinin aynı adlı ekine basılınca
   o ekin belgesi gömülür (G17), 150 ms dolmadan listedeki düğmeyle açılan ön izleme kapanan ön izlemenin tıklamasını
   almaz (G17b). İletinin gövdesine konmuş bir `#drive-active-item-info` gösterilen dosya sayılmaz, gerçek ön izlemeyle
   birlikteyse ikisine de güvenilmez, öğe kalkınca gerçek ek gömülür (G18). Öğe gövdede konumu sabit bir kabın içindeyse

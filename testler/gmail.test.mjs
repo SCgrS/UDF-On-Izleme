@@ -155,13 +155,28 @@ test('ek kartı: download_url\'den ad ve adres, bağlantıdan yalnız adres', ()
   assert.equal(G.kartBilgisi(a), null);
 });
 
-test('sayfadaki ekler: Kart ve bağlantısı tek ek, sayfadaki sırayla', () => {
+test('iletinin ekleri: Yalnız o iletinin kartları, kart ve bağlantısı tek ek, sayfadaki sırayla', () => {
   kur({ iletiler: [{ msg: MSG_A, th: TH_A, kartlar: ['Bir.udf', 'İki.pdf'] }, { msg: MSG_B, th: TH_B, kartlar: ['Üç.udf'] }] });
-  const l = duz(G.ekListesi(d));
-  assert.deepEqual(l.map(e => `${e.th === TH_A ? 'A' : 'B'} ${e.attid} ${e.ad}`), ['A 0.1 Bir.udf', 'A 0.2 İki.pdf', 'B 0.1 Üç.udf']);
+  const liste = th => duz(G.ekListesi(d, th)).map(e => `${e.th === TH_A ? 'A' : 'B'} ${e.attid} ${e.ad}`);
+  assert.deepEqual(liste(TH_A), ['A 0.1 Bir.udf', 'A 0.2 İki.pdf']);
+  assert.deepEqual(liste(TH_B), ['B 0.1 Üç.udf']);
+  // İleti belirtilmezse ya da kimliği geçersizse hiçbir kart okunmaz.
+  assert.deepEqual(liste(undefined), []);
+  assert.deepEqual(liste('"]'), []);
+  assert.deepEqual(liste(TH_A.slice(0, 8)), [], 'kimliğin başı başka iletiyi seçmez');
   // Kartın download_url'ü henüz yoksa (Gmail sonradan yazabiliyor) bağlantıdan, adsız.
   d.querySelector('[download_url]').removeAttribute('download_url');
-  assert.deepEqual(duz(G.ekListesi(d)).map(e => `${e.attid} ${e.ad}`), ['0.1 null', '0.2 İki.pdf', '0.1 Üç.udf']);
+  assert.deepEqual(liste(TH_A), ['A 0.1 null', 'A 0.2 İki.pdf']);
+  // Öbür iletinin kartları eklentinin koduna hiç gelmez: Kart okuyucusu yalnız tıklanan iletinin kartlarına çağrılır
+  // (seçicinin kendi eşleştirmesi sayılmaz).
+  kur({ iletiler: [{ msg: MSG_A, th: TH_A, kartlar: ['Bir.udf'] }, { msg: MSG_B, th: TH_B, kartlar: ['Üç.udf', 'Dört.udf'] }] });
+  const okunan = [];
+  const asil = w.Element.prototype.getAttribute, asilSecici = w.Document.prototype.querySelectorAll;
+  let secicide = false;
+  w.Element.prototype.getAttribute = function (ad) { const v = asil.call(this, ad); if (!secicide && (ad === 'download_url' || ad === 'href') && v != null) okunan.push(v); return v; };
+  w.Document.prototype.querySelectorAll = function (s) { secicide = true; try { return asilSecici.call(this, s); } finally { secicide = false; } };
+  try { G.ekListesi(d, TH_A); } finally { w.Element.prototype.getAttribute = asil; w.Document.prototype.querySelectorAll = asilSecici; }
+  assert.ok(okunan.length > 0 && okunan.every(a => a.includes(`th=${TH_A}`)), JSON.stringify(okunan));
 });
 
 test('ön izlemede gösterilen ek: Tıklanan iletideki, ana alanın sırasındaki ek', () => {
@@ -175,20 +190,18 @@ test('ön izlemede gösterilen ek: Tıklanan iletideki, ana alanın sırasındak
   // İki iletide aynı adlı ek: Tıklanan ileti ayırır.
   assert.equal(goster({ anaSayisi: 2, etkin: 1, baslik: 'Deneme dilekçesi.udf' }, { th: TH_B }), 'B 0.2 Deneme dilekçesi.udf');
   assert.equal(goster({ anaSayisi: 5, etkin: 0, baslik: 'Deneme dilekçesi.udf' }, { th: TH_A }), 'A 0.1 Deneme dilekçesi.udf');
-  // Tıklama bilinmiyorsa: Tahmin yalnız izin varsa (sayfa ön izleme açıkken yenilendi) ve tek ileti tutuyorsa.
-  assert.equal(goster({ anaSayisi: 2, etkin: 0, baslik: 'İkinci ileti.udf' }, null, { tiklamasizOlur: true }), 'B 0.1 İkinci ileti.udf');
-  assert.equal(goster({ anaSayisi: 2, etkin: 1, baslik: 'Deneme dilekçesi.udf' }, null, { tiklamasizOlur: true }), null);
-  // Kartsız açılan ön izleme (ör. gelen kutusu listesindeki ek düğmesi): Sayfadaki başka bir iletinin eki tahmin edilmez.
+  // Tıklama bilinmiyorsa (gelen kutusu listesindeki ek düğmesi, ön izleme açıkken yenilenen sayfa) tahmin yapılmaz: Adı
+  // sayfada tek olan ek de seçilmez.
   assert.equal(goster({ anaSayisi: 2, etkin: 0, baslik: 'İkinci ileti.udf' }, null), null);
   // Tıklanan ileti sayfada değilse başka iletiye bakılmaz.
-  assert.equal(goster({ anaSayisi: 2, etkin: 0, baslik: 'İkinci ileti.udf' }, { th: 'abcdef0123456789' }, { tiklamasizOlur: true }), null);
+  assert.equal(goster({ anaSayisi: 2, etkin: 0, baslik: 'İkinci ileti.udf' }, { th: 'abcdef0123456789' }), null);
   // Sıra tutmazsa (ör. Gmail sırayı değiştirdi) tıklanan iletide o adda tek ek varsa o, birden çoksa hiçbiri.
   assert.equal(goster({ anaSayisi: 9, etkin: 7, baslik: 'Notlu.udf' }, { th: TH_A }), 'A 0.2 Notlu.udf');
   assert.equal(goster({ anaSayisi: 9, etkin: 7, baslik: 'Aynı ad.udf' }, { th: TH_A }), null);
   // Tıklanan iletide belirsizse, öbür iletide o adda tek ek olsa da o seçilmez (gözden geçirmede bulundu).
   const B2 = { ...B, kartlar: ['İkinci ileti.udf', 'Aynı ad.udf'] };
   kur({ iletiler: [A, B2], anaSayisi: 9, etkin: 7, baslik: 'Aynı ad.udf' });
-  assert.equal(G.gosterilenEk(d, { th: TH_A }, { tiklamasizOlur: true }), null);
+  assert.equal(G.gosterilenEk(d, { th: TH_A }), null);
   kur({ iletiler: [A, B2], anaSayisi: 0 });
   const ana = d.createElement('div');   // Yapı tanınmıyor: Ana alan yok, sıra -1
   ana.append(bilgiOgesi(JSON.stringify({ id: '', title: 'Aynı ad.udf' })));
@@ -202,7 +215,7 @@ test('ön izlemede gösterilen ek: Tıklanan iletideki, ana alanın sırasındak
   // Büyük harfli uzantı.
   assert.equal(goster({ anaSayisi: 1, etkin: 0, baslik: 'BÜYÜK.UDF' }, null), null);
   kur({ iletiler: [{ msg: MSG_A, th: TH_A, kartlar: ['BÜYÜK.UDF'] }], anaSayisi: 1, etkin: 0, baslik: 'BÜYÜK.UDF' });
-  assert.equal(G.gosterilenEk(d, null, { tiklamasizOlur: true }).attid, '0.1');
+  assert.equal(G.gosterilenEk(d, { th: TH_A }).attid, '0.1');
 });
 
 test('adsız kart (yalnız bağlantı) yalnız tıklanan iletide, sırasıyla kabul edilir', () => {

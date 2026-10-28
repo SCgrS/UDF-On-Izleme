@@ -773,7 +773,7 @@ uydurma ekli iki deneme iletisiyle yapıldı. Gerçek belgeye dokunulmadı.
   ön izleme yeni kartın ekini gösterir (sahte Gmail G17, kapanıştan 13 ms sonra). Kapanıştan önce görülen tıklama sonraki
   ön izlemeye geçmez (`tiklamaGecerli`). Açılış ise tıklama görüldüyse erken denetimde, görülmediyse toplu denetimde
   işlenir (§12, 1. madde). Kapanıştan sonraki 150 ms içinde, kapanan ön izlemenin konumu sabit katmanında (aynı düğüm)
-  tıklamasız yeniden beliren ön izleme aynı ön izleme sayılır, tıklaması ve tahmin izni geri gelir. Bu bir önlem: Gerçek
+  tıklamasız yeniden beliren ön izleme aynı ön izleme sayılır, tıklaması geri gelir. Bu bir önlem: Gerçek
   Gmail'de oklarla gezinirken bilgi öğesinin bir an kalkıp kalkmadığı ölçülmedi. Gmail gezinirken katmanı korur (ana
   alanları aynı pencereye ekler, §11.1). Yeni bir katmanda açılan ön izleme (kartsız açılış ya da tıklaması toplu
   denetime dek görülmemiş açılış) önceki tıklamayı almaz (sahte Gmail G17b: Kapanıştan 150 ms dolmadan listedeki
@@ -790,11 +790,15 @@ uydurma ekli iki deneme iletisiyle yapıldı. Gerçek belgeye dokunulmadı.
   koruyup korumadığı ölçülmedi. Drive'da öğe yine `getElementById` ile alınır (sayfaya orada dışarıdan öğe konamaz, öğenin
   Drive'da tek olduğu da ölçülmedi). Sınama: `gmail.test.mjs`, `icerik.test.mjs`, sahte Gmail G18 ve G18b (iletinin
   gövdesinde konumu sabit kaptaki öğe, pencere ve ana alanla da: Ne gömülür ne düğme çıkar).
+- Yalnız tıklanan iletinin ek kartları okunur: Seçici adresinde o iletinin kimliği (`th=`) geçen kartları alır
+  (`gmail-ek.js` `ekListesi`), sayfadaki öbür iletilerin kartları eklentinin koduna gelmez.
 - Gösterilen ek, o iletinin kartlarından etkin ana alanın sırasındaki karttır. Adı pencerenin adıyla tutmalı. Tutmazsa
   iletide o adda tek ek varsa o alınır. Aynı adlı iki ek (deneme iletisinde "Aynı ad.udf" iki kez) sırayla ayrılır.
   Tıklanan iletide eşleşme belirsizse başka iletiye bakılmaz.
-- Tıklamasız tahmin (sayfada tek bir ileti tutuyorsa o ek) yalnız sayfa ön izlemenin adresiyle açıldıysa (ön izleme
-  açıkken yenilendi) ve yalnız o ilk ön izlemede yapılır.
+- Tıklamasız tahmin yapılmaz. Ön izleme açıkken yenilenen sayfada (adreste `?projector=`) Gmail ön izlemeyi tıklamasız
+  açar: Belge gömülmez, Gmail'in kartı kalır. Pencereyi kapatıp eke yeniden basmak yeter. Eskiden adı sayfada tek olan ek
+  tahmin ediliyordu, bunun için sayfadaki bütün iletilerin kartları okunuyordu. Kullanıcı okunan bilginin tıklanan
+  e-postayla sınırlı kalmasını istedi (2026-10-28).
 - Kartsız açılan ön izlemede (gelen kutusu listesindeki ek düğmeleri) belge gömülmez, Gmail'in "Önizleme yok" kartı
   kalır. Okuma bölmesinde başka bir yazışma açıkken sayfadaki aynı adlı bir ek yanlışlıkla gösterilmesin diye tahmin
   yapılmaz (bağımsız gözden geçirmede bulundu). Gmail bu düğmeleri yalnız ön izleyebildiği türler için gösterir, .udf
