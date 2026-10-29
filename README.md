@@ -151,7 +151,9 @@ kullanır, bunlar eklentiye girmez.
 
 ## Teşekkür
 
-UDF biçimini çözen emeğini herkesle paylaştığı için Hasan İmer Akın'a buradan da teşekkür ederim.
+Eklentinin UDF belgelerini okuyan motoru, [legaluga-uyap-ui](https://github.com/hasanimer/legaluga-uyap-ui) projesinin
+UDF okuyucusundan türetildi (MIT lisansı, lisans metni ve telif bildirimi [LISANSLAR.txt](LISANSLAR.txt) dosyasında). Bu
+emek için Hasan İmer Akın'a ([@hasanimer](https://github.com/hasanimer)) buradan da teşekkür ederim.
 
 ---
 
