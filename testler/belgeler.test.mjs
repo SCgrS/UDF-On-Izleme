@@ -59,7 +59,7 @@ test('e-imza rozetleri: Sürüm notu görüntüleyicinin yazılarını birebir k
   }
 });
 
-// Mağazadaki gizlilik politikası adresi README'nin Veri gizliliği bölümünü gösteren site sayfasıdır.
+// Mağazadaki gizlilik politikası adresi GitHub'daki README'nin Veri gizliliği bölümüdür.
 test('gizlilik metni: README ve sürüm notundaki süreler ve sekmede kalan bilgiler koda uyar', () => {
   // Alınmayan kayıt bir dakikada, baytlar ve kullanılmayan ön indirmeler 15 sn'de bırakılır.
   assert.equal(sabit('arkaplan.js', 'KAYIT_SURESI'), 60000);
