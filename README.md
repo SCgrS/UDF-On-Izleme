@@ -144,6 +144,11 @@ klasöründe. Eklenti bunun dışında hiçbir üçüncü taraf pakete bağlı d
 [jsdom](https://github.com/jsdom/jsdom) ve [pdf.js](https://github.com/mozilla/pdf.js) (`pdfjs-dist`) paketlerini
 kullanır, bunlar eklentiye girmez.
 
+## Otomatik denetimler
+
+[![CodeQL Advanced](https://github.com/SCgrS/UDF-On-Izleme/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/SCgrS/UDF-On-Izleme/actions/workflows/codeql.yml)\
+[![Dependency Review](https://github.com/SCgrS/UDF-On-Izleme/actions/workflows/dependency-review.yml/badge.svg?branch=main)](https://github.com/SCgrS/UDF-On-Izleme/actions/workflows/dependency-review.yml)
+
 ## Teşekkür
 
 UDF biçimini çözen emeğini herkesle paylaştığı için Hasan İmer Akın'a buradan da teşekkür ederim.
