@@ -286,6 +286,33 @@ test('çizim: Girinti, işaret, sekme, not, üst bilgi aralığı ve güvenlik',
   assert.ok(!/background/.test(p.style.cssText), 'yazı tipi adı CSS\'e sızmaz');
 });
 
+test('ölçüm tuvali yalnız sekmeli paragrafta kurulur, son sekmeden sonraki metin ölçülmez, özet model bırakılınca da kalır', async () => {
+  // jsdom'da tuval yok: Ölçen sahte bağlam (harf başına 6 px).
+  const eski = pencere.HTMLCanvasElement.prototype.getContext;
+  const olculen = [];
+  let kurulan = 0;
+  pencere.HTMLCanvasElement.prototype.getContext = () => { kurulan++; return { font: '', measureText: m => { olculen.push(m); return { width: m.length * 6 }; } }; };
+  try {
+    const ciz = async kur => {
+      const b = new Belge();
+      const g = M.ciz(await M.oku(new Uint8Array(udfZip([['content.xml', b.xml({ ogeler: kur(b) })]]))), { belge: pencere.document });
+      await g.bitti;
+      return g;
+    };
+    const duz = await ciz(b => [b.paragraf({}, [['Sekmesiz paragraf']]), b.paragraf({}, [['İkinci paragraf']])]);
+    assert.equal(kurulan, 0, 'sekmesiz belgede tuval kurulmaz');
+    assert.equal(duz.ozet.bolum, 1);
+    assert.equal(duz.ozet.notSayisi, 0);
+    duz.birak();
+    const g = await ciz(b => [b.paragraf({}, [['Önce\tsonra']]), b.paragraf({}, [['Sekmesiz']])]);
+    assert.equal(kurulan, 1);
+    assert.deepEqual(olculen, ['Önce'], 'yalnız sekmeden önceki metin ölçülür');
+    // Varsayılan durak 72 punto: 4 harf × 6 px × 0,75 = 18 pt yazıdan sonra 54 pt sekme (tuvalin ölçtüğü genişlik).
+    assert.equal(g.kok.querySelector('.udf-sekme').style.getPropertyValue('width'), '54pt');
+    g.birak();
+  } finally { pencere.HTMLCanvasElement.prototype.getContext = eski; }
+});
+
 test('resimler <img>: tek blob adresi (antet her bölümde aynı), kapanınca bırakılır, tuval yok', async () => {
   const { Belge, resim, udfZip } = await import('../araclar/ornek-uret.mjs');
   const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAADklEQVR4nGP4zwADQBYAD/4B//Ga+iUAAAAASUVORK5CYII=';

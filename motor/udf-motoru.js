@@ -1240,8 +1240,14 @@
     const E = (etiket, sinif) => { const e = belge.createElement(etiket); if (sinif) e.className = sinif; return e; };
     const { sayfa, taban } = model;
     const tabanAile = aileListesi(taban.aile);
-    let olcum = null;
-    try { olcum = belge.createElement('canvas').getContext('2d'); } catch { olcum = null; }
+    // Yazı genişliği ölçüm tuvali yalnız sekme konumu için gerekir: İlk sekmeli paragrafta kurulur, çizim bitince bırakılır.
+    // Tuvalin metin önbelleği ölçülen her farklı metin için şekillendirme sonucu tutar (20.000 paragrafta ~25 MB) ve tuval
+    // yaşadıkça kalır.
+    let olcum, olcumBitti = false;
+    const olcumAl = () => {
+      if (olcum === undefined && !olcumBitti) { try { olcum = belge.createElement('canvas').getContext('2d'); } catch { olcum = null; } }
+      return olcum || null;
+    };
     let bitti = false;
 
     const kok = E('div', 'udf');
@@ -1273,9 +1279,10 @@
     const fontKisa = st => `${st.italik ? 'italic ' : ''}${st.kalin ? '700 ' : ''}${st.punto}pt ${aileListesi(st.aile)}`;
     const genislikPt = (metin, st) => {
       if (!metin) return 0;
-      if (!olcum) return metin.length * st.punto * 0.5;
-      olcum.font = fontKisa(st);
-      return olcum.measureText(metin).width * 0.75;
+      const o = olcumAl();
+      if (!o) return metin.length * st.punto * 0.5;
+      o.font = fontKisa(st);
+      return o.measureText(metin).width * 0.75;
     };
 
     // Resimler <img> olarak gösterilir; her resim için tek blob adresi (üst bilgideki antet her bölümde aynı adresi
@@ -1343,7 +1350,9 @@
           if (bitti === 'birakildi') return;
           const k = 2 / 0.75, tv = belge.createElement('canvas');
           tv.width = Math.max(1, Math.round(sayfa.en * k)); tv.height = Math.max(1, Math.round(sayfa.boy * k));
-          const ctx = tv.getContext('2d');
+          // Karo yalnız bir kez çizilip PNG'ye çevrilir: Tuval işlemcide kalır (willReadFrequently). Hızlandırılmış tuval
+          // GPU sürecinde karo ve kaynak resim için ~60 MB tutuyor ve belge kapanınca da bırakmıyordu.
+          const ctx = tv.getContext('2d', { willReadFrequently: true });
           if (f.soluk) ctx.globalAlpha = 0.15;
           ctx.drawImage(bmp, f.sol * k, f.ust * k, Math.max(1, (sayfa.en - f.sol - f.sag) * k), Math.max(1, (sayfa.boy - f.ust - f.alt) * k));
           const blob = await new Promise(c => tv.toBlob(c));
@@ -1430,6 +1439,9 @@
       }
       let x = p.ilk;
       let bos = true;
+      // Konum (x) yalnız ardından sekme gelen parçalar için gerekir: Son sekmeden sonraki metin ölçülmez.
+      let sonSekme = -1;
+      for (let k = p.parcalar.length - 1; k >= 0; k--) if (p.parcalar[k].t === 'sekme') { sonSekme = k; break; }
       for (let i = 0; i < p.parcalar.length; i++) {
         const c = p.parcalar[i];
         if (c.t === 'metin') {
@@ -1440,9 +1452,11 @@
           notSinifi(sp, c.notlar);
           d.append(sp);
           if (c.yazi.trim()) bos = false;
-          const satirlar = c.yazi.split('\n');
-          if (satirlar.length > 1) x = p.asili;
-          x += genislikPt(satirlar[satirlar.length - 1], c.stil);
+          if (i < sonSekme) {
+            const satirlar = c.yazi.split('\n');
+            if (satirlar.length > 1) x = p.asili;
+            x += genislikPt(satirlar[satirlar.length - 1], c.stil);
+          }
         } else if (c.t === 'sekme') {
           // TabSet'te ileride durak yoksa Swing'in varsayılanı: her 72 puntoda bir (gerçek belgelerde boşlukla yapılan
           // hizalamalar bu aralığa göre tutuyor).
@@ -1474,7 +1488,7 @@
           bos = false;
         }
       }
-      if (bos && !p.parcalar.some(c => c.t === 'sekme')) {
+      if (bos && sonSekme < 0) {
         const sp = E('span');
         sp.textContent = '\u00a0';
         d.append(sp);
@@ -1603,8 +1617,16 @@
       });
     }
 
-    // İlk dilimler eşzamanlı çizilir; gerisi denetimi sayfaya bırakarak eklenir. Bitince iş listesi boşaltılır (her iş
-    // modelin bir parçasını tutuyor).
+    // Özet çizimden önce kurulur: Çizim bitince model bırakılır (küçük belgede bu, aşağıdaki ilk dilimlerle eşzamanlı olur).
+    const ozet = {
+      tur: 'UDF', bolum: model.bolumler.length, sablon: model.sablon, kesildi: model.kesildi,
+      resimReddi: model.sayac.resimReddi, sayac: model.sayac, sure: model.sure, kodlama: model.kodlama, ham: !!model.ham,
+      notSayisi: model.notlar.length, imza: model.imza, ozellikler: model.ozellikler, bicimSurumu: model.bicimSurumu
+    };
+
+    // İlk dilimler eşzamanlı çizilir; gerisi denetimi sayfaya bırakarak eklenir. Bitince (ya da iptalde) iş listesi
+    // boşaltılır, model ve ölçüm tuvali bırakılır: Döndürülen işlevler (birak, tumunuCiz) ve resimlerin olay dinleyicileri
+    // bu işlevin kapsamını belge açık kaldıkça tutar, model ve tuvalin metin önbelleği onunla kalırdı.
     let sira = 0;
     const t0 = performance.now();
     while (sira < isler.length && (sira < 3 || performance.now() - t0 < 30)) isler[sira++]();
@@ -1618,7 +1640,13 @@
         }
         bitti = true;
         return true;
-      } finally { isler.length = 0; }
+      } finally {
+        isler.length = 0;
+        model = null;
+        olcum = null;
+        olcumBitti = true;
+        notYazilari.clear();
+      }
     })();
 
     // Yazdırmadan önce: bütün dilimler eklenmiş, resimler çözülmüş ve arka plan resmi hazır olmalı (boş resim basılmasın).
@@ -1644,11 +1672,7 @@
         dogrulamalar.clear();
         if (filigranUrl) { belge.documentElement.style.removeProperty('--udf-filigran'); URL.revokeObjectURL(filigranUrl); filigranUrl = null; }
       },
-      ozet: {
-        tur: 'UDF', bolum: model.bolumler.length, sablon: model.sablon, kesildi: model.kesildi,
-        resimReddi: model.sayac.resimReddi, sayac: model.sayac, sure: model.sure, kodlama: model.kodlama, ham: !!model.ham,
-        notSayisi: model.notlar.length, imza: model.imza, ozellikler: model.ozellikler, bicimSurumu: model.bicimSurumu
-      }
+      ozet
     };
   }
 

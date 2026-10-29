@@ -388,7 +388,7 @@ const UZUN = 'a'.repeat(64) + '@' + ['b'.repeat(63), 'c'.repeat(63), 'd'.repeat(
 const GECERLI_EPOSTA = ['ikinci@ornek.com', 'Ad.Soyad+dava@buro.com.tr', "o'brien@ornek.co.uk", 'a_b-c@alt-alan.ornek.org', UZUN];
 const GECERSIZ_EPOSTA = ['ikinci@ornek', 'a@b@ornek.com', 'a b@ornek.com', 'a\u0000@ornek.com', 'a\n@ornek.com', 'a\u007f@ornek.com',
   'a/b@ornek.com', 'a?b@ornek.com', 'a#b@ornek.com', 'a&b@ornek.com', 'a=b@ornek.com', 'a@ornek..com', 'a@.ornek.com', '@ornek.com',
-  'a@ornek.com.', 'a@ornek.com/', '<b>@ornek.com', 'çağrı@ornek.com', 'a@örnek.com', `${UZUN}x`, `${'a'.repeat(65)}@ornek.com`, 'x', ''];
+  'a@ornek.com.', 'a@ornek.com/', '<b>@ornek.com', 'ışık@ornek.com', 'a@örnek.com', `${UZUN}x`, `${'a'.repeat(65)}@ornek.com`, 'x', ''];
 
 test('kayıt: Hesap sıra (0-99) ya da sıkı biçimde e-posta adresi, olduğu gibi. Başka her biçim hesapsız', async () => {
   const a = kur({ udfIndir: async () => ({ bayt: new Uint8Array([1]), ad: null, hesap: null }) });

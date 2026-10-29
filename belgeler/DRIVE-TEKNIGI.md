@@ -657,8 +657,8 @@ belgede solda "E-imzasız" yazar.
   (en büyük içerik / esneklik çarpanı), yakınlaştırma tam ortaya düşer. Dardaki yanın içeriği kendi sütununun ortasında.
 - Notlar solda: Sağda yalnız Yazdır / PDF (≈ 125 px) kalınca yanlar yakın; Notlar sağda olsaydı imzalı notlu
   belgede solda ≈ 150 px boşluk kalırdı. Notlar düğmesi yazısız (≈ 64 px), `aria-label` "Notlar (n)".
-- Sol yan boş kalmasın: e-imzasız ve notsuz belgede "E-imzasız" rozeti (`rozetleriYaz`). Ofisteki Drive for desktop'ta
-  rastgele 12 gerçek UDF'nin 12'si e-imzasız ve notsuzdu, yani en sık görülen durum bu.
+- Sol yan boş kalmasın: e-imzasız ve notsuz belgede "E-imzasız" rozeti (`rozetleriYaz`). Rastgele bakılan UDF'lerin
+  hepsi e-imzasız ve notsuzdu, yani en sık görülen durum bu.
 - Doğal genişlik sığmazsa (`cubuguYerlestir`): Önce eşit düzen ölçülür. Sığmazsa `.kisa` ile rozetlerin kısa biçimi
   denenir (yanlar yine eşit, yalnız kısa biçimi olan rozet değişir: "E-imza karşılaştırılamadı", §7). O da sığmazsa
   `.sikisik` ile ızgara yerine düz sıra (yanlar eşitlenmez). O da sığmazsa rozetler kırpılır. Kısa biçim sıkışık düzenden
@@ -724,6 +724,40 @@ Drive, yapay örnekler; süreç belleği WMI, GPU süreci dâhil).
   drive` çerezler kapalı adımı dilimli yolu çalıştırır, B3 bozuk resmi (`resim-bozuk.udf`) denetler; `chrome-sina.mjs
   gorsel` resimlerin yüklendiğini ve PDF'te basıldığını (`/Subtype /Image`) gösterir.
 
+### 10.1 İkinci ölçüm (2026-10-29)
+
+Kullanıcı isteği: "RAM'in optimizasyonu yapalım, yapabildiğimiz kadarıyla". Görünmez Chrome'da yapay belgelerle ölçüldü:
+Açık − boş farkı, en az üç tekrarın ortancası, süreç belleği memory-infra dökümüyle (V8, Oilpan, ayırıcılar, GPU süreci),
+tutma yolları yığın kesitiyle. Süreç ayak izinde ±3 MB, GPU sürecinde ±5 MB oynama var, kısa dilekçedeki farklar bunun
+içinde kalıyor.
+- Ölçüm tuvali (`ciz` `olcumAl`): Sekme konumu için yazı genişliğini ölçen 2d tuval her metin parçasını ölçüyordu.
+  Tuvalin şekillendirme önbelleği ölçülen her farklı metni tutar ve tuval belge açık kaldıkça yaşıyordu (döndürülen `birak`
+  ve `tumunuCiz` ile resimlerin dinleyicileri `ciz`'in kapsamını tutar). 20.000 paragraflık belgede 20.006
+  `PlainTextNode`, 23,7 MB. Artık tuval ilk sekmeli paragrafta kurulur, yalnız ardından sekme gelen parçalar ölçülür,
+  çizim bitince ya da kesilince tuval bırakılır. Açık − boş: 20.000 paragraf +162 → +97 MB, 600 paragraf (~30 sayfa)
+  +23,8 → +17,2 MB, 400 paragraf ve 200 not +18,6 → +13,8 MB. Uzun belgenin çizimi ~0,9 sn kısaldı.
+- Model (`ciz` `bitis`): Çizim bitince ya da kesilince model ve not yazıları bırakılır, özet (`ozet`) çizimden önce
+  kurulur. 20.000 paragrafta JS yığını +12,5 → +2,2 MB. Paragraf başına ~0,5 KB, kısa belgede fark yok. Parça metinleri
+  `textContent`'e verilince Blink'te Text düğümüyle paylaşılan dış dizelere dönüşüyor, metin havuzunun tamamı tutulmuyordu.
+- Arka plan karosu: Tuval `willReadFrequently` ile işlemcide kalır. Hızlandırılmış tuval GPU sürecinde karo ve kaynak resim
+  için ~60 MB tutuyor, belge kapanınca da bırakmıyordu. A4 arka plan resminde GPU süreci açıkken +75,9 → +13,6 MB, başka
+  belgeye geçince +79,4 → +17,5 MB. Karonun pikselleri en çok 14/255 farklı (%15 soluk filigranda görünmez), ekran ve
+  baskı aynı PNG'yi kullanır. Ölçüm görünmez Chrome'un yazılım GPU'sunda yapıldı: Gerçek ekran kartında miktar farklı
+  olabilir.
+- Görünüm aynı: Yedi yapay belgede (sekmeli, notlu, antetli, arka plan resimli, uzun) çizilen DOM, sekme genişlikleri ve
+  yazdırma CSS'i önce ve sonra bayt bayt aynı. jsdom'da tuval olmadığı için `motor.test.mjs` "ölçüm tuvali" sahte bir
+  ölçen bağlamla sınar (sekmesiz belgede tuval yok, son sekmeden sonrası ölçülmez, sekme genişliği ölçülen yazıdan).
+- Denenip alınmayanlar: `govdeOku`'nun boy biliniyorsa tek diziye yazması (service worker tepesi dosyanın iki katında
+  kaldı, akışın her parçası kendi ArrayBuffer'ında gelip GC'ye dek duruyor), `resimDogrula`'da küçük çözüm
+  (`resizeWidth`, Chrome resmi önce tam çözüyor), Drive sekmesine yalnız iki betik (−0,01 MB), 1× arka plan karosu
+  (baskı çözünürlüğü yarıya iner).
+- Ölçülüp bırakılanlar: Gözlemcinin `characterData`'sı kalıcı yığını değiştirmiyor, yalnız uç DOM çalkantısında %22 iş ve
+  geçici çöp ekliyor (gerçek Drive'da bilgi öğesinin metninin yerinde güncellenip güncellenmediği ölçülmedi, §6.1). Ön
+  izleme indirme bitmeden kapatılınca service worker baytları en çok 15 sn tutuyor (dosya boyu kadar, bilinçli sınır).
+  Uzun belgede her paragrafın satır içi stili (20.000 paragrafta ~18 MB Oilpan) sınıf kurallarıyla küçülebilir, çizimin
+  geniş bir yeniden yazımı olduğu için yapılmadı. Sekmedeki büyük görünüm İndir için dosya baytlarını tutar (dosya boyu),
+  gömülü görünüm tutmaz.
+
 ## 11. Gmail ekleri (2026-10-26)
 
 Kullanıcı isteği: Gmail'de `.udf` ekine tıklayınca "Önizleme yok" yerine belge açılsın. Ölçümler kullanıcının Chrome'unda (Claude in Chrome), kullanıcının onayıyla kendine gönderilen, yalnız
@@ -748,7 +782,7 @@ uydurma ekli iki deneme iletisiyle yapıldı. Gerçek belgeye dokunulmadı.
 - UDF ön izlemesinde Dosya menüsünde Yazdır yok, ikinci satırda yalnız İndir var (§14).
 
 ### 11.2 Ek kartları ve indirme
-- İletideki her ek kartında `span[download_url]` var: `application/octet-stream:<yüzde kodlu ad>:https://mail.google.com/mail/u/1/https://mail.google.com/mail/u/1?ui=2&ik=<10 onaltılık>&attid=0.N&permmsgid=msg-f:<19 rakam>&th=<16 onaltılık>&view=att&zw&disp=safe`.
+- İletideki her ek kartında `span[download_url]` var: `application/octet-stream:<yüzde kodlu ad>:https://mail.google.com/mail/u/<n>/https://mail.google.com/mail/u/<n>?ui=2&ik=<10 onaltılık>&attid=0.N&permmsgid=msg-f:<19 rakam>&th=<16 onaltılık>&view=att&zw&disp=safe`.
   Gmail adresin başını iki kez yazıyor. İçinde aynı sorguyla bir `a[target=_blank]` durur. `th` iletinin kendi kimliği
   (yazışmanınki değil), `attid` her iletide 0.1'den başlar.
 - Bu adres Gmail oturumunun çerezleriyle istenince `mail-attachment.googleusercontent.com/attachment/u/1/?…` adresine

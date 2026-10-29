@@ -11,7 +11,7 @@ dışı dosya girmez, paketleyici onu "pakete girmedi (git'in izlemediği)" diye
 yapılmadan pakete girmez. Git'e hiç eklenmemiş bir öğe, diskte olmayan izlenen dosya ve git deposu olmayan klasör açık hata
 verir. Bu yüzden `npm test`'in paket testleri Code → Download ZIP'ten çıkarılan klasörde çalışmaz.
 
-- `npm install`, ardından `npm test`: Birim testleri (144 test, `testler/*.test.mjs`). Testler yapay örneklerle çalışır
+- `npm install`, ardından `npm test`: Birim testleri (145 test, `testler/*.test.mjs`). Testler yapay örneklerle çalışır
   (`araclar/ornek-uret.mjs`, `testler/ornekler/`).
   - `motor.test.mjs`: Belge okuma ve çizim (stiller, listeler, sekmeler, tablolar, resimler, e-imza durumları, iptal,
     yazdırma CSS'i). `motor-sinir.test.mjs`: Zip sınırları (zip bombası, girdi sayısı, CRC-32, şifreli girdi, ZIP64, çok

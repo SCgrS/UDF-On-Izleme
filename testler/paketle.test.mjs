@@ -256,7 +256,7 @@ test('yerel-sina: Satırlarda dosya adı ve belge metni yok, sıra numarası ve 
   // klasör: Okuma EISDIR verir, Node'un iletisi tam yolu taşır).
   const klasor = fs.mkdtempSync(path.join(os.tmpdir(), 'udf-yerel-'));
   const adlar = { 'Davacı Ayşe Örnekoğlu 2026-1234 Esas.udf': 'dilekce.udf', 'Davalı Veli Sınamacı 2026-987 Esas.udf': 'zip-degil.udf' };
-  const okunamayan = 'Davacı Zeynep Kılıçarslan Esas.udf';
+  const okunamayan = 'Davacı Zeynep Denemeoğlu Esas.udf';
   try {
     for (const [ad, kaynak] of Object.entries(adlar)) fs.copyFileSync(path.join(KOK, 'testler', 'ornekler', kaynak), path.join(klasor, ad));
     fs.mkdirSync(path.join(klasor, okunamayan));
@@ -270,7 +270,7 @@ test('yerel-sina: Satırlarda dosya adı ve belge metni yok, sıra numarası ve 
     assert.match(satirlar[0], /^1 [0-9a-f]{8} \{"bolum":\d+/);
     assert.match(satirlar[1], /^2 [0-9a-f]{8} HATA okuma EISDIR$/);
     assert.match(satirlar[2], /^3 [0-9a-f]{8} HATA zip /);
-    for (const parca of ['Davacı', 'Davalı', 'Ayşe', 'Örnekoğlu', 'Veli', 'Sınamacı', 'Zeynep', 'Kılıçarslan', '1234', '987', 'Esas', '.udf', klasor]) {
+    for (const parca of ['Davacı', 'Davalı', 'Ayşe', 'Örnekoğlu', 'Veli', 'Sınamacı', 'Zeynep', 'Denemeoğlu', '1234', '987', 'Esas', '.udf', klasor]) {
       assert.ok(!r.stdout.includes(parca) && !r.stderr.includes(parca), parca);
     }
     // Özet yalnız sayılar ve kısa sabit değerler taşır, belgenin metninden söz yok.
