@@ -2,13 +2,12 @@
 // Tam ekranda belge genişliğin ancak %40'ı, GitHub görseli sütuna sığdırınca yazı okunmuyor. Belgenin yanlarındaki Drive
 // listesinden şeritler çıkarılır, üst çubuk iki ucundan birleşir (dosya adı solda, düğmeler sağda kalır), Drive'ın okları
 // yeni kenarlara konur: Görüntü daha dar bir pencerede çekilmiş gibi olur. Kesilen yerlerin iki yanındaki sütunlar aynı
-// olmalı, değilse (Drive'ın görünümü değişmişse) hata. Tam ekran çekimler mağaza görsellerinin kaynağıdır, yerinde kalır.
+// olmalı, değilse (Drive'ın görünümü değişmişse) hata. Tam ekran çekimler bu kesitlerin kaynağıdır, yerinde kalır.
 //   node araclar/dar-gorseller.mjs [klasör]   (varsayılan belgeler/gorseller)
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromeBaslat, sekmeAc } from './cdp.mjs';
-import { rgbPng } from './magaza-gorselleri.mjs';
+import { chromeBaslat, sekmeAc, rgbPng } from './cdp.mjs';
 
 const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Üst çubuk (dosya adı, menüler, düğmeler, İndir şeridi) y 0–112, altında Drive'ın listesi, belge ve not bölmesi. Üst

@@ -1,4 +1,4 @@
-// Belgeler kodla uyumlu kalır: README'deki, sürüm notundaki ve mağaza metnindeki e-imza rozeti yazıları görüntüleyicideki
+// Belgeler kodla uyumlu kalır: README'deki ve sürüm notundaki e-imza rozeti yazıları görüntüleyicideki
 // yazılarla birebir aynıdır. Gizlilik metnindeki süreler ve sekmenin belleğinde kalan bilgiler koddakine uyar. Belgelerde ve
 // kodda kullanılmayan adlar ve eklentide olmayan seçenekler geçmez. Bilinen sınırlar (kesilme notunun nedenleri, notun
 // vurgusu) ve Gmail'in bilgi öğesine güven koşulları koddaki gibi anlatılır. Kod yorumları tarihli kullanıcı isteği taşımaz
@@ -16,14 +16,6 @@ const duz = metin => metin.replace(/\s+/g, ' ');
 const listele = (klasor, uzanti) => fs.readdirSync(path.join(KOK, klasor)).filter(a => uzanti.test(a)).map(a => path.posix.join(klasor, a));
 const MD = ['README.md', 'DEGISIKLIKLER.md', ...listele('belgeler', /\.md$/)];
 
-// MAGAZA.md'de bir başlığın ardından gelen ilk kod bloğu (mağaza panosuna kopyalanan metin).
-function magazaBlogu(baslik) {
-  const m = oku('belgeler/MAGAZA.md');
-  const bas = m.indexOf(baslik);
-  assert.ok(bas >= 0, baslik);
-  const ac = m.indexOf('```\n', bas) + 4;
-  return duz(m.slice(ac, m.indexOf('\n```', ac)));
-}
 // README'de **Başlık.** ile başlayan paragraf.
 function readmeParagrafi(baslik) {
   const m = oku('README.md');
@@ -46,11 +38,10 @@ function sabit(dosya, ad) {
   return Number(m[1]);
 }
 
-test('e-imza rozetleri: Sürüm notu ve mağaza açıklaması görüntüleyicinin yazılarını birebir kullanır, README yalnız ilkini', () => {
+test('e-imza rozetleri: Sürüm notu görüntüleyicinin yazılarını birebir kullanır, README yalnız ilkini', () => {
   const kod = oku('goruntule.js');
   const bas = kod.indexOf('function imzaRozeti(');
   const imza = [...kod.slice(bas, kod.indexOf('\n  }\n', bas)).matchAll(/metin: '([^']+)'/g)].map(m => m[1]);
-  const kisa = kod.slice(bas).match(/sinif: 'rozet-kisa', metin: '([^']+)'/)[1];
   const hepsi = new Set([...kod.matchAll(/metin: '(E-imza[^']*)'/g)].map(m => m[1]));
   // Özet tutuyor, tutmuyor, karşılaştırılamadı (uzun ve dar çubuktaki kısa biçim). E-imzasız rozeti rozetleriYaz'da.
   assert.equal(imza.length, 4, imza.join(' | '));
@@ -60,8 +51,6 @@ test('e-imza rozetleri: Sürüm notu ve mağaza açıklaması görüntüleyicini
   assert.ok(readme.includes(`**${imza[0]}**`), `README: ${imza[0]}`);
   for (const y of imza) assert.ok(surum.includes(`**${y}**`), `DEGISIKLIKLER: ${y}`);
   assert.ok(surum.includes('**E-imzasız**'));
-  const aciklama = magazaBlogu('**Açıklama**');
-  for (const y of imza.filter(y => y !== kisa)) assert.ok(aciklama.includes(`"${y}"`), `mağaza açıklaması: ${y}`);
   // Belgelerin andığı her rozet yazısı görüntüleyicide var (başka araçları anlatan HAZIR-ARACLAR.md dışında).
   for (const yol of MD.filter(y => y !== 'belgeler/HAZIR-ARACLAR.md')) {
     const m = duz(oku(yol));
@@ -70,7 +59,7 @@ test('e-imza rozetleri: Sürüm notu ve mağaza açıklaması görüntüleyicini
   }
 });
 
-// Mağazadaki gizlilik politikası adresi README'nin Veri gizliliği bölümünü gösteren site sayfasıdır (MAGAZA.md).
+// Mağazadaki gizlilik politikası adresi README'nin Veri gizliliği bölümünü gösteren site sayfasıdır.
 test('gizlilik metni: README ve sürüm notundaki süreler ve sekmede kalan bilgiler koda uyar', () => {
   // Alınmayan kayıt bir dakikada, baytlar ve kullanılmayan ön indirmeler 15 sn'de bırakılır.
   assert.equal(sabit('arkaplan.js', 'KAYIT_SURESI'), 60000);

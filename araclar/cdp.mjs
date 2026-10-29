@@ -135,3 +135,50 @@ export async function ifadeBekle(g, ifade, sure = 15000) {
     await new Promise(z => setTimeout(z, 150));
   }
 }
+
+// Chrome'un ekran görüntüsü RGBA olabilir: Saydamlık kanalı atılıp 24 bitlik PNG yazılır. Sayfanın zemini opak olduğu
+// için her pikselin saydamlığı 255 olmalı, değilse hata.
+export function rgbPng(png) {
+  const parcalar = [];
+  let en, boy, derinlik, tur;
+  for (let i = 8; i < png.length;) {
+    const uzunluk = png.readUInt32BE(i), ad = png.toString('latin1', i + 4, i + 8);
+    if (ad === 'IHDR') { en = png.readUInt32BE(i + 8); boy = png.readUInt32BE(i + 12); derinlik = png[i + 16]; tur = png[i + 17]; }
+    if (ad === 'IDAT') parcalar.push(png.subarray(i + 8, i + 8 + uzunluk));
+    i += 12 + uzunluk;
+  }
+  if (derinlik !== 8 || (tur !== 2 && tur !== 6) || png[png.indexOf('IHDR') + 16] !== 0) throw new Error(`beklenmeyen PNG: derinlik ${derinlik}, tür ${tur}`);
+  if (tur === 2) return png;
+  const ham = zlib.inflateSync(Buffer.concat(parcalar));
+  const satir = en * 4, cikti = Buffer.alloc((en * 3 + 1) * boy);
+  let onceki = Buffer.alloc(satir);
+  for (let y = 0; y < boy; y++) {
+    const suzgec = ham[y * (satir + 1)], s = Buffer.from(ham.subarray(y * (satir + 1) + 1, (y + 1) * (satir + 1)));
+    for (let x = 0; x < satir; x++) {
+      const a = x >= 4 ? s[x - 4] : 0, b = onceki[x], c = x >= 4 ? onceki[x - 4] : 0;
+      let ek = 0;
+      if (suzgec === 1) ek = a;
+      else if (suzgec === 2) ek = b;
+      else if (suzgec === 3) ek = (a + b) >> 1;
+      else if (suzgec === 4) { const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); ek = pa <= pb && pa <= pc ? a : pb <= pc ? b : c; }
+      else if (suzgec !== 0) throw new Error('bilinmeyen PNG süzgeci: ' + suzgec);
+      s[x] = (s[x] + ek) & 255;
+    }
+    const hedef = y * (en * 3 + 1);
+    for (let x = 0; x < en; x++) {
+      if (s[x * 4 + 3] !== 255) throw new Error(`saydam piksel (${x}, ${y})`);
+      cikti[hedef + 1 + x * 3] = s[x * 4]; cikti[hedef + 2 + x * 3] = s[x * 4 + 1]; cikti[hedef + 3 + x * 3] = s[x * 4 + 2];
+    }
+    onceki = s;
+  }
+  const crcTablo = new Int32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c; });
+  const parca = (ad, veri) => {
+    const b = Buffer.alloc(12 + veri.length), govde = Buffer.concat([Buffer.from(ad, 'latin1'), veri]);
+    let c = -1; for (const x of govde) c = crcTablo[(c ^ x) & 255] ^ (c >>> 8);
+    b.writeUInt32BE(veri.length, 0); govde.copy(b, 4); b.writeUInt32BE((c ^ -1) >>> 0, 8 + veri.length);
+    return b;
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(en, 0); ihdr.writeUInt32BE(boy, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([png.subarray(0, 8), parca('IHDR', ihdr), parca('IDAT', zlib.deflateSync(cikti, { level: 9 })), parca('IEND', Buffer.alloc(0))]);
+}

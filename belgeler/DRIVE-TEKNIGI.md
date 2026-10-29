@@ -1009,7 +1009,7 @@ bilgilerinde durur (§7). Kodun bütününe bağımsız bir gizlilik incelemesi 
   bağlantısının kimliğiyle kaynak anahtarı (`sonDriveBaglantisi`). Anahtar ön izleme kapanınca ya da bir süre sonra
   silinmez: Google bilgi öğesini bir an kaldırıp ön izlemeyi yeniden kurunca (§11.3) ya da ön izleme açıkken ana alanı
   yeniden çizince belge aynı anahtarla yeniden gömülür. Kullanıcının her yalın, gerçek tıklamasında tıklanan bağlantının
-  adresi `urldenBilgi` ile okunur, yalnız Drive dosyası bağlantısı tutulur. README ve gizlilik politikası (`MAGAZA.md`)
+  adresi `urldenBilgi` ile okunur, yalnız Drive dosyası bağlantısı tutulur. README'nin Veri gizliliği bölümü
   bunu söyler, `testler/belgeler.test.mjs` metni koda bağlar.
 - **CSP:** `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src
   https://drive.usercontent.google.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors

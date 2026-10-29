@@ -91,8 +91,7 @@ verir. Bu yüzden `npm test`'in paket testleri Code → Download ZIP'ten çıkar
   Drive'ın görüntüleyicisinde iki yapay dilekçe gösterir (internet gerekir, oturum açılmaz, herkese açık örnek klasör,
   tam ekran 1920×1200, 2 kat yoğunlukta çekilip küçültülür). Görüntüdeki dosya adları da yapaydır. Sonunda
   `node araclar/dar-gorseller.mjs`'i de çalıştırır: README tam ekran çekimlerin dar kesitlerini gösterir
-  (`drive-belge-dar.png`, `drive-notlar-dar.png`), GitHub'da belge büyük görünsün diye. Ardından
-  `node araclar/magaza-gorselleri.mjs`: Chrome Web Mağazası görselleri (`belgeler/magaza/`, metinler `belgeler/MAGAZA.md`).
+  (`drive-belge-dar.png`, `drive-notlar-dar.png`), GitHub'da belge büyük görünsün diye.
 - `node araclar/simge-uret.mjs`: Simgeleri (`simgeler/`) SVG'den yeniden üretir.
 - `node araclar/yerel-sina.mjs <klasör>`: Klasördeki `.udf` dosyalarını motordan geçirir. Her dosya için sıra numarası,
   adın SHA-256 özetinin ilk 8 hanesi ve yapısal özet (sayılar, imza durumu, biçim sürümü, süre) yazar. Dosya adı ve belge
