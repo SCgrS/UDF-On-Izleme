@@ -70,13 +70,14 @@ test('e-imza rozetleri: Sürüm notu ve mağaza açıklaması görüntüleyicini
   }
 });
 
-test('gizlilik metni: README, sürüm notu ve gizlilik politikasındaki süreler ve sekmede kalan bilgiler koda uyar', () => {
+// Mağazadaki gizlilik politikası adresi README'nin Veri gizliliği bölümünü gösteren site sayfasıdır (MAGAZA.md).
+test('gizlilik metni: README ve sürüm notundaki süreler ve sekmede kalan bilgiler koda uyar', () => {
   // Alınmayan kayıt bir dakikada, baytlar ve kullanılmayan ön indirmeler 15 sn'de bırakılır.
   assert.equal(sabit('arkaplan.js', 'KAYIT_SURESI'), 60000);
   assert.equal(sabit('arkaplan.js', 'SURE'), 15000);
   assert.equal(sabit('icerik.js', 'BAYT_SURESI'), 15000);
   assert.equal(sabit('icerik.js', 'ON_SURE'), 15000);
-  const metinler = { 'README Saklama': readmeParagrafi('Saklama'), 'gizlilik politikası': magazaBlogu('**Gizlilik politikası adresi:**') };
+  const metinler = { 'README Saklama': readmeParagrafi('Saklama') };
   for (const [ad, m] of Object.entries({ ...metinler, 'sürüm notu': surumMaddesi('Gizlilik') })) {
     assert.match(m, /Bilgisi eklentinin arka planında en geç bir dakikada, baytları indirme bittikten en geç 15 saniye sonra silinir/, ad);
     assert.match(m, /Belge gösterilirken yalnız ön izleme penceresinin belleğindedir/, ad);

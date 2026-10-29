@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "UDF Ön İzleme",
   "short_name": "UDF Ön İzleme",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Google Drive ve Gmail’deki UYAP .udf belgelerini Google’ın ön izlemesinde açar, sunucuya göndermez. Geliştirici: x.com/CgrShn",
   "author": "x.com/CgrShn",
   "homepage_url": "https://x.com/CgrShn",

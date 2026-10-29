@@ -135,6 +135,9 @@ indirilenler listesine girer.
 dosyalarını yalnız Drive'ın indirme adresinden (`drive.usercontent.google.com`), Gmail eklerini Gmail sayfasının içinden
 (`mail.google.com`) kendi oturumunuzla indirir. Başka bir izin istemez.
 
+Eklentinin kullanıcı verilerini kullanması, Sınırlı Kullanım (Limited Use) şartları dâhil Chrome Web Mağazası Kullanıcı
+Verileri Politikası'na uyar.
+
 ## Üçüncü taraf bileşenler
 
 Eklentinin belge okuma motoru (`motor/udf-motoru.js`), Hasan İmer Akın'ın
