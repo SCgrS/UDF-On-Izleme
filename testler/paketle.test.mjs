@@ -222,7 +222,9 @@ test('iş akışları: Belirteç yalnız okur, depoya yalnız sürümü yayımla
     assert.deepEqual(ia.permissions, { contents: 'read' }, `${ad}: İş akışı düzeyinde yalnız okuma`);
     for (const [isAdi, is] of Object.entries(ia.jobs)) {
       const yetki = is.permissions || {};
-      if (Object.values(yetki).some(d => d !== 'read' && d !== 'none')) yazanlar.push([ad, isAdi, is]);
+      // CodeQL taraması sonucunu yalnız Security sekmesine yazar, depoya yazmaz.
+      if (ad === 'codeql.yml') assert.deepEqual(yetki, { contents: 'read', actions: 'read', 'security-events': 'write' }, `${ad} ${isAdi}`);
+      else if (Object.values(yetki).some(d => d !== 'read' && d !== 'none')) yazanlar.push([ad, isAdi, is]);
       for (const a of is.steps) {
         if (eylem(a) === 'actions/checkout') assert.equal(a.with && a.with['persist-credentials'], 'false', `${ad} ${isAdi}: checkout`);
         if (eylem(a) === 'actions/upload-artifact') {
