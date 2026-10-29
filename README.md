@@ -102,10 +102,10 @@ kartında ↻ düğmesine basın.
 Belgeleriniz hiçbir yere gönderilmez. Eklenti belgeyi yalnız Google'dan, tarayıcınızda açık olan kendi oturumunuzla alır
 ve yalnız tarayıcınızda gösterir.
 
-**İnternete bağlanma.** Eklenti internete yalnız belgeyi Google'dan indirmek için bağlanır. Hiçbir yere veri göndermez.
+**İnternete bağlanma:** Eklenti internete yalnız belgeyi Google'dan indirmek için bağlanır. Hiçbir yere veri göndermez.
 Eklentinin bir sunucusu yoktur.
 
-**Okuduğu bilgiler.** Eklenti belgenin içeriği dışında yalnız şunları okur:
+**Okuduğu bilgiler:** Eklenti belgenin içeriği dışında yalnız şunları okur:
 
 - **Drive'da:** Ön izleme penceresindeki dosyanın kimliği, adı ve türü, Drive'da açık olan hesabın sırası (birden çok
   Google hesabıyla giriş yaptıysanız hangisi olduğu, Drive'ın adresinde yazılıysa hesabın e-posta adresi), paylaşım
@@ -117,12 +117,12 @@ Eklentinin bir sunucusu yoktur.
   dosyası bağlantısı mı diye bakar, erişim anahtarı için bastığınız son Drive bağlantısının dosya kimliğini ve erişim
   anahtarını alır. E-postaların metnine, konusuna, gönderenine ya da alıcılarına bakmaz.
 
-**İndirme.** Drive'daki `.udf` dosyası, ön izleme penceresinde açıldığı anda Drive'ın indirme adresinden
+**İndirme:** Drive'daki `.udf` dosyası, ön izleme penceresinde açıldığı anda Drive'ın indirme adresinden
 (`drive.usercontent.google.com`), Drive'da açık olan hesabınızla indirilir. Gmail'de bir `.udf` ekinin kartına bastığınız
 anda ek, belge daha çabuk açılsın diye Gmail sayfasının içinden kendi oturumunuzla indirilmeye başlar. Ön izleme
 açılmazsa ek en geç 15 saniye sonra bellekten silinir, indirme sürüyorsa kesilir.
 
-**Saklama.** Eklenti hiçbir şey saklamaz: Ayarı, geçmişi ya da kaydı yoktur, tarayıcının hiçbir deposunu kullanmaz.
+**Saklama:** Eklenti hiçbir şey saklamaz: Ayarı, geçmişi ya da kaydı yoktur, tarayıcının hiçbir deposunu kullanmaz.
 Açılan belgenin bilgisi ve baytları belge açılırken bellekte durur: Bilgisi eklentinin arka planında en geç bir
 dakikada, baytları indirme bittikten en geç 15 saniye sonra silinir. Belge gösterilirken yalnız ön izleme penceresinin
 belleğindedir, pencere kapanınca gider. Drive ya da Gmail sekmesinin belleğinde sekme yenilenene ya da kapanana dek
@@ -131,7 +131,7 @@ bağlantısının dosya kimliğiyle erişim anahtarı kalabilir. Belgenin adı s
 tarayıcı geçmişine düşmez. Belgeyi eklentinin **İndir** düğmesiyle bilgisayarınıza kaydederseniz dosya, adıyla Chrome'un
 indirilenler listesine girer.
 
-**İzinler.** Eklenti yalnız Drive'ın (`drive.google.com`) ve Gmail'in (`mail.google.com`) sayfalarında çalışır. Drive
+**İzinler:** Eklenti yalnız Drive'ın (`drive.google.com`) ve Gmail'in (`mail.google.com`) sayfalarında çalışır. Drive
 dosyalarını yalnız Drive'ın indirme adresinden (`drive.usercontent.google.com`), Gmail eklerini Gmail sayfasının içinden
 (`mail.google.com`) kendi oturumunuzla indirir. Başka bir izin istemez.
 

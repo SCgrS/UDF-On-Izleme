@@ -27,7 +27,7 @@ function magazaBlogu(baslik) {
 // README'de **Başlık.** ile başlayan paragraf.
 function readmeParagrafi(baslik) {
   const m = oku('README.md');
-  const bas = m.indexOf(`**${baslik}.**`);
+  const bas = m.indexOf(`**${baslik}:**`);
   assert.ok(bas >= 0, baslik);
   return duz(m.slice(bas, m.indexOf('\n\n', bas)));
 }
