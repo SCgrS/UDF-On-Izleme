@@ -158,7 +158,7 @@ const ISLER = [
 
 // Chrome'un ekran görüntüsü RGBA olabilir: Saydamlık kanalı atılıp 24 bitlik PNG yazılır. Sayfanın zemini opak olduğu
 // için her pikselin saydamlığı 255 olmalı, değilse hata.
-function rgbPng(png) {
+export function rgbPng(png) {
   const parcalar = [];
   let en, boy, derinlik, tur;
   for (let i = 8; i < png.length;) {

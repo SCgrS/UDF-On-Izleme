@@ -11,7 +11,7 @@ tıklamanız, Gmail'de eke tıklamanız yeter. Belge, PDF'ler gibi Google'ın ke
 belgelerini bilgisayara indirmeden okumak, yazdırmak ya da PDF olarak kaydetmek isteyenler içindir.
 
 <p align="center">
-  <img src="belgeler/gorseller/drive-belge.png" width="90%" alt="Drive'ın ön izleme penceresinde açılmış bir UDF dilekçesi, altta yakınlaştırma ve Yazdır / PDF çubuğu">
+  <img src="belgeler/gorseller/drive-belge-dar.png" width="90%" alt="Drive'ın ön izleme penceresinde açılmış bir UDF dilekçesi, altta yakınlaştırma ve Yazdır / PDF çubuğu">
 </p>
 
 ## Kurulum
@@ -77,7 +77,7 @@ Belgeye Editör'de eklenmiş notlar sağdaki bölmede açılır. Bir nota basın
 daraldıkça bölme de daralır, belge tek başına sıkışmaz.
 
 <p align="center">
-  <img src="belgeler/gorseller/drive-notlar.png" width="90%" alt="Not bölmesi açık: Belgedeki iki not ve işaretli yerleri">
+  <img src="belgeler/gorseller/drive-notlar-dar.png" width="90%" alt="Not bölmesi açık: Belgedeki iki not ve işaretli yerleri">
 </p>
 
 ### E-imza

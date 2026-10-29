@@ -3,6 +3,7 @@
 // .txt dosyalarını UDF sayar ve Drive'dan indirmek yerine yapay belgeleri verir (dosya kimliğine göre); Drive'ın
 // başlığında ve arkadaki listede görünen dosya adları da yapay adlarla değiştirilir (yalnız görüntü için). Tam ekran
 // (1920×1200) ve 2 kat yoğunlukta çekilir: not bölmesi açıkken de belge ortada kalır, yazılar keskin olur. İnternet gerekir.
+// README bu çekimlerin dar kesitlerini gösterir, komut sonunda onları da üretir (dar-gorseller.mjs).
 //   node araclar/tanitim-gorselleri.mjs [çıktı klasörü]   (varsayılan belgeler/gorseller)
 import fs from 'node:fs';
 import os from 'node:os';
@@ -11,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { chromeBaslat, sekmeAc, ifadeBekle, CERCEVE } from './cdp.mjs';
 import { Belge, SEKME, udfZip, sahteImza } from './ornek-uret.mjs';
 import { eklentiyiKopyala } from './paketle.mjs';
+import { darGorseller } from './dar-gorseller.mjs';
 
 const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const KLASOR = 'https://drive.google.com/drive/folders/15uNXeRBIhVvZJIhL4yTw4IsStMhUaaxl';
@@ -265,6 +267,7 @@ export async function tanitimGorselleri(cikti = path.join(KOK, 'belgeler', 'gors
 }
 
 if (process.argv[1] && process.argv[1].endsWith('tanitim-gorselleri.mjs')) {
-  const klasor = process.argv[2];
-  await tanitimGorselleri(klasor ? path.resolve(klasor) : undefined);
+  const klasor = process.argv[2] ? path.resolve(process.argv[2]) : undefined;
+  await tanitimGorselleri(klasor);
+  await darGorseller(klasor);
 }

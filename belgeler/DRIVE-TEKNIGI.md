@@ -680,7 +680,9 @@ belgede solda "E-imzasız" yazar.
   herkese açık gdown klasörü, oturumsuz. Eklentinin geçici kopyası `.txt`'yi UDF sayar ve indirme yerine yapay dilekçeyi
   (e-imzalı, iki notlu; `tanitimBelgesi`) verir. Yalnız görüntü için sayfada: dosya adları yapay adlarla değişir, Drive'ın
   metin dosyasına özgü Yazdır/yakınlaştırma denetimleri gizlenir (gerçek `.udf` ön izlemesinde o şeritte yalnız İndir
-  var), dosya simgesi griye döner, oturum açma düğmesi ve tanıtım kutusu gizlenir.
+  var), dosya simgesi griye döner, oturum açma düğmesi ve tanıtım kutusu gizlenir. README tam ekran çekimlerin dar
+  kesitlerini gösterir (`araclar/dar-gorseller.mjs`): Belgenin yanlarındaki listeden şeritler çıkar, üst çubuk iki
+  ucundan birleşir, oklar yeni kenarlara konur. Tam ekran çekimler mağaza görsellerinin kaynağıdır.
 - Çerçevede `allow="clipboard-write"` izni yok: Panoya yazan bir düğme yok (bağımsız gözden geçirmede denetlendi). Seçip
   Ctrl+C ile kopyalamak bu izni istemez.
 - Sınama: `chrome-sina.mjs drive` D1'de yakınlaştırmanın ortası çubuğun ortasıyla 1 px içinde (dört durum, düğmeler hapın
