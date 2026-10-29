@@ -46,9 +46,10 @@ Bu eklenti bağımsızdır. Google, Google Drive, Gmail ya da UYAP ile bağlant�
 
 | Alan | Dosya | Boyut |
 |---|---|---|
-| Mağaza simgesi | `simge-128.png` | 128×128 |
-| Ekran görüntüleri (sırayla) | `ekran-1-belge.png`, `ekran-2-notlar.png`, `ekran-3-cubuk.png` | 1280×800 |
+| Mağaza simgesi | `magaza-simgesi-128.png` | 128×128 |
+| Ekran görüntüleri (sırayla) | `ekran-1-drive-gmail.png`, `ekran-2-notlar.png`, `ekran-3-yazdir.png`, `ekran-4-gizlilik.png` | 1280×800 |
 | Küçük tanıtım kutusu | `tanitim-kucuk-440x280.png` | 440×280 |
+| Kayan yazı tanıtım bloğu | `kayan-yazi-tanitim-blogu-1400x560.png` | 1400×560 |
 
 Görüntülerdeki belge, kişi ve dosya adları örnektir (yapay dilekçe). Ekran görüntüleri Drive'da çekildi. Gmail'de
 çekilmiş görüntü yok: Gerçek bir posta kutusu kullanılmadı.
