@@ -159,7 +159,7 @@ export async function sunucuKur(bayt, secenek = {}) {
   const istekler = [];
   const sunucu = https.createServer(sertifika(), (q, y) => {
     const u = new URL(q.url, `https://${q.headers.host}`);
-    if (q.headers.host.startsWith('drive.usercontent.google.com')) {
+    if (u.hostname === 'drive.usercontent.google.com') {
       const cerez = q.headers.cookie || '';
       istekler.push({ id: u.searchParams.get('id'), au: u.searchParams.get('authuser'), cerez, koken: q.headers.origin || '', zaman: Date.now() });
       if (u.pathname !== '/download') { y.writeHead(404); return y.end(); }
@@ -861,9 +861,10 @@ export async function driveSina(udfYolu, ekranYolu) {
         const { nodeId } = await b.g('DOM.querySelector', { nodeId: root.nodeId, selector: '#dosya-sec' });
         await b.g('DOM.setFileInputFiles', { files: [path.join(KOK, 'testler', 'ornekler', ad)], nodeId });
         await ifadeBekle(b.g, `document.getElementById('belge-adi').textContent === ${JSON.stringify(ad)} && !!document.querySelector('.udf-sayfa')`);
-        durumlar.push(await deger(b.g, `(() => { const n = document.getElementById('dugme-notlar'), r = [...document.querySelectorAll('#rozetler .rozet')]; return { ad: ${JSON.stringify(ad)},
+        // Dosya adı sayfada çalışan kodun metnine yazılmaz, sonuca burada eklenir.
+        durumlar.push({ ad, ...await deger(b.g, `(() => { const n = document.getElementById('dugme-notlar'), r = [...document.querySelectorAll('#rozetler .rozet')]; return {
           rozet: r.map(e => e.innerText).join('|'), sinif: r.map(e => e.className).join('|'), title: r.map(e => e.title).join('|'),
-          notlar: n.hidden ? null : { yazi: n.textContent.trim(), etiket: n.getAttribute('aria-label') } }; })()`));
+          notlar: n.hidden ? null : { yazi: n.textContent.trim(), etiket: n.getAttribute('aria-label') } }; })()`) });
       }
       const [d, y, n, t, k] = durumlar;
       // B3. Verisi yarıda kesik resim (başlığı sağlam): <img> onu hatasız ama boş gösterirdi; motor doğrulayıp uyarı yazısı
