@@ -18,6 +18,8 @@ belgelerini bilgisayara indirmeden okumak, yazdırmak ya da PDF olarak kaydetmek
 
 Gereken: Google Chrome 116 ya da üstü. Bilgisayarda UYAP Doküman Editörü kurulu olması gerekmez.
 
+Eklenti mağazada yayımlanana dek aşağıdaki **Kaynak koddan** adımlarıyla kurulur.
+
 ### Chrome Web Mağazası'ndan
 
 1. Yukarıdaki bağlantıya tıklayın, açılan sayfada **Chrome'a ekle**'ye basın.
@@ -32,6 +34,8 @@ Kurulumdan sonra yapılacak bir ayar yoktur. Eklenti üyelik, e-posta ya da ücr
 2. Chrome'un adres çubuğuna `chrome://extensions` yazın, sağ üstte **Geliştirici modu**'nu açın.
 3. **Paketlenmemiş öğe yükle**'ye basın ve içinde `manifest.json` olan klasörü seçin. Windows zip'i iç içe iki klasöre
    açar, içteki klasörü seçin.
+
+Geliştirme ve sınama komutları [belgeler/GELISTIRME.md](belgeler/GELISTIRME.md) dosyasındadır.
 
 ## Öne çıkanlar
 
@@ -136,7 +140,9 @@ dosyalarını yalnız Drive'ın indirme adresinden (`drive.usercontent.google.co
 Eklentinin belge okuma motoru (`motor/udf-motoru.js`), Hasan İmer Akın'ın
 [legaluga-uyap-ui](https://github.com/hasanimer/legaluga-uyap-ui) projesindeki `udf.js` dosyasından türetildi (MIT
 lisansı, © 2026 Hasan İmer Akın). Özgün lisans metni [LISANSLAR.txt](LISANSLAR.txt) dosyasında ve `ucuncu-taraf/`
-klasöründe. Eklenti bunun dışında hiçbir üçüncü taraf pakete bağlı değildir.
+klasöründe. Eklenti bunun dışında hiçbir üçüncü taraf pakete bağlı değildir. Geliştirme ve sınama araçları
+[jsdom](https://github.com/jsdom/jsdom) ve [pdf.js](https://github.com/mozilla/pdf.js) (`pdfjs-dist`) paketlerini
+kullanır, bunlar eklentiye girmez.
 
 ## Teşekkür
 
