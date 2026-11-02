@@ -28,7 +28,7 @@ verir. Bu yüzden `npm test`'in paket testleri Code → Download ZIP'ten çıkar
     indirmesi ve kesilmesi, dilimler, hesap biçimi). `indir.test.mjs`: Drive ve Gmail indirmesi, hata iletileri, kesilen
     ve yarıda kalan indirme. `drive.test.mjs`, `gmail.test.mjs`: Kimlik, hesap, ek bulma. `paketle.test.mjs`: Paket ve
     manifest alanları, sürüm notu, iş akışlarının yetkileri, `yerel-sina.mjs`'in çıktısı. `belgeler.test.mjs`:
-    README'deki, sürüm notundaki ve mağaza metnindeki e-imza rozeti yazıları, gizlilik metnindeki süreler, bilinen
+    README'deki ve sürüm notundaki e-imza rozeti yazıları, gizlilik metnindeki süreler, bilinen
     sınırlar (kesilme notunun nedenleri, notun vurgusu) ve Gmail'in bilgi öğesine güven koşulları koda uyar, belgelerde
     ve kodda kullanılmayan adlar ve eklentide olmayan seçenekler geçmez. Kod yorumları tarihsiz ve kaydırılmış, test
     adlarında iki noktadan sonraki söz büyük harfle başlar.
@@ -103,7 +103,7 @@ verir. Bu yüzden `npm test`'in paket testleri Code → Download ZIP'ten çıkar
   olan tek iştir: Depoyu çekmez, deponun kodunu çalıştırmaz, çıktıyı indirip GitHub sürümünü oluşturur. İki iş akışında da
   belirteç yalnız okur (`permissions: contents: read`), `checkout` adımı kimlik bilgisini diske bırakmaz
   (`persist-credentials: false`).
-- Sürüm notları `DEGISIKLIKLER.md`'de. GitHub sürüm notu bölümün ardına `araclar/surum-notu.mjs`'in kendi Kurulum adımlarını
+- Sürüm notları `DEGISIKLIKLER.md`'de. GitHub sürüm notu bölümün ardına `araclar/surum-notu.mjs`'in mağaza bağlantısını, zip'ten kurulum adımlarını
   (zip'i çıkarmak, Geliştirici modu, Paketlenmemiş öğe yükle, sekmeleri yenilemek) ve Güncelleme satırını (aynı klasörün
   üzerine çıkarmak, kartta ↻) ekler. Bu yüzden `DEGISIKLIKLER.md`'deki bölümlere kurulum adımı yazılmaz. Biçim kuralları
   ve araştırma notları `belgeler/` altında (Drive'a gömme: `DRIVE-TEKNIGI.md`).

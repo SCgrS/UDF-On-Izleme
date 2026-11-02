@@ -1,5 +1,6 @@
-// GitHub sürümünün notunu yazar (yayim.yml): DEGISIKLIKLER.md'deki sürüm bölümü ve ardından sürüm zip'iyle kurulum ve
-// güncelleme adımları. Not kendi başına yeterlidir, README'ye gönderme yapmaz. node araclar/surum-notu.mjs 0.0.1
+// GitHub sürümünün notunu yazar (yayim.yml): DEGISIKLIKLER.md'deki sürüm bölümü, ardından mağaza bağlantısı ve sürüm
+// zip'iyle kurulum ve güncelleme adımları. Not kendi başına yeterlidir, README'ye gönderme yapmaz.
+// node araclar/surum-notu.mjs 0.0.1
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,14 +11,16 @@ const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Sürüm zip'inin kökünde manifest.json durur (üst klasör yok): Zip'in çıkarıldığı klasör Chrome'a yüklenen klasördür.
 // Güncellemede yeni zip aynı klasörün üzerine çıkarılır, kartta ↻ eklentiyi o klasörden yeniden yükler.
 export const KURULUM = [
-  '**Kurulum:**',
+  "**Chrome Web Mağazası'ndan kurulum:** [Mağaza sayfasında](https://chromewebstore.google.com/detail/paceajflhpjobpgbejgnkhgkogpdffod) **Chrome'a ekle**'ye basın, kurulumdan önce açılmış Drive ve Gmail sekmelerini yenileyin (F5). Mağazadan kurulan eklentiyi Chrome kendisi günceller.",
   '',
-  `1. \`${PAKET_ADI}\` dosyasını indirin, sağ tıklayıp **Tümünü ayıkla** ile kalıcı bir klasöre çıkarın. Chrome eklentiyi bu klasörden çalıştırır. Klasör silinirse eklenti durur.`,
+  "**Zip'ten kurulum:**",
+  '',
+  `1.\`${PAKET_ADI}\` dosyasını indirin, sağ tıklayıp **Tümünü ayıkla** ile kalıcı bir klasöre çıkarın. Chrome eklentiyi bu klasörden çalıştırır. Klasör silinirse eklenti durur.`,
   "2. Chrome'da adres çubuğuna `chrome://extensions` yazıp Enter'a basın ve sağ üstteki **Geliştirici modu**'nu açın.",
   "3. **Paketlenmemiş öğe yükle**'ye basıp zip'i çıkardığınız klasörü seçin. Bu, içinde `manifest.json` olan klasördür.",
   '4. Açık Drive ve Gmail sekmelerini yenileyin (F5).',
   '',
-  `**Güncelleme:** Yeni sürümün \`${PAKET_ADI}\` dosyasını Chrome'a yüklediğiniz klasörün (içinde \`manifest.json\` olan klasör) üzerine çıkarın. Windows sorarsa dosyaların üzerine yazılmasını onaylayın. Sonra \`chrome://extensions\` sayfasında eklentinin kartındaki **yenile** (↻) düğmesine basın ve açık Drive ve Gmail sekmelerini yenileyin (F5).`
+  `**Zip'ten kurulanın güncellemesi:** Yeni sürümün \`${PAKET_ADI}\` dosyasını Chrome'a yüklediğiniz klasörün (içinde \`manifest.json\` olan klasör) üzerine çıkarın. Windows sorarsa dosyaların üzerine yazılmasını onaylayın. Sonra \`chrome://extensions\` sayfasında eklentinin kartındaki **yenile** (↻) düğmesine basın ve açık Drive ve Gmail sekmelerini yenileyin (F5).`
 ].join('\n');
 
 // degisiklikler: DEGISIKLIKLER.md'nin metni. Sürümün bölümü yoksa null.

@@ -146,8 +146,8 @@ test('sürüm notu kendi başına yeterli: Bölüm, ardından sürüm zip\'iyle 
   assert.equal(surumNotu(metin, '1.2.4'), null);
   // Zip üst klasörsüz: Çıkarılan klasör, içinde manifest.json olan ve Chrome'a yüklenen klasördür. Güncellemede aynı klasörün
   // üzerine çıkarılıp kartta ↻.
-  for (const parca of [`\`${PAKET_ADI}\``, 'Tümünü ayıkla', '`chrome://extensions`', '**Geliştirici modu**', '**Paketlenmemiş öğe yükle**',
-    '`manifest.json`', '**Güncelleme:**', 'üzerine çıkarın', '(↻)']) assert.ok(KURULUM.includes(parca), parca);
+  for (const parca of ['https://chromewebstore.google.com/detail/paceajflhpjobpgbejgnkhgkogpdffod', `\`${PAKET_ADI}\``, 'Tümünü ayıkla', '`chrome://extensions`', '**Geliştirici modu**', '**Paketlenmemiş öğe yükle**',
+    '`manifest.json`', '**Zip\'ten kurulanın güncellemesi:**', 'üzerine çıkarın', '(↻)']) assert.ok(KURULUM.includes(parca), parca);
   assert.doesNotMatch(KURULUM, /README|Download ZIP|-main\b/, 'not başka bir belgeye ya da GitHub\'ın Code zip\'ine göndermez');
   assert.doesNotMatch(KURULUM, /;|  /, 'noktalı virgül ve çift boşluk yok');
   // Komut satırı: Depodaki DEGISIKLIKLER.md'den manifest'in sürümü, bilinmeyen sürümde çıkış kodu 1.

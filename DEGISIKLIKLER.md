@@ -41,8 +41,8 @@
   sekme yenilenene dek yalnız son açılan dosyanın, Gmail'de son basılan ek kartının e-postasının ve son basılan Drive
   bağlantısının kimliği (bağlantının erişim anahtarı da) kalabilir. Belgenin adı sekme başlığına ve adrese konmaz.
   Drive'da ön izlemedeki dosyanın kimliği, adı, türü, hesap sırası (adreste yazılıysa hesabın e-posta adresi), paylaşım
-  bağlantısının erişim anahtarı ve dosya sayfasında sekme başlığı okunur. Gmail'de ön izlemedeki dosyanın adı, açık
-  e-postadaki ek kartlarının adları ve indirme bağlantıları, hangi karta basıldığı ve basılan son Drive bağlantısının
+  bağlantısının erişim anahtarı ve dosya sayfasında sekme başlığı okunur. Gmail'de ön izlemedeki dosyanın adı, basılan
+  kartın bulunduğu e-postadaki ek kartlarının adları ve indirme bağlantıları, hangi karta basıldığı ve basılan son Drive bağlantısının
   dosya kimliğiyle erişim anahtarı okunur. Chrome'da üçüncü taraf çerezleri kapalıyken de belge açılır. Eklenti yalnız
   `drive.google.com` ve `mail.google.com` sitelerinde çalışır, site erişimi yalnız bu iki site ve
   `drive.usercontent.google.com` içindir, başka bir izin istemez.

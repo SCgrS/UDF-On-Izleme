@@ -1,8 +1,6 @@
 # UDF Ön İzleme
 
-### ⬇ Chrome Web Mağazası'ndan ekle
-
-Mağaza bağlantısı, eklenti mağazada yayımlanınca buraya eklenecek.
+### [⬇ Chrome Web Mağazası'ndan ekle](https://chromewebstore.google.com/detail/paceajflhpjobpgbejgnkhgkogpdffod)
 
 UDF Ön İzleme, UYAP Doküman Editörü'nün `.udf` belgelerini Google Drive'da ve Gmail'de açan bir **Chrome eklentisi**.
 
@@ -18,8 +16,6 @@ belgelerini bilgisayara indirmeden okumak, yazdırmak ya da PDF olarak kaydetmek
 
 Gereken: Google Chrome 116 ya da üstü. Bilgisayarda UYAP Doküman Editörü kurulu olması gerekmez.
 
-Eklenti mağazada yayımlanana dek aşağıdaki **Kaynak koddan** adımlarıyla kurulur.
-
 ### Chrome Web Mağazası'ndan
 
 1. Yukarıdaki bağlantıya tıklayın, açılan sayfada **Chrome'a ekle**'ye basın.
@@ -30,7 +26,7 @@ Kurulumdan sonra yapılacak bir ayar yoktur. Eklenti üyelik, e-posta ya da ücr
 
 ### Kaynak koddan
 
-1. Bu sayfada **Code › Download ZIP** ile zip'i indirin, sağ tıklayıp **Tümünü ayıkla** deyin.
+1. Bu depoyu indirin: Sağ üstteki **Code › Download ZIP**'e basın, sağ tıklayıp **Tümünü ayıkla** deyin.
 2. Chrome'un adres çubuğuna `chrome://extensions` yazın, sağ üstte **Geliştirici modu**'nu açın.
 3. **Paketlenmemiş öğe yükle**'ye basın ve içinde `manifest.json` olan klasörü seçin. Windows zip'i iç içe iki klasöre
    açar, içteki klasörü seçin.
