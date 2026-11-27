@@ -15,7 +15,7 @@ export const KURULUM = [
   '',
   "**Zip'ten kurulum:**",
   '',
-  `1.\`${PAKET_ADI}\` dosyasını indirin, sağ tıklayıp **Tümünü ayıkla** ile kalıcı bir klasöre çıkarın. Chrome eklentiyi bu klasörden çalıştırır. Klasör silinirse eklenti durur.`,
+  `1. \`${PAKET_ADI}\` dosyasını indirin, sağ tıklayıp **Tümünü ayıkla** ile kalıcı bir klasöre çıkarın. Chrome eklentiyi bu klasörden çalıştırır. Klasör silinirse eklenti durur.`,
   "2. Chrome'da adres çubuğuna `chrome://extensions` yazıp Enter'a basın ve sağ üstteki **Geliştirici modu**'nu açın.",
   "3. **Paketlenmemiş öğe yükle**'ye basıp zip'i çıkardığınız klasörü seçin. Bu, içinde `manifest.json` olan klasördür.",
   '4. Açık Drive ve Gmail sekmelerini yenileyin (F5).',
