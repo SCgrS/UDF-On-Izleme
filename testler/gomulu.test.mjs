@@ -88,9 +88,12 @@ test('manifest: Drive\'a ve Gmail\'e yalnız gömülü giriş sayfası açık, �
   const m = JSON.parse(oku('manifest.json'));
   const siteler = ['https://drive.google.com/*', 'https://mail.google.com/*'];
   assert.deepEqual(m.web_accessible_resources, [{ resources: ['gomulu.html'], matches: siteler, use_dynamic_url: true }]);
-  // İçerik betiği yalnız Drive'ın klasör ve dosya sayfalarında ve Gmail'in posta sayfalarında çalışır.
+  // İçerik betiği Drive'ın klasör ve dosya sayfalarında ve Gmail'in posta sayfalarında yalnız üst belgede, Drive'ın ön
+  // izleme çerçevesinde (viewer) alt çerçevede de çalışır.
   const yollar = ['https://drive.google.com/drive/*', 'https://drive.google.com/file/*', 'https://mail.google.com/mail/*'];
-  assert.deepEqual(m.content_scripts, [{ matches: yollar, js: ['drive-kimlik.js', 'gmail-ek.js', 'indir.js', 'icerik.js'], css: ['icerik.css'], run_at: 'document_idle' }]);
+  const cerceve = ['https://drive.google.com/viewer/*', 'https://drive.google.com/u/*/viewer/*'];
+  const betikler = { js: ['drive-kimlik.js', 'gmail-ek.js', 'indir.js', 'icerik.js'], css: ['icerik.css'], run_at: 'document_idle' };
+  assert.deepEqual(m.content_scripts, [{ matches: yollar, ...betikler }, { matches: cerceve, ...betikler, all_frames: true }]);
   assert.equal(m.version, JSON.parse(fs.readFileSync(path.join(KOK, 'package.json'), 'utf8')).version, 'manifest ile package.json sürümü aynı');
 });
 

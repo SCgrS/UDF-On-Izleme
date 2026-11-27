@@ -1,5 +1,11 @@
 # Değişiklikler
 
+## 0.1.1 (2026-11-27)
+
+- **Drive'ın yeni ön izleme penceresi:** Google Drive, ön izleme penceresini artık ayrı bir çerçevede açıyor. `.udf`
+  belgeleri bu yeni pencerede de açılır. Önceki sürümde Drive'da belge yerine arşivin dosya listesi (`content.xml`,
+  `sign.sgn`) görünüyordu.
+
 ## 0.1.0 (2026-10-29)
 
 İlk sürüm.

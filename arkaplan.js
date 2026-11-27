@@ -11,6 +11,8 @@ const ANAHTAR = /^[0-9a-f-]{36}$/;
 const GORUNTULEYICI = chrome.runtime.getURL('goruntule.html');
 const DRIVE = /^https:\/\/drive\.google\.com\//;
 const GMAIL = /^https:\/\/mail\.google\.com\//;
+// Drive'ın ön izleme çerçevesi (drive.google.com/u/<n>/viewer/main): Görüntüleyici bu alt çerçevede açılabilir.
+const DRIVE_CERCEVESI = /^https:\/\/drive\.google\.com\/(?:u\/\d{1,2}\/)?viewer\//;
 
 // Açılacak belgenin kaydı: Görüntüleyici (gömülü çerçeve ya da sekme) açılınca 'kayit-al' ile bir kez alır, kayıt o anda
 // silinir. Alınmayan kayıt (çerçeve hiç yüklenmedi) 60 sn sonra silinir, aynı anda en çok beşi durur (sınır aşılınca en
@@ -220,9 +222,11 @@ chrome.runtime.onMessage.addListener((ileti, gonderen, yanit) => {
     gmailDilimi(ileti.anahtar, ileti.i, ileti.sekme).then(yanit, () => yanit({ hata: 'AG' }));
     return true;
   }
-  // Bundan sonrakiler Drive ya da Gmail sekmesindeki içerik betiğinden gelir. Gmail eki yalnız Gmail sekmesinden, Drive
-  // dosyası ikisinden de (Gmail, iletideki Drive bağlantılarını da aynı görüntüleyicide gösterebilir).
-  if (!gonderen.tab || gonderen.frameId !== 0 || !(DRIVE.test(gonderen.url || '') || GMAIL.test(gonderen.url || ''))) return;
+  // Bundan sonrakiler Drive ya da Gmail sekmesindeki içerik betiğinden gelir: Sekmenin üst belgesinden ya da Drive'ın ön
+  // izleme çerçevesinden. Gmail eki yalnız Gmail sekmesinden, Drive dosyası ikisinden de (Gmail, iletideki Drive
+  // bağlantılarını da aynı görüntüleyicide gösterebilir).
+  const gonderenAdresi = gonderen.url || '';
+  if (!gonderen.tab || !(gonderen.frameId === 0 ? DRIVE.test(gonderenAdresi) || GMAIL.test(gonderenAdresi) : DRIVE_CERCEVESI.test(gonderenAdresi))) return;
   if (ileti.kaynak === 'gmail' ? !GMAIL.test(gonderen.url) || !GmailEk.ekTemizle(ileti.ek) : !KIMLIK.test(String(ileti.id || ''))) return;
   if (ileti.tur === 'gomulu-kayit') {
     let anahtar = null;

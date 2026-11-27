@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "UDF Ön İzleme",
   "short_name": "UDF Ön İzleme",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Google Drive ve Gmail’deki UYAP .udf belgelerini Google’ın ön izlemesinde açar, sunucuya göndermez. Geliştirici: x.com/CgrShn",
   "author": "x.com/CgrShn",
   "homepage_url": "https://x.com/CgrShn",
@@ -37,6 +37,23 @@
         "icerik.css"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://drive.google.com/viewer/*",
+        "https://drive.google.com/u/*/viewer/*"
+      ],
+      "js": [
+        "drive-kimlik.js",
+        "gmail-ek.js",
+        "indir.js",
+        "icerik.js"
+      ],
+      "css": [
+        "icerik.css"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "web_accessible_resources": [

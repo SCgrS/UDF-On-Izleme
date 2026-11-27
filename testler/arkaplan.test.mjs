@@ -96,6 +96,26 @@ test('kayıt: Yalnız görüntüleyici sayfası alabilir, biçimsiz anahtara yan
   assert.equal((await a.al(anahtar)).id, DRIVE_ID);
 });
 
+test('kayıt: Drive\'ın ön izleme çerçevesinden (viewer) yazılır, öbür alt çerçevelerden yazılmaz', async () => {
+  const a = kur({ udfIndir: async () => ({ bayt: new Uint8Array([1]), ad: null, hesap: null }) });
+  for (const url of ['https://drive.google.com/u/1/viewer/main?origin=x', 'https://drive.google.com/viewer/main']) {
+    const y = await a.gonder({ tur: 'gomulu-kayit', id: DRIVE_ID, ad: 'a.udf', au: 1 }, { ...a.driveSekmesi, url, frameId: 4 });
+    assert.match(y.anahtar, /^[0-9a-f-]{36}$/, url);
+    assert.deepEqual(await a.al(y.anahtar), { id: DRIVE_ID, ad: 'a.udf', au: 1, rk: null });
+  }
+  for (const [ad, url] of [
+    ['Drive klasör sayfası alt çerçevede', 'https://drive.google.com/drive/u/0/folders/x'],
+    ['viewer benzeri yol', 'https://drive.google.com/drive/viewer/main'],
+    ['Gmail alt çerçevesi', 'https://mail.google.com/mail/u/1/'],
+    ['başka site', 'https://ornek.com/u/1/viewer/main']
+  ]) {
+    assert.equal(await a.gonder({ tur: 'gomulu-kayit', id: DRIVE_ID, ad: 'a.udf' }, { ...a.driveSekmesi, url, frameId: 4 }), undefined, ad);
+    assert.equal(await a.gonder({ tur: 'udf-ac', id: DRIVE_ID, ad: 'a.udf' }, { ...a.driveSekmesi, url, frameId: 4 }), undefined, ad);
+  }
+  assert.equal(await a.gonder({ tur: 'gomulu-kayit', kaynak: 'gmail', ad: 'a.udf', ek: EK }, { ...a.driveSekmesi, url: 'https://drive.google.com/u/1/viewer/main', frameId: 4 }), undefined, 'Gmail eki Drive çerçevesinden gelmez');
+  assert.equal(a.sekmeler.length, 0);
+});
+
 test('kayıt: Alınmayan kayıt 60 sn sonra silinir, aynı anda en çok beşi durur (en eskisi gider)', async () => {
   const a = kur({ udfIndir: async () => ({ bayt: new Uint8Array([1]), ad: null, hesap: null }) });
   const anahtarlar = [];

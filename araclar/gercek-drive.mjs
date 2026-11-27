@@ -14,6 +14,12 @@ const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const KLASOR = 'https://drive.google.com/drive/folders/15uNXeRBIhVvZJIhL4yTw4IsStMhUaaxl';
 const ADLAR = ['spam.txt', 'spam2.txt'];
 const bekle = ms => new Promise(r => setTimeout(r, ms));
+// Drive ön izlemeyi ayrı bir çerçevede (drive.google.com/viewer/main) açıyor (oturumsuzda 2026-10-27'den, oturum açıkta
+// 2026-11-27'den beri). Görüntüleyiciye ait ifadeler o çerçevenin belgesinde değerlendirilir (aynı köken), çerçeve yoksa
+// üst belgede. Fare olaylarının yeri çerçevenin konumu kadar kaydırılır.
+const GORUNTULEYICI = `(() => { const ust = window.document; for (const f of ust.querySelectorAll('iframe')) { try { const d = f.contentDocument; if (d && d.location.pathname.includes('/viewer/') && d.getElementById('drive-active-item-info')) return d; } catch { /* başka köken */ } } return ust; })()`;
+const icinde = ifade => `(() => { const document = ${GORUNTULEYICI}; return (${ifade}); })()`;
+const KAYMA = `(() => { const d = ${GORUNTULEYICI}; const f = d.defaultView.frameElement; if (!f) return { x: 0, y: 0 }; const r = f.getBoundingClientRect(); return { x: r.left, y: r.top }; })()`;
 
 function kopyaKur() {
   const hedef = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'udf-gercek-')), 'eklenti');
@@ -60,7 +66,7 @@ export async function gercekSina(ekranYolu) {
       await s.g('Input.dispatchMouseEvent', { type: 'mouseReleased', x: yer.x, y: yer.y, button: 'left', buttons: 0, clickCount: n });
       await bekle(80);
     }
-    await ifadeBekle(s.g, "!!document.getElementById('drive-active-item-info')", 8000).catch(async () => console.log('görüntüleyici açılmadı:', await deger(s.g, "document.activeElement && document.activeElement.outerHTML.slice(0, 160)")));
+    await ifadeBekle(s.g, icinde("!!document.getElementById('drive-active-item-info')"), 8000).catch(async () => console.log('görüntüleyici açılmadı:', await deger(s.g, "document.activeElement && document.activeElement.outerHTML.slice(0, 160)")));
     const cerceve = async () => {
       for (let i = 0; i < 80; i++) {
         const { targetInfos } = await c.gonder('Target.getTargets');
@@ -70,7 +76,7 @@ export async function gercekSina(ekranYolu) {
       }
       return null;
     };
-    const gommeDurumu = () => deger(s.g, `(() => {
+    const gommeDurumu = () => deger(s.g, icinde(`(() => {
       const bilgi = document.getElementById('drive-active-item-info');
       const ana = bilgi && bilgi.closest('[role=main]');
       const c = ana && ((ana.shadowRoot && ana.shadowRoot.querySelector('iframe.udf-okuyucu-cerceve')) || ana.querySelector(':scope > iframe.udf-okuyucu-cerceve'));
@@ -84,7 +90,7 @@ export async function gercekSina(ekranYolu) {
       const gorunenDrive = [...ana.children].filter(e => e !== c && e.checkVisibility({ visibilityProperty: true, opacityProperty: true })).length;
       return { var: true, oge, ust: Math.round(r.top - ar.top), alt: Math.round(ar.bottom - r.bottom), en: Math.round(r.width), anaEn: Math.round(ar.width), okSayisi: oklar.length, okUstte, gorunenDrive, odak: c.getRootNode().activeElement === c,
         golgede: !!ana.shadowRoot && ana.shadowRoot.contains(c) };
-    })()`);
+    })()`));
     let g = await cerceve();
     let durum = g ? await ifadeBekle(g, "document.querySelector('.durum.hata h2') ? document.querySelector('.durum.hata h2').textContent : document.querySelector('.udf-sayfa') ? 'belge' : ''", 20000).catch(() => 'zaman aşımı') : 'çerçeve yok';
     let gom = await gommeDurumu();
@@ -95,14 +101,14 @@ export async function gercekSina(ekranYolu) {
       fs.writeFileSync(ekranYolu, Buffer.from(data, 'base64'));
       console.log('ekran görüntüsü:', ekranYolu);
     }
-    await ifadeBekle(s.g, CERCEVE_ODAKTA, 3000).catch(() => {});
+    await ifadeBekle(s.g, icinde(CERCEVE_ODAKTA), 3000).catch(() => {});
     await s.g('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 });
     await s.g('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 });
     await bekle(2500);
     gom = await gommeDurumu();
     sonuc('sağ ok (belgede) → Drive sonraki dosyaya geçti, belge yeni alana gömüldü', gom.oge === ADLAR[1] && gom.var && gom.gorunenDrive === 0, JSON.stringify(gom));
     // Drive'ın okuna fareyle basılınca da geçer (ok belgenin üstünde).
-    const ok = await deger(s.g, "(() => { for (const b of document.querySelectorAll('[aria-label=\"Önceki\"]')) { const x = b.getBoundingClientRect(); const h = document.elementFromPoint(x.left + x.width / 2, x.top + x.height / 2); if (h === b || b.contains(h)) return { x: x.left + x.width / 2, y: x.top + x.height / 2 }; } return null; })()");
+    const ok = await deger(s.g, icinde("(() => { const k = " + KAYMA + "; for (const b of document.querySelectorAll('[aria-label=\"Önceki\"]')) { const x = b.getBoundingClientRect(); const h = document.elementFromPoint(x.left + x.width / 2, x.top + x.height / 2); if (h === b || b.contains(h)) return { x: k.x + x.left + x.width / 2, y: k.y + x.top + x.height / 2 }; } return null; })()"));
     if (ok) {
       await s.g('Input.dispatchMouseEvent', { type: 'mouseMoved', x: ok.x, y: ok.y });
       await s.g('Input.dispatchMouseEvent', { type: 'mousePressed', x: ok.x, y: ok.y, button: 'left', buttons: 1, clickCount: 1 });
@@ -112,13 +118,13 @@ export async function gercekSina(ekranYolu) {
     gom = await gommeDurumu();
     sonuc('Drive’ın önceki okuna fareyle basınca geçer, belge yeniden gömülür', !!ok && gom.oge === ADLAR[0] && gom.var && gom.gorunenDrive === 0, JSON.stringify(gom));
     g = await cerceve();
-    await deger(s.g, `${CERCEVE} && ${CERCEVE}.focus(), 1`);
-    await ifadeBekle(s.g, CERCEVE_ODAKTA, 3000).catch(() => {});
+    await deger(s.g, icinde(`${CERCEVE} && ${CERCEVE}.focus(), 1`));
+    await ifadeBekle(s.g, icinde(CERCEVE_ODAKTA), 3000).catch(() => {});
     await s.g('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
     await s.g('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
     await bekle(1500);
     gom = await gommeDurumu();
-    const isaretli = await deger(s.g, "document.querySelectorAll('[data-udf-okuyucu-gomulu]').length");
+    const isaretli = await deger(s.g, icinde("document.querySelectorAll('[data-udf-okuyucu-gomulu]').length"));
     sonuc('Esc (belgede) → Drive’ın görüntüleyicisi kapandı, iz kalmadı', !gom.oge && gom.sayi === 0 && isaretli === 0, JSON.stringify({ ...gom, isaretli }));
 
     // Boşluğa tıklamak (Drive'ın PDF görüntüleyicisindeki gibi) kapatır: dosya yeniden açılır, çerçevede hata kutusunun
@@ -138,7 +144,7 @@ export async function gercekSina(ekranYolu) {
     g = yer ? await cerceve() : null;
     if (g) await ifadeBekle(g, "!!document.querySelector('.durum.hata') || !!document.querySelector('.udf-sayfa')", 20000).catch(() => {});
     const acikti = (await gommeDurumu()).var;
-    const nokta = await deger(s.g, `(() => { const c = ${CERCEVE}; if (!c) return null; const r = c.getBoundingClientRect(); return { x: r.left + 100, y: r.top + 40 }; })()`);
+    const nokta = await deger(s.g, icinde(`(() => { const k = ${KAYMA}, c = ${CERCEVE}; if (!c) return null; const r = c.getBoundingClientRect(); return { x: k.x + r.left + 100, y: k.y + r.top + 40 }; })()`));
     if (nokta) {
       await s.g('Input.dispatchMouseEvent', { type: 'mouseMoved', x: nokta.x, y: nokta.y });
       await s.g('Input.dispatchMouseEvent', { type: 'mousePressed', x: nokta.x, y: nokta.y, button: 'left', buttons: 1, clickCount: 1 });

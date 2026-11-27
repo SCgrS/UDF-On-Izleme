@@ -79,8 +79,9 @@ verir. Bu yüzden `npm test`'in paket testleri Code → Download ZIP'ten çıkar
 - `node araclar/chrome-sina.mjs github`: GitHub'ın Code → Download ZIP'i (HEAD, ön ek `UDF-On-Izleme-main/`)
   çıkarılıp temiz Chrome'a doğrudan yüklenir mi (kimlik sabit, dıştaki klasör "manifest eksik" verir, örnek belge çizilir).
 - `node araclar/chrome-sina.mjs gercek`: Gerçek Drive'ın görüntüleyicisinde gömme denemesi (internet gerekir, herkese
-  açık örnek klasör, oturum açılmaz, `.txt` dosyaları UDF sayılır). 2026-10-27'den beri çalışmıyor: Oturumsuz Drive'ın
-  görüntüleyicisi bir iframe'de açılıyor (`DRIVE-TEKNIGI.md` §14). Aynı klasörü kullanan `tanitim-gorselleri.mjs` de öyle.
+  açık örnek klasör, oturum açılmaz, `.txt` dosyaları UDF sayılır). Drive'ın görüntüleyicisi bir iframe'de açıldığı için
+  ifadeler o çerçevenin belgesinde değerlendirilir (`DRIVE-TEKNIGI.md` §15). Aynı klasörü kullanan
+  `tanitim-gorselleri.mjs` henüz buna uyarlanmadı, çalışmıyor.
 - `node araclar/chrome-sina.mjs gorsel <klasör> <çıktı>`: Klasördeki `.udf` dosyalarını görüntüleyicide açar, ekran
   görüntüsü ve PDF üretir, konsol hatalarını ve CSP ihlallerini sayar. Gerçek belgelerle çalışırken çıktı klasörünü depo
   dışında tutun.

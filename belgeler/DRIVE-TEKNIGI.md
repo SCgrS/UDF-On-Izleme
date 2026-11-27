@@ -1094,11 +1094,31 @@ kalkınca okundu.
 - **Not bölmesi:** `clamp(240px, 25vw, 320px)`: 1280 px'te ve üstünde 320, 960 px'te ve altında 240 px. Kullanıcının
   Gmail penceresinde (yaklaşık 930 px, bölme açık) sayfa %65'e küçülüyor, soldaki ok sayfanın kenarına biniyordu. Bölme
   240 px olunca belge alanı 80 px genişler. Sınama: Sahte Gmail G9 (958 px'te 240, 1280 px'te 320).
-- **Oturumsuz Drive'ın görüntüleyicisi çerçeveye taşındı:** `chrome-sina.mjs gercek` (herkese açık klasör, oturumsuz) artık
-  çalışmıyor: Görüntüleyici `drive.google.com/viewer/main` adresli bir iframe'de açılıyor, `#drive-active-item-info` üst
-  belgede yok. İçerik betiği yalnız üst belgede ve `/drive/*`, `/file/*` yollarında çalıştığı için oturum açmamış
-  kullanıcının ön izlemesinde belge gömülmez. Oturum açık Drive'da görüntüleyici üst belgede (aynı gün ölçüldü). README
-  görsellerini üreten `tanitim-gorselleri.mjs` de aynı klasörü kullandığı için yeniden üretilemez.
+- **Oturumsuz Drive'ın görüntüleyicisi çerçeveye taşındı:** Görüntüleyici `drive.google.com/viewer/main` adresli bir
+  iframe'de açılıyor, `#drive-active-item-info` üst belgede yok. O gün oturum açık Drive'da görüntüleyici üst belgedeydi.
+  2026-11-27'de oturum açık Drive da çerçeveye geçti, eklenti çerçevede de çalışır oldu (§15).
 - **Yazdırma** sahte Gmail'de sınandı: Ctrl+P (belgede ve Gmail'in çubuğunda) ve **Yazdır / PDF** düğmesi çerçeveyi hemen
   basar, baskı görünümünde çubuk ve not bölmesi yok, belgenin alt boşluğu kalkar (G6, G6b). Gerçek Gmail'de Chrome'un
   yazdırma penceresi açılınca Claude onu kapatamadığı için orada denenmedi.
+
+## 15. Görüntüleyici çerçevede (2026-11-27)
+- **Ölçüm:** Oturum açık Drive'da (`/drive/u/1/…`) `.udf`'ye çift tıklayınca Drive'ın arşiv görünümü (`content.xml`,
+  `documentproperties.xml`, `sign.sgn` listesi) çıktı, belge gömülmedi. Üst belgede `#drive-active-item-info` ve görünür
+  ana alan yok. Görüntüleyicinin tamamı (üst çubuk, menüler, Yorum, oklar) pencereyi kaplayan bir iframe'de:
+  `src` `/viewer/main?origin=…&source=…&authuser=1`, yüklenince adresi `/u/1/viewer/main?origin=…&source=…`. Çerçeve
+  üst belgeyle aynı kökende (`drive.google.com`), konumu sol üst köşe. İçinde yapı eskisiyle aynı: `role=dialog` içinde
+  her dosya için bir `role=main`, gösterilende `#drive-active-item-info` (`{"id","title","mimeType"}`, `.udf` için
+  `application/x-zip`). Çerçevenin adresinde dosya kimliği ve og:url yok.
+- **Eklenti:** `manifest.json`'da ikinci içerik betiği girdisi `https://drive.google.com/viewer/*` ve
+  `https://drive.google.com/u/*/viewer/*` yollarında `all_frames: true` ile çalışır. `icerik.js` alt çerçevelerden yalnız
+  bunda çalışır, o da `location.ancestorOrigins`'in hepsi `https://drive.google.com` ise: Başka bir sitenin içine konmuş
+  Drive çerçevesine belge gömülmez. Hesap çerçevenin yolundaki `/u/<n>/`'den, yoksa üst sayfanın adresinden ya da
+  og:url'sinden okunur. Paylaşım bağlantısının kimliği ve kaynak anahtarı üst sayfanın adresinden okunur. Arka plan
+  `frameId` 0 olmayan gönderenden yalnız bu çerçevenin adresiyle kayıt kabul eder (`DRIVE_CERCEVESI`). Gmail'in ek ön
+  izlemesi aynı gün üst belgedeydi, 0.1.0 Gmail'de belgeyi gömdü.
+- **İzin:** Yeni yollar aynı sitede (`drive.google.com`), Chrome'un izin uyarısı değişmez.
+- **Sınama:** Sahte Drive D8c (`/drive/u/1/cerceveli`, içinde `/u/1/viewer/main`): Belge çerçevenin ana alanına gömülür,
+  Drive'ın içeriği ve Yorum gizlenir, üst belgeye işaret konmaz, indirme `authuser=1` ile. `chrome-sina.mjs gercek`
+  (herkese açık klasör, oturumsuz) yeniden çalışıyor: Görüntüleyiciye ait ifadeleri çerçevenin belgesinde değerlendirir,
+  gömme, oklar, Esc ve boşluğa tıklama geçti. `tanitim-gorselleri.mjs` hâlâ üst belgeye bakıyor, yeniden üretilmeden önce
+  aynı biçimde uyarlanmalı.

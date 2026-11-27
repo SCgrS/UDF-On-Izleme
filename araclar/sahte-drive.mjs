@@ -180,6 +180,17 @@ export async function sunucuKur(bayt, secenek = {}) {
       y.writeHead(403, { 'content-type': 'text/html' });
       return y.end('<html>Yasak</html>');
     }
+    // Ön izlemenin ayrı çerçevede açıldığı Drive (2026-11-27 ölçümü): Üst sayfa, içinde görüntüleyici çerçevesi
+    // (/u/<n>/viewer/main). Çerçevenin adresinde dosya kimliği yok, og:url de yok: Hesap yalnız yoldaki /u/<n>/'den bilinir.
+    if (u.pathname === '/drive/u/1/cerceveli') {
+      y.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      return y.end('<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Deneme - Google Drive</title></head><body style="margin:0">' +
+        '<iframe src="/u/1/viewer/main?origin=x" style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></body></html>');
+    }
+    if (/^\/(?:u\/\d\/)?viewer\/main$/.test(u.pathname)) {
+      y.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      return y.end(dosyaSayfasi(KIMLIK.udf).replace(/<meta property="og:url"[^>]*>/, ''));
+    }
     if (/^\/drive\//.test(u.pathname)) { y.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return y.end(klasorSayfasi); }
     const m = /^\/file\/d\/([^/]+)\/view/.exec(u.pathname);
     if (m) { y.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return y.end(dosyaSayfasi(m[1], u.searchParams.has('yapisiz'), u.searchParams.has('golgeli'))); }
@@ -668,6 +679,27 @@ export async function driveSina(udfYolu, ekranYolu) {
       sonuc('ana alana gölge kökü eklenemezse çerçeve ana alanın çocuğu, Drive içeriği ve Yorum gizli', !!yer && yer.ust === 112 && yer.kart === 'hidden' &&
         yer.yorum === 'none' && /^BELGE: metin var/.test(durum), `${durum} · ${JSON.stringify(yer)}`);
       await c.gonder('Target.closeTarget', { targetId: dg.targetId });
+    }
+    // D8c. Drive'ın ön izlemesi ayrı çerçevede (drive.google.com/u/<n>/viewer/main): Belge çerçevenin içindeki ana alana
+    // gömülür, Drive'ın içeriği ve Yorum gizlenir, üst sayfaya çerçeve konmaz, hesap çerçevenin adresinden okunur.
+    {
+      const once = istekler.length;
+      const dc = await sekmeAc(c, 'https://drive.google.com/drive/u/1/cerceveli');
+      await dc.g('Runtime.enable');
+      await ifadeBekle(dc.g, "(() => { const f = document.querySelector('iframe'); return document.readyState === 'complete' && !!f && !!f.contentDocument && f.contentDocument.readyState === 'complete'; })()");
+      await bekle(1200);
+      const yer = await deger(dc.g, `(() => { const d = document.querySelector('iframe').contentDocument, ana = d.querySelector('[role=main]');
+        const c = ana && ana.shadowRoot && ana.shadowRoot.querySelector('iframe.udf-okuyucu-cerceve'); if (!c) return null;
+        const r = c.getBoundingClientRect();
+        return { ust: Math.round(r.top), kart: getComputedStyle(d.getElementById('kart')).visibility, yorum: getComputedStyle(d.getElementById('yorum')).display,
+          ustBelgede: document.querySelectorAll('[data-udf-okuyucu-gomulu]').length }; })()`);
+      f = await cerceveBul();
+      durum = f ? await belgeDurumu(f.g) : 'çerçeve yok';
+      const yeni = istekler.slice(once).filter(i => i.id === KIMLIK.udf);
+      sonuc('ön izleme ayrı çerçevedeyse (viewer) belge o çerçevenin ana alanına gömülür, hesap çerçevenin adresinden', !!yer && yer.ust === 112 &&
+        yer.kart === 'hidden' && yer.yorum === 'none' && yer.ustBelgede === 0 && /^BELGE: metin var/.test(durum) && yeni.length >= 1 && yeni.every(i => i.au === '1'),
+        `${durum} · ${JSON.stringify(yer)} · authuser: ${yeni.map(i => i.au).join(', ')}`);
+      await c.gonder('Target.closeTarget', { targetId: dc.targetId });
     }
 
     // D9. Arka planın indirmesi başaramazsa (401) görüntüleyici dosyayı kendisi indirir. Sayfanın hesap sırası bilindiği

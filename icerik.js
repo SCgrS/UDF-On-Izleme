@@ -15,13 +15,35 @@
 (() => {
   'use strict';
   const baglamVar = () => { try { return !!(chrome.runtime && chrome.runtime.id); } catch { return false; } };
+  // Drive'ın ön izlemesi ayrı bir çerçevede de açılır: drive.google.com/u/<n>/viewer/main (2026-11-27 ölçümü, oturum
+  // açık kullanıcıda da). Görüntüleyicinin yapısı çerçevenin içinde aynıdır. Betik alt çerçevelerden yalnız bunda, o da
+  // bütün ataları Drive'sa çalışır: Başka bir sitenin içine konmuş Drive çerçevesine belge gömülmez.
+  const DRIVE_KOKENI = 'https://drive.google.com';
+  const CERCEVEDE = window.top !== window;
+  const driveCercevesi = () => {
+    if (location.origin !== DRIVE_KOKENI || !/^\/(?:u\/\d{1,2}\/)?viewer\//.test(location.pathname)) return false;
+    const atalar = location.ancestorOrigins;
+    return !!atalar && atalar.length > 0 && Array.from(atalar).every(o => o === DRIVE_KOKENI);
+  };
   // Eklenti güncellenip betik yeniden eklendiğinde eski kopyanın bağlamı geçersizdir: O zaman yenisi kurulur, eskisi
   // hiçbir olaya karışmaz.
-  if (window.top !== window || (typeof globalThis.__udfOkuyucuIcerik === 'function' && globalThis.__udfOkuyucuIcerik())) return;
+  if ((CERCEVEDE && !driveCercevesi()) || (typeof globalThis.__udfOkuyucuIcerik === 'function' && globalThis.__udfOkuyucuIcerik())) return;
   globalThis.__udfOkuyucuIcerik = baglamVar;
   const K = globalThis.DriveKimlik, G = globalThis.GmailEk, D = globalThis.DriveIndir;
   if (!K || !G || !D) return;
   const GMAIL = location.hostname === 'mail.google.com';
+  // Drive sayfasının adresi: Ön izleme çerçevesindeyken üst sayfanınki (aynı köken). Paylaşım bağlantısının kimliği ve
+  // kaynak anahtarı oradadır.
+  function sayfaAdresi() {
+    if (!CERCEVEDE) return location.href;
+    try { return window.top.location.href; } catch { return location.href; }
+  }
+  // Drive'ın hesabı: Bu belgenin adresinden (çerçevede /u/<n>/viewer/main), yoksa üst sayfanın adresinden ya da og:url'sinden.
+  function driveHesabi() {
+    const au = K.sayfaHesabi(document, location.href);
+    if (au != null || !CERCEVEDE) return au;
+    try { return K.sayfaHesabi(window.top.document, window.top.location.href); } catch { return null; }
+  }
   // Görüntüleyicinin bilgi öğesi (#drive-active-item-info). Gmail'de yalnız görüntüleyicinin katmanındaki tek öğe
   // (GmailEk.bilgiOgesi): E-postanın gövdesine aynı kimlikle konmuş bir öğe gösterilen dosya sayılmaz. Drive'da sayfaya
   // dışarıdan öğe konamaz.
@@ -55,10 +77,10 @@
   // bağlantısının kaynak anahtarı. Gmail eki: Ad ve ekin indirme bilgisi (GmailEk).
   function dosyaBilgisi(bilgi) {
     if (bilgi.kaynak === 'gmail') return { kaynak: 'gmail', ad: String(bilgi.ad || '').slice(0, 300), ek: G.ekTemizle(bilgi.ek) };
-    const adres = K.urldenBilgi(location.href) || {};
+    const adres = K.urldenBilgi(GMAIL ? location.href : sayfaAdresi()) || {};
     return {
       id: bilgi.id, ad: String(bilgi.ad || '').slice(0, 300),
-      au: Number.isInteger(bilgi.au) ? bilgi.au : (GMAIL ? G.sayfaHesabi(location.href) : K.sayfaHesabi(document, location.href)),
+      au: Number.isInteger(bilgi.au) ? bilgi.au : (GMAIL ? G.sayfaHesabi(location.href) : driveHesabi()),
       rk: bilgi.rk || (adres.id === bilgi.id ? adres.rk : null)
     };
   }
@@ -566,7 +588,7 @@
   // bağlantısından alınır. Drive'ın klasör görünümünde dosyanın kaynak anahtarı bilinmez.
   function hedefBul() {
     const oge = K.aktifOge(document, bilgiOgesi());
-    const sayfa = K.urldenBilgi(location.href);
+    const sayfa = K.urldenBilgi(GMAIL ? location.href : sayfaAdresi());
     if (oge && K.udfAdiMi(oge.ad)) {
       const ayni = sayfa && sayfa.id === oge.id;
       const baglanti = GMAIL && sonDriveBaglantisi && sonDriveBaglantisi.id === oge.id ? sonDriveBaglantisi : null;
